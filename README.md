@@ -4,6 +4,8 @@ Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16
 
 ## Stato reale: 0.1.0-alpha.2, analisi locale
 
+**Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
+
 Questa prima consegna **non migliora ancora la grafica dei giochi**. Serve a collaudare selezione, rilevamento e interfaccia prima di introdurre modifiche ai file.
 
 Disponibile:
@@ -31,7 +33,7 @@ I nomi dei file e le risorse versione sono indizi, non verifiche di firma o sicu
 
 Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.com/luigip11/DLSS5_ReShade_for_games). Per scaricare una build, aprire [Actions](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/workflows/windows-build.yml), scegliere una compilazione riuscita e scaricare l'artifact `GamePanel-win-x64-alpha` dopo l'accesso a GitHub. L'artifact contiene il pacchetto portabile e il relativo SHA-256. Se il workflow non è ancora terminato, non è ancora disponibile una build verificata da Actions.
 
-1. Estrarre **tutto** `GamePanel-win-x64.zip` in una cartella scrivibile, fuori dalle cartelle dei giochi.
+1. Estrarre l'artifact scaricato, poi estrarre **tutto** `GamePanel-win-x64.zip` in una cartella scrivibile, fuori dalle cartelle dei giochi. Aprire un EXE dalla vista di WinRAR avvia una copia temporanea e non equivale a estrarre l'intero pacchetto.
 2. Avviare `GamePanel.exe`. Non richiede installazione separata di .NET né privilegi amministrativi.
 3. Incollare il percorso completo nel campo **Percorso completo del gioco (.exe)** e premere **Analizza percorso** o **Invio**. In alternativa usare **Seleziona gioco .exe** o trascinare il file. Le virgolette esterne di "Copia come percorso" sono accettate. Se non emerge un'API grafica, il file potrebbe essere un launcher o caricare il renderer dinamicamente.
 4. Aprire Diagnosi. Esportare il JSON in Documenti se si vuole conservarlo.
