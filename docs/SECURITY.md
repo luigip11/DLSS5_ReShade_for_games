@@ -1,0 +1,27 @@
+# Sicurezza e confini dell'alpha
+
+## Cosa fa il codice attuale
+
+Legge PE, file versione e nomi dei componenti; calcola un hash; mostra i risultati. Non chiama LoadLibrary o Assembly.Load sui file selezionati, non carica add-on, non installa servizi, non scrive registro, non richiede elevazione, non modifica impostazioni HDR/driver. Nessuna connessione di rete implementata. Non scrive automaticamente profili, cache o log. L'esportazione del JSON è una scrittura richiesta dall'utente; il pulsante Avvia esegue intenzionalmente l'EXE selezionato.
+
+Il framework, Windows, antivirus e il gioco possono compiere attività proprie non controllate dal gestore. Questo testo descrive il codice GamePanel, non garantisce il comportamento dell'intero PC.
+
+## Limiti dell'analisi
+
+- Import diretti soltanto: renderer in DLL engine, delay imports, percorsi non scansionati e caricamenti dinamici possono sfuggire.
+- La scansione inventaria nomi noti entro limiti; non attribuisce firme o identità ai mod.
+- Le versioni file sono dichiarazioni del file, non attestazioni.
+- Indicatori anti-cheat limitati e non esaustivi. Nessun indicatore non significa assenza.
+- L'hash identifica il contenuto letto, non prova assenza di malware o compatibilità.
+- Non è uno scanner antivirus e non rende sicuro un EXE modificato o una DLL preesistente.
+- L'analisi è soggetta a modifiche concorrenti dei file. Non usare il report per autorizzare una futura scrittura senza rianalisi e verifica degli hash al momento dell'operazione.
+
+## Distribuzione
+
+Il sorgente alpha non include binari grafici terzi. Il pacchetto self-contained include componenti runtime Microsoft. Build senza certificato Authenticode: conservare gli hash, verificare provenienza, non aggirare le protezioni. Non presentare una build non scansionata come "certificata priva di malware".
+
+Non usare ancora con l'aspettativa di ottenere DLSS o HDR: le pagine relative dichiarano le integrazioni mancanti.
+
+## Vulnerabilità
+
+Non esiste ancora un canale pubblico del progetto. Segnalare nel canale di sviluppo privato i passi minimi, versione/commit e comportamento osservato. Non inserire token, eseguibili del gioco o dump contenenti dati personali nelle issue pubbliche.
