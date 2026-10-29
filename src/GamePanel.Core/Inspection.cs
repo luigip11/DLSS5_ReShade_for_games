@@ -85,12 +85,13 @@ public sealed class GameInspector
 
     public GameReport Inspect(string executablePath, CancellationToken token = default)
     {
-        var path = Path.GetFullPath(executablePath);
-        if (!string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("Seleziona il file .exe del gioco.");
+        var path = Path.GetFullPath(ExecutablePath.Normalize(executablePath));
         var file = new FileInfo(path);
-        if (!file.Exists) throw new FileNotFoundException("Eseguibile non trovato.", path);
-        if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        // GetAttributes preserves access-denied/not-found errors; FileInfo.Exists hides them.
+        var attributes = File.GetAttributes(path);
+        if (attributes.HasFlag(FileAttributes.Directory))
+            throw new InvalidDataException("Il percorso indica una cartella. Seleziona il file .exe al suo interno.");
+        if (attributes.HasFlag(FileAttributes.ReparsePoint))
             throw new InvalidDataException("Seleziona il file reale, non un collegamento del filesystem.");
         var details = PeInspector.Read(path);
         if (details.IsDll) throw new InvalidDataException("Il file selezionato è una DLL, non un eseguibile.");

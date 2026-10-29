@@ -43,6 +43,39 @@ string Fixture(string name, bool x64 = false, bool dll = false, string imported 
     return path;
 }
 
+Check("Percorso Windows con spazi, parentesi e virgolette di Explorer", () =>
+{
+    const string windowsPath = @"C:\Program Files (x86)\EA GAMES\Need for Speed Underground 2\speed2.exe";
+    Require(ExecutablePath.Normalize("  \"" + windowsPath + "\"  ") == windowsPath, "Percorso quotato alterato.");
+    Require(ExecutablePath.Normalize(windowsPath) == windowsPath, "Percorso non quotato alterato.");
+});
+Check("L'analizzatore accetta il percorso reale quotato con spazi", () =>
+{
+    var relative = Path.Combine("Program Files (x86)", "EA GAMES", "Need for Speed Underground 2", "speed2.exe");
+    Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(temp, relative))!);
+    var path = Fixture(relative);
+    var report = new GameInspector().Inspect("\"" + path + "\"");
+    Require(report.ExecutablePath == path, "File diverso da quello selezionato.");
+    Require(report.GraphicsApis.Contains("Direct3D 9"), "File non analizzato.");
+});
+Check("Rifiuto percorsi vuoti, multipli o virgolette non bilanciate", () =>
+{
+    foreach (var invalid in new string?[] { null, "", "   ", "\"\"", "\"C:\\game.exe", "C:\\game.exe\"", "C:\\game.exe\nD:\\other.exe", "\"C:\\game.exe\" --argument", "C:\\game.lnk", "C:\\game.exe\0" })
+        Reject(() => ExecutablePath.Normalize(invalid));
+});
+Check("File mancante distinto dagli errori PE", () =>
+{
+    try { new GameInspector().Inspect(Path.Combine(temp, "missing.exe")); }
+    catch (FileNotFoundException) { return; }
+    throw new Exception("File mancante non segnalato correttamente.");
+});
+Check("Una cartella con estensione EXE non è un eseguibile", () =>
+{
+    var directory = Path.Combine(temp, "folder.exe"); Directory.CreateDirectory(directory);
+    try { new GameInspector().Inspect(directory); }
+    catch (InvalidDataException) { return; }
+    throw new Exception("Cartella accettata come eseguibile.");
+});
 Check("PE x86: import grafico e architettura", () =>
 {
     var pe = PeInspector.Read(Fixture("legacy.exe"));

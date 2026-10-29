@@ -4,7 +4,7 @@ Nessuna modifica grafica in questa alpha. Non è richiesto installare ReShade, D
 
 1. Estrarre il pacchetto completo in una cartella dell'utente e avviare GamePanel.exe senza elevazione.
 2. Verificare leggibilità e navigazione a scala schermo 100%, 125% e 150%; ridimensionare la finestra.
-3. Selezionare l'EXE di Underground 1, poi di Underground 2. Registrare architettura e API dichiarata. Controllare che il gioco non parta durante la selezione.
+3. Incollare il percorso completo dell'EXE di Underground 2 nel campo dell'app, prima senza virgolette e poi con le virgolette di "Copia come percorso". Provare sia **Analizza percorso** sia **Invio**; entrambi devono analizzare lo stesso file. Ripetere scegliendo l'EXE con **Seleziona gioco .exe**. Registrare architettura e API dichiarata. Il gioco non deve partire durante l'analisi. Ripetere con Underground 1.
 4. Selezionare l'EXE di un gioco moderno. Se le API non vengono determinate, annotare se è un launcher anziché l'eseguibile del renderer.
 5. Aprire DLSS/HDR e verificare che nessun controllo dichiari una mod installata o una funzione attiva.
 6. Aprire Diagnosi e controllare componenti individuati contro la cartella reale. Assenza di DLL rilevate non prova assenza di DLSS.
@@ -16,3 +16,5 @@ Nessuna modifica grafica in questa alpha. Non è richiesto installare ReShade, D
 Raccogliere: versione di Windows, driver NVIDIA, adattatori rilevati, GPU usata dal gioco, display interno/esterno e supporto HDR indicato dalle impostazioni Windows; risultato per ciascun punto. Per il prossimo blocco servono anche due titoli moderni specifici con versione/build.
 
 Da completare prima di dichiarare M0 collaudato: avvio effettivo su Windows 11, DPI, drag/drop, dialoghi, enumerazione GPU e report su giochi reali. I controlli sintetici del core non sostituiscono queste prove.
+
+Per alpha.2 verificare anche che modificare il campo dopo un'analisi disabiliti l'esportazione e rimuova il pulsante di avvio del risultato precedente. Provare il trascinamento dell'EXE sia nel campo percorso sia nel resto della finestra. Un percorso mancante deve produrre **File non trovato** e restare correggibile nel campo.

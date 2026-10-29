@@ -26,10 +26,19 @@ internal sealed class MainWindow : Window
     private static readonly Brush Ink = Brush("#ECF1FA");
     private static readonly Brush Muted = Brush("#AAB7CA");
     private static readonly Brush Accent = Brush("#8ADAC3");
-    private readonly TextBlock _path = Text("Seleziona l'eseguibile del gioco per iniziare.", 15, Muted);
+    private readonly TextBox _path = new()
+    {
+        FontSize = 14, Foreground = Ink, Background = Surface, CaretBrush = Accent,
+        BorderBrush = Brush("#52637B"), BorderThickness = new Thickness(1),
+        Padding = new Thickness(12), AcceptsReturn = false, AcceptsTab = false,
+        HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+        VerticalContentAlignment = VerticalAlignment.Center,
+        ToolTip = "Incolla il percorso completo dell'EXE, anche con le virgolette di Windows."
+    };
     private readonly TextBlock _status = Text("Pronto · analisi locale", 13, Muted);
     private readonly StackPanel _content = new() { Margin = new Thickness(32) };
     private readonly Button _select;
+    private readonly Button _analyze;
     private readonly Button _export;
     private readonly Button _cancel;
     private readonly List<Button> _navigation = [];
@@ -41,7 +50,7 @@ internal sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "GamePanel · Analisi iniziale";
+        Title = "GamePanel · 0.1.0-alpha.2";
         Width = 1160; Height = 800; MinWidth = 860; MinHeight = 620;
         Background = BackgroundBrush; Foreground = Ink;
         FontFamily = new FontFamily("Segoe UI"); FontSize = 14;
@@ -57,7 +66,7 @@ internal sealed class MainWindow : Window
         var sidebar = new DockPanel { Background = Brush("#161C27"), LastChildFill = true };
         frame.Children.Add(sidebar);
         var bottom = new StackPanel { Margin = new Thickness(22) };
-        bottom.Children.Add(Text("0.1 · ALPHA", 12, Accent));
+        bottom.Children.Add(Text("0.1 · ALPHA 2", 12, Accent));
         bottom.Children.Add(Text("Selezione e analisi disponibili.\nMod DLSS/HDR da integrare.", 12, Muted));
         DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
         var menu = new StackPanel { Margin = new Thickness(16, 28, 16, 0) };
@@ -79,24 +88,54 @@ internal sealed class MainWindow : Window
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
         var header = new StackPanel { Margin = new Thickness(32, 28, 32, 16) };
         header.Children.Add(Text("Scegli da dove iniziare.", 28, Ink, FontWeights.SemiBold));
-        _path.Margin = new Thickness(0, 8, 0, 16); header.Children.Add(_path);
+        var pathLabel = new Label { Content = "Percorso completo del gioco (.exe)", Target = _path, Foreground = Muted, Padding = new Thickness(0), Margin = new Thickness(0, 12, 0, 6) };
+        header.Children.Add(pathLabel);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_path, "ExecutablePath");
+        _path.Margin = new Thickness(0, 0, 0, 12); header.Children.Add(_path);
         var actions = new WrapPanel();
         _select = Button("Seleziona gioco .exe", async (_, _) => await SelectAsync());
-        _select.Background = Accent; _select.Foreground = BackgroundBrush;
+        _analyze = Button("Analizza percorso", async (_, _) => await InspectAsync(_path.Text));
+        _analyze.Background = Accent; _analyze.Foreground = BackgroundBrush;
+        _analyze.IsEnabled = false;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_analyze, "AnalyzePath");
         _export = Button("Esporta analisi", (_, _) => Export()); _export.IsEnabled = false;
         _cancel = Button("Annulla analisi", (_, _) => _cancellation?.Cancel()); _cancel.Visibility = Visibility.Collapsed;
-        actions.Children.Add(_select); actions.Children.Add(_export); actions.Children.Add(_cancel);
+        actions.Children.Add(_analyze); actions.Children.Add(_select); actions.Children.Add(_export); actions.Children.Add(_cancel);
         header.Children.Add(actions);
-        header.Children.Add(Text("Oppure trascina qui l'EXE · Nessun account richiesto", 12, Muted));
+        header.Children.Add(Text("Incolla il percorso e premi Invio, scegli il file oppure trascina qui l'EXE.", 12, Muted));
         DockPanel.SetDock(header, Dock.Top); main.Children.Add(header);
         main.Children.Add(new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        DragOver += (_, e) => { e.Effects = !_busy && e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
-        Drop += async (_, e) =>
+        _path.TextChanged += (_, _) =>
         {
+            _analyze.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
+            if (!_busy && _report is not null)
+            {
+                _report = null; _export.IsEnabled = false;
+                _status.Text = "Percorso modificato · Premi Analizza percorso";
+                Render();
+            }
+        };
+        _path.PreviewKeyDown += async (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Enter && _analyze.IsEnabled)
+            { e.Handled = true; await InspectAsync(_path.Text); }
+        };
+        PreviewDragOver += (_, e) =>
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            e.Effects = !_busy && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: 1 }
+                ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        };
+        PreviewDrop += async (_, e) =>
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            e.Handled = true;
             if (!_busy && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: 1 } paths)
                 await InspectAsync(paths[0]);
         };
         Closing += (_, _) => { _closing = true; _cancellation?.Cancel(); };
+        Loaded += (_, _) => _path.Focus();
         Render();
     }
 
@@ -109,7 +148,8 @@ internal sealed class MainWindow : Window
     private async Task InspectAsync(string path)
     {
         if (_busy) return;
-        _busy = true; _select.IsEnabled = false; _export.IsEnabled = false;
+        _busy = true; _select.IsEnabled = false; _analyze.IsEnabled = false;
+        _path.IsReadOnly = true; _export.IsEnabled = false;
         _cancel.Visibility = Visibility.Visible;
         _report = null; _page = 0;
         _path.Text = path;
@@ -121,6 +161,7 @@ internal sealed class MainWindow : Window
             var token = _cancellation.Token;
             var report = await Task.Run(() => new GameInspector().Inspect(path, token), token);
             if (_closing) return;
+            _path.Text = report.ExecutablePath;
             _report = report; _export.IsEnabled = true;
             _status.Text = "Analisi completata · Nessuna mod applicata";
         }
@@ -129,14 +170,32 @@ internal sealed class MainWindow : Window
         {
             if (!_closing)
             {
-                _status.Text = "Analisi non completata";
-                MessageBox.Show(this, e.Message, "Impossibile analizzare il file", MessageBoxButton.OK, MessageBoxImage.Information);
+                var title = e switch
+                {
+                    FileNotFoundException or DirectoryNotFoundException => "File non trovato",
+                    UnauthorizedAccessException => "Accesso al file negato",
+                    BadImageFormatException => "File trovato, formato non leggibile",
+                    _ => "Analisi non completata"
+                };
+                var detail = e switch
+                {
+                    FileNotFoundException or DirectoryNotFoundException => "Controlla che il percorso indichi il file reale del gioco. Puoi sceglierlo con Seleziona gioco .exe.",
+                    UnauthorizedAccessException => "Windows ha negato la lettura. Controlla i permessi del file selezionato.",
+                    _ => e.Message
+                };
+                _status.Text = title;
+                MessageBox.Show(this, detail + "\n\nPercorso inserito:\n" + path, title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         finally
         {
             _cancellation.Dispose(); _cancellation = null; _busy = false;
-            if (!_closing) { _select.IsEnabled = true; _cancel.Visibility = Visibility.Collapsed; Render(); }
+            if (!_closing)
+            {
+                _select.IsEnabled = true; _path.IsReadOnly = false;
+                _analyze.IsEnabled = !string.IsNullOrWhiteSpace(_path.Text);
+                _cancel.Visibility = Visibility.Collapsed; Render();
+            }
         }
     }
 

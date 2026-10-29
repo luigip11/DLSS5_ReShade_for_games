@@ -2,14 +2,14 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: 0.1.0-alpha.1, analisi locale
+## Stato reale: 0.1.0-alpha.2, analisi locale
 
 Questa prima consegna **non migliora ancora la grafica dei giochi**. Serve a collaudare selezione, rilevamento e interfaccia prima di introdurre modifiche ai file.
 
 Disponibile:
 
 - Interfaccia nativa italiana con pagine Gioco, DLSS, HDR e Diagnosi.
-- Selezione o trascinamento di un singolo EXE, indipendente dagli store.
+- Selezione, trascinamento o inserimento del percorso di un singolo EXE, indipendente dagli store. Accetta anche il percorso tra virgolette copiato da Esplora file.
 - Analisi statica PE x86/x64; indizi del renderer dagli import diretti.
 - Inventario limitato dei componenti DLSS, ReShade, proxy e add-on nelle cartelle vicine.
 - Calcolo SHA-256; avvisi su possibili indicatori anti-cheat e scansione parziale.
@@ -33,7 +33,7 @@ Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.c
 
 1. Estrarre **tutto** `GamePanel-win-x64.zip` in una cartella scrivibile, fuori dalle cartelle dei giochi.
 2. Avviare `GamePanel.exe`. Non richiede installazione separata di .NET né privilegi amministrativi.
-3. Selezionare il vero EXE del gioco. Se non emerge un'API grafica, il file potrebbe essere un launcher o caricare il renderer dinamicamente.
+3. Incollare il percorso completo nel campo **Percorso completo del gioco (.exe)** e premere **Analizza percorso** o **Invio**. In alternativa usare **Seleziona gioco .exe** o trascinare il file. Le virgolette esterne di "Copia come percorso" sono accettate. Se non emerge un'API grafica, il file potrebbe essere un launcher o caricare il renderer dinamicamente.
 4. Aprire Diagnosi. Esportare il JSON in Documenti se si vuole conservarlo.
 
 Il pacchetto alpha non è firmato con certificato Authenticode e non è stato eseguito su Windows da questo ambiente Linux. Una compilazione riuscita e test del core non sostituiscono un collaudo Windows, una scansione antivirus o un audit completo. Non disattivare le protezioni per usarlo: in caso di rilevamento, fermarsi e verificare l'esatto file.
@@ -71,3 +71,9 @@ L'implementazione iniziale è nuova: nessun sorgente RHI/Swapper né DLL grafica
 I link ai progetti in `docs/COMPONENTS.md` sono riferimenti di analisi; non costituiscono approvazione dei binari né una promessa di integrazione. Ogni componente va verificato per versione, provenienza, licenza e compatibilità.
 
 Vedere [ROADMAP](docs/ROADMAP.md), [SECURITY](docs/SECURITY.md) e [WINDOWS-CHECK](docs/WINDOWS-CHECK.md).
+
+## Correzione alpha.2
+
+La prima alpha mostrava il percorso in un'etichetta non modificabile. Ora il campo accetta l'incolla diretto, anche per percorsi con spazi e parentesi come quelli sotto `Program Files (x86)`. I messaggi distinguono file non trovato, accesso negato e formato PE non leggibile. Modificare il percorso invalida l'analisi precedente: non si può esportare o avviare per errore il gioco analizzato prima.
+
+Questa modifica risolve l'inserimento del percorso. Non dimostra ancora la lettura dell'EXE reale di NFS Underground 2 presente sul PC dell'utente.
