@@ -1,4 +1,4 @@
-# GamePanel — nome provvisorio
+# GamePanel — DLSS5, ReShade for games
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
