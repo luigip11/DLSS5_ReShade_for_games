@@ -20,3 +20,9 @@ I dati sopra descrivono la prima pubblicazione, non lo stato di alpha.3. Per alp
 La pipeline Windows esegue gli stessi controlli, compila l'app e usa UI Automation per incollare un percorso quotato, creare un backup e recuperare un EXE di prova eliminato. L'EXE di prova è una copia dell'apphost compilato e non viene eseguito. Viene eseguito soltanto GamePanel. Lo script verifica l'hash del file recuperato e pulisce soltanto le proprie cartelle di prova. L'esito effettivo è nei log della build.
 
 Restano separati: collaudo del backup sul gioco reale, permessi della sua cartella Program Files, DPI e interazioni manuali, Smart App Control e firma, antivirus, tutti i percorsi grafici DLSS/HDR/ReShade. Non sono stati simulati un disco fisicamente pieno o una reale perdita di alimentazione.
+
+## Alpha.4 — revisione dell'interfaccia e preparazione della firma
+
+Il motore del core non cambia. La pipeline mantiene i 44 controlli e il ciclo GUI di analisi, backup e recupero; aggiunge screenshot della vera finestra e un controllo negativo che impedisce di considerare firmata l'alpha ordinaria. La compilazione locale del restyling WPF è stata eseguita; gli esiti Windows effettivi e le immagini sono negli artifact della build.
+
+Il workflow di firma di produzione è solo predisposto. Non viene avviato dai push e, senza le variabili e il secret di un provider approvato, si ferma prima di contattarlo. La verifica positiva di un pacchetto realmente firmato e il collaudo con SAC attivo restano bloccati dalla mancanza del servizio di firma. Il successo dell'avvio sul runner Windows non dimostra che il file sia accettato da SAC sul PC dell'utente.

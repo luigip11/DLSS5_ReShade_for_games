@@ -26,7 +26,16 @@ jobs:
         run: ./scripts/publish.ps1
       - name: Check desktop startup
         shell: powershell
-        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe
+        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview
+      - name: Verify that unsigned files cannot pass the production-signing gate
+        shell: pwsh
+        run: ./scripts/check-signature-gate.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
+      - name: Interface screenshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: GamePanel-interface-preview
+          path: artifacts/ui-preview/
+          if-no-files-found: error
       - name: Portable package and checksums
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, pinned 2026-10-29
         with:

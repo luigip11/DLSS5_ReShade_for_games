@@ -19,13 +19,13 @@ internal static class Program
     }
 }
 
-internal sealed class MainWindow : Window
+internal sealed partial class MainWindow : Window
 {
-    private static readonly Brush BackgroundBrush = Brush("#11151D");
-    private static readonly Brush Surface = Brush("#1B2230");
-    private static readonly Brush Ink = Brush("#ECF1FA");
-    private static readonly Brush Muted = Brush("#AAB7CA");
-    private static readonly Brush Accent = Brush("#8ADAC3");
+    private static readonly Brush BackgroundBrush = DesignSystem.Background;
+    private static readonly Brush Surface = DesignSystem.Panel;
+    private static readonly Brush Ink = DesignSystem.Text;
+    private static readonly Brush Muted = DesignSystem.Muted;
+    private static readonly Brush Accent = DesignSystem.Lime;
     private readonly TextBox _path = new()
     {
         FontSize = 14, Foreground = Ink, Background = Surface, CaretBrush = Accent,
@@ -37,10 +37,10 @@ internal sealed class MainWindow : Window
     };
     private readonly TextBlock _status = Text("Pronto · analisi locale", 13, Muted);
     private readonly StackPanel _content = new() { Margin = new Thickness(32) };
-    private readonly Button _select;
-    private readonly Button _analyze;
-    private readonly Button _export;
-    private readonly Button _cancel;
+    private Button _select = null!;
+    private Button _analyze = null!;
+    private Button _export = null!;
+    private Button _cancel = null!;
     private readonly List<Button> _navigation = [];
     private GameReport? _report;
     private CancellationTokenSource? _cancellation;
@@ -56,65 +56,10 @@ internal sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "GamePanel · 0.1.0-alpha.3";
-        Width = 1160; Height = 800; MinWidth = 860; MinHeight = 620;
-        Background = BackgroundBrush; Foreground = Ink;
-        FontFamily = new FontFamily("Segoe UI"); FontSize = 14;
-        WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        AllowDrop = true;
-        Resources.Add(typeof(Button), ButtonStyle());
-
-        var frame = new Grid();
-        frame.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(218) });
-        frame.ColumnDefinitions.Add(new ColumnDefinition());
-        Content = frame;
-
-        var sidebar = new DockPanel { Background = Brush("#161C27"), LastChildFill = true };
-        frame.Children.Add(sidebar);
-        var bottom = new StackPanel { Margin = new Thickness(22) };
-        bottom.Children.Add(Text("0.1 · ALPHA 3", 12, Accent));
-        bottom.Children.Add(Text("Analisi e backup locali.\nMod DLSS/HDR da integrare.", 12, Muted));
-        DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
-        var menu = new StackPanel { Margin = new Thickness(16, 28, 16, 0) };
-        menu.Children.Add(Text("GAMEPANEL", 22, Ink, FontWeights.SemiBold));
-        menu.Children.Add(Text("Il tuo gioco, sotto controllo", 12, Muted));
-        menu.Children.Add(new Border { Height = 28 });
-        var names = new[] { "01   Gioco", "02   DLSS", "03   HDR e immagine", "04   Backup", "05   Diagnosi" };
-        for (var i = 0; i < names.Length; i++)
-        {
-            var page = i;
-            var button = Button(names[i], (_, _) => { _page = page; Render(); });
-            if (i == 3) System.Windows.Automation.AutomationProperties.SetAutomationId(button, "BackupsPage");
-            button.HorizontalContentAlignment = HorizontalAlignment.Left;
-            _navigation.Add(button); menu.Children.Add(button);
-        }
-        sidebar.Children.Add(menu);
-
-        var main = new DockPanel(); Grid.SetColumn(main, 1); frame.Children.Add(main);
-        var footer = new Border { BorderBrush = Brush("#2A3445"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(32, 14, 32, 14), Child = _status };
-        System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
-        DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
-        var header = new StackPanel { Margin = new Thickness(32, 28, 32, 16) };
-        header.Children.Add(Text("Scegli da dove iniziare.", 28, Ink, FontWeights.SemiBold));
-        var pathLabel = new Label { Content = "Percorso completo del gioco (.exe)", Target = _path, Foreground = Muted, Padding = new Thickness(0), Margin = new Thickness(0, 12, 0, 6) };
-        header.Children.Add(pathLabel);
-        System.Windows.Automation.AutomationProperties.SetAutomationId(_path, "ExecutablePath");
-        _path.Margin = new Thickness(0, 0, 0, 12); header.Children.Add(_path);
-        var actions = new WrapPanel();
-        _select = Button("Seleziona gioco .exe", async (_, _) => await SelectAsync());
-        _analyze = Button("Analizza percorso", async (_, _) => await InspectAsync(_path.Text));
-        _analyze.Background = Accent; _analyze.Foreground = BackgroundBrush;
-        _analyze.IsEnabled = false;
-        System.Windows.Automation.AutomationProperties.SetAutomationId(_analyze, "AnalyzePath");
-        _export = Button("Esporta analisi", (_, _) => Export()); _export.IsEnabled = false;
-        _cancel = Button("Annulla analisi", (_, _) => _cancellation?.Cancel()); _cancel.Visibility = Visibility.Collapsed;
-        actions.Children.Add(_analyze); actions.Children.Add(_select); actions.Children.Add(_export); actions.Children.Add(_cancel);
-        header.Children.Add(actions);
-        header.Children.Add(Text("Incolla il percorso e premi Invio, scegli il file oppure trascina qui l'EXE.", 12, Muted));
-        DockPanel.SetDock(header, Dock.Top); main.Children.Add(header);
-        main.Children.Add(new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        BuildShell();
         _path.TextChanged += (_, _) =>
         {
+            _inputHint.Visibility = _path.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             _analyze.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
             if (!_busy) ResetBackups();
             if (!_busy && _report is not null)
@@ -212,11 +157,15 @@ internal sealed class MainWindow : Window
 
     private void Render()
     {
+        _sectionName.Text = PageTitles[_page].ToUpperInvariant();
+        _gameContext.Text = GameName();
+        _inputHint.Visibility = _path.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         _content.Children.Clear();
         for (var i = 0; i < _navigation.Count; i++)
         {
-            _navigation[i].Background = i == _page ? Brush("#293D3D") : Brushes.Transparent;
-            _navigation[i].Foreground = i == _page ? Accent : Muted;
+            _navigation[i].Background = i == _page ? DesignSystem.Color("#203127") : Brushes.Transparent;
+            _navigation[i].BorderBrush = i == _page ? DesignSystem.Color("#3C5536") : Brushes.Transparent;
+            _navigation[i].Content = NavigationContent(i, i == _page);
         }
         switch (_page)
         {
@@ -228,45 +177,26 @@ internal sealed class MainWindow : Window
         }
     }
 
-    private void RenderGame()
-    {
-        Heading("Gioco", "Partiamo dai file reali, anche fuori dalle librerie degli store.");
-        if (_report is null)
-        {
-            Card(_busy ? "Lettura dell'eseguibile…" : "Un EXE per iniziare", _busy
-                ? "Controllo intestazioni, import grafici e componenti nelle cartelle vicine."
-                : "Seleziona o trascina l'EXE. L'analisi legge i file senza caricarli come codice e senza applicare mod.");
-            Card("Prima di applicare mod", "Analizza l'EXE e apri Backup per salvare una copia dei file gestiti. Installazione e parametri DLSS/HDR saranno introdotti dopo il collaudo del recupero.");
-        }
-        else
-        {
-            Card(System.IO.Path.GetFileName(_report.ExecutablePath),
-                $"Architettura: {_report.Architecture}\nAPI dichiarate: {(_report.GraphicsApis.Count > 0 ? string.Join(", ", _report.GraphicsApis) : "Non determinate")}\nComponenti individuati: {_report.Components.Count}");
-            Card("Come leggere il risultato", "Gli import statici forniscono indizi sul renderer. I nomi delle DLL indicano componenti possibili, non ne verificano autenticità o compatibilità.");
-            if (_report.HasAntiCheatIndicators)
-                Card("Da verificare prima di modificare", "La scansione ha trovato possibili indicatori anti-cheat. Questa alpha non applica mod.");
-            var launch = Button("Avvia senza modifiche", (_, _) => Launch());
-            launch.IsEnabled = !_busy;
-            _content.Children.Add(launch);
-        }
-        Card("Schermo e GPU", Hardware.DisplayDevices() + "\nSupporto HDR del display: rilevamento da integrare. La GPU da sola non conferma il supporto HDR dello schermo.");
-    }
+    private void RenderGame() => RenderDashboard();
 
     private void RenderDlss()
     {
-        Heading("DLSS", "Super Resolution, Frame Generation e Neural Rendering saranno gestiti separatamente.");
+        Heading("Più controllo sul rendering.", "Le funzioni DLSS verranno proposte in base al gioco e all'hardware compatibile.");
+        FeatureCards(("Super Resolution", "Qualità di ricostruzione e versione della libreria per gioco.", "chip"),
+            ("Frame Generation", "Gestione separata della generazione dei fotogrammi.", "game"),
+            ("Neural Rendering", "Percorso dedicato, da collaudare anche sui titoli legacy.", "scan"));
         var found = _report?.Components.Where(c => c.Kind.StartsWith("DLSS", StringComparison.Ordinal)).ToArray() ?? [];
         Card("Componenti presenti", found.Length == 0 ? "Nessuna DLL DLSS riconosciuta nell'analisi attuale. Questo non esclude caricamenti dal driver o da percorsi non scansionati."
             : string.Join("\n", found.Select(c => $"{c.Kind} · {c.Version}\n{c.RelativePath}")));
-        Card("Gestione da integrare", "La prossima fase introdurrà versioni approvate, anteprima delle modifiche e backup verificati. Nessun download, swap o controllo DLSS viene effettuato da questa alpha.");
-        Card("Giochi vecchi", "I profili per Underground 1 e 2 richiederanno un collaudo specifico. L'eventuale percorso neurale con helper x64 resterà sperimentale finché non verificato.");
+        Details("Disponibilità e giochi legacy", "Questa alpha riconosce i componenti ma non installa o regola DLSS. I profili per Underground 1 e 2 richiedono collaudo specifico; l'eventuale helper x64 resterà sperimentale finché non verificato.");
     }
 
     private void RenderHdr()
     {
-        Heading("HDR e immagine", "Un solo metodo HDR attivo per profilo, quando compatibile.");
-        Card("Calibrazione da integrare", "Il pannello finale proporrà luminosità di riferimento, picco luminoso e regolazioni immagine supportate dal componente selezionato. Questa alpha non cambia HDR di Windows, driver o impostazioni dei giochi.");
-        Card("Prima il display", "Il supporto HDR andrà rilevato per il monitor usato dal gioco. Fino a quel controllo non viene dichiarata compatibilità HDR.");
+        Heading("La luce giusta per ogni gioco.", "Un percorso immagine coerente, con parametri comprensibili e profili per titolo.");
+        FeatureCards(("HDR", "Luminosità di riferimento e picco, dopo la verifica dello schermo.", "sun"),
+            ("ReShade", "Preset e regolazioni immagine, con recupero dei file gestiti.", "scan"));
+        Card("Schermo HDR · da verificare", "L'app non ha ancora verificato il supporto HDR del monitor. Nessun preset o effetto viene applicato da questa versione.");
         Card("ReShade e componenti esistenti", _report is null ? "Seleziona un gioco per leggere i componenti presenti."
             : string.Join("\n", _report.Components.Where(c => c.Kind.Contains("ReShade", StringComparison.Ordinal) || c.Kind.Contains("proxy", StringComparison.Ordinal) || c.Kind.Contains("Add-on", StringComparison.Ordinal))
                 .Select(c => $"{c.RelativePath} · {c.Kind}").DefaultIfEmpty("Nessun componente riconosciuto nella scansione limitata.")));
@@ -291,12 +221,14 @@ internal sealed class MainWindow : Window
     private void RenderBackups()
     {
         Heading("Backup e ripristino", "Copie locali verificate, conservate anche dopo la chiusura dell'app.");
-        Card("Stato", _backupMessage);
-        Card("Cosa viene salvato", "EXE selezionato e componenti grafici riconosciuti dall'analisi. Sono registrati anche i nomi dei futuri loader e file di configurazione. Salvataggi e asset del gioco non fanno parte di questo backup mirato.");
+        Card("La tua copia di riferimento", _backupMessage);
+        var scope = Text("Salva l'EXE e i componenti riconosciuti. Salvataggi e asset del gioco sono esclusi.", 12, Muted);
+        scope.Margin = new Thickness(0, 0, 0, 14); _content.Children.Add(scope);
         var actions = new WrapPanel();
         var create = Button("Crea backup", async (_, _) => await CreateBackupAsync());
         System.Windows.Automation.AutomationProperties.SetAutomationId(create, "CreateBackup");
         create.IsEnabled = !_busy && _report is not null;
+        create.Background = Accent; create.Foreground = BackgroundBrush; create.BorderBrush = Accent;
         var load = Button("Carica backup del percorso", async (_, _) => await LoadBackupsAsync());
         load.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
         actions.Children.Add(create); actions.Children.Add(load); _content.Children.Add(actions);
@@ -306,7 +238,7 @@ internal sealed class MainWindow : Window
             {
                 Margin = new Thickness(0, 4, 0, 16), Padding = new Thickness(12),
                 ItemsSource = _snapshots.Select(s => new BackupChoice(s.Id,
-                    $"{s.CreatedAt.LocalDateTime:g} · {s.FileCount} file · {s.Bytes / (1024d * 1024):F1} MB · {s.Id[..8]}")).ToArray(),
+                    $"{s.CreatedAt.LocalDateTime:dd MMM yyyy · HH:mm} · {s.FileCount} file · {s.Bytes / (1024d * 1024):F1} MB")).ToArray(),
                 DisplayMemberPath = nameof(BackupChoice.Label), SelectedValuePath = nameof(BackupChoice.Id),
                 SelectedValue = _selectedBackup, IsEnabled = !_busy
             };
@@ -342,12 +274,12 @@ internal sealed class MainWindow : Window
                 Card($"File mancanti da recuperare: {missing.Length}", string.Join("\n", missing));
                 var restore = Button($"Ripristina / riprendi ({missing.Length} file)", async (_, _) => await RestoreBackupAsync());
                 System.Windows.Automation.AutomationProperties.SetAutomationId(restore, "RestoreMissing");
+                restore.Background = Accent; restore.Foreground = BackgroundBrush; restore.BorderBrush = Accent;
                 restore.IsEnabled = !_busy; _content.Children.Add(restore);
             }
         }
-        Card("Protezione dei file presenti", "Questa versione recupera soltanto i file mancanti. Se un file presente è cambiato, il ripristino viene bloccato. Un recupero interrotto si può riprendere dopo aver risolto il problema; i file già recuperati restano conservati.");
-        Card("Dove sono conservate le copie", _backups.StorePath + "\nNon eliminare questa cartella: contiene i dati necessari al recupero. Le copie non sono caricate su Internet.");
-        Card("Cartelle protette", "La creazione del backup richiede lettura dei file. Il recupero richiede anche scrittura nella cartella del gioco; Windows può negarla per Program Files. In quel caso l'app segnala il problema e conserva il backup.");
+        Details("Come funziona il recupero", "Si recuperano solo i file mancanti. Un file presente ma cambiato blocca l'operazione. Dopo un'interruzione, i file già recuperati restano e il recupero può essere ripreso. Il backup resta conservato.");
+        Details("Dove si trovano le copie e quali permessi servono", _backups.StorePath + "\n\nLe copie sono locali: non eliminare questa cartella. La creazione richiede lettura dei file; il recupero richiede scrittura nella cartella del gioco. Windows può negarla per Program Files: in quel caso l'app segnala il problema e conserva il backup.");
     }
 
     private sealed record BackupChoice(string Id, string Label);
@@ -483,7 +415,7 @@ internal sealed class MainWindow : Window
         var stack = new StackPanel();
         stack.Children.Add(Text(title, 17, Ink, FontWeights.SemiBold));
         var body = Text(description, 14, Muted); body.Margin = new Thickness(0, 10, 0, 0); body.LineHeight = 23; stack.Children.Add(body);
-        _content.Children.Add(new Border { Background = Surface, CornerRadius = new CornerRadius(10), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 16), Child = stack });
+        _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 16), Child = stack });
     }
 
     private static TextBlock Text(string value, double size, Brush color, FontWeight? weight = null) => new()
@@ -491,21 +423,10 @@ internal sealed class MainWindow : Window
     private static Brush Brush(string hex) => (Brush)new BrushConverter().ConvertFromString(hex)!;
     private static Button Button(string text, RoutedEventHandler handler)
     {
-        var button = new Button { Content = text, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(16, 12, 16, 12), Cursor = System.Windows.Input.Cursors.Hand };
+        var button = new Button { Content = text, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(16, 12, 16, 12), Cursor = System.Windows.Input.Cursors.Hand, HorizontalContentAlignment = HorizontalAlignment.Center };
         button.Click += handler; return button;
     }
-    private static Style ButtonStyle()
-    {
-        var style = new Style(typeof(Button));
-        style.Setters.Add(new Setter(Control.BackgroundProperty, Brush("#273246")));
-        style.Setters.Add(new Setter(Control.ForegroundProperty, Ink));
-        style.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
-        style.Setters.Add(new Setter(Control.FontSizeProperty, 14d));
-        style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Center));
-        var disabled = new Trigger { Property = IsEnabledProperty, Value = false };
-        disabled.Setters.Add(new Setter(OpacityProperty, .45)); style.Triggers.Add(disabled);
-        return style;
-    }
+
 }
 
 internal static class Hardware

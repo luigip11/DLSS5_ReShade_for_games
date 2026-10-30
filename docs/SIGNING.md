@@ -1,6 +1,6 @@
 # Smart App Control: blocco confermato e firma ancora da attivare
 
-Stato al 30 ottobre 2026: i file GamePanel alpha.3 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
+Stato al 30 ottobre 2026: i file GamePanel alpha.4 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
 
 ## Significato e limite attuale
 
@@ -31,3 +31,7 @@ Microsoft raccomanda di considerare tutti i binari distribuiti, inclusi DLL e co
 Da alpha.3 l'artifact GitHub contiene direttamente `GamePanel.exe` e le DLL: basta estrarlo completamente una volta. Alpha.1/2 contenevano invece un secondo ZIP da estrarre. Un percorso temporaneo di WinRAR indica un avvio dalla vista dell'archivio. L'estrazione corretta evita dipendenze mancanti, ma non aggiunge la firma che Smart App Control richiede nel caso osservato.
 
 Non cambiare le impostazioni di protezione del PC per compensare questo limite di distribuzione.
+
+## Predisposizione alpha.4
+
+La candidatura pronta da completare dal proprietario è in [SIGNPATH-APPLICATION](SIGNPATH-APPLICATION.md). Il workflow manuale `windows-signed-build.yml` richiede configurazione e approvazione del provider prima di chiamare servizi esterni. Non viene eseguito sui push e non è stato attivato. L'alpha ordinaria resta non firmata; il controllo automatico rifiuta esplicitamente il suo passaggio come pacchetto firmato. Non è stata verificata una firma di produzione reale perché manca l'identità autorizzata.

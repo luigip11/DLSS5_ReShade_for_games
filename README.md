@@ -2,7 +2,7 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: 0.1.0-alpha.3, analisi e backup locali
+## Stato reale: 0.1.0-alpha.4, interfaccia gaming, analisi e backup locali
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
@@ -18,6 +18,7 @@ Disponibile:
 - Esportazione JSON locale su richiesta, fuori dalla cartella del gioco.
 - Avvio esplicito del gioco senza modifiche, con la sua cartella come working directory.
 - Lettura degli adattatori video esposti da Windows.
+- Panoramica gaming con dati reali, navigazione a icone e backup più diretto; screenshot nell'artifact `GamePanel-interface-preview`.
 - Copie di riferimento dell'EXE e dei componenti riconosciuti, con hash verificati e archivio persistente nei dati utente.
 - Anteprima di recupero, ripristino dei soli file mancanti e ripresa delle operazioni interrotte. I file presenti ma cambiati bloccano il recupero.
 
@@ -87,3 +88,9 @@ Questa modifica risolve l'inserimento del percorso. Non dimostra ancora la lettu
 ## Novità alpha.3
 
 Prima base di recupero: backup persistenti, copie verificate, anteprima dei conflitti, recupero dei file mancanti e journal per la ripresa. Il report condiviso dall'utente ha confermato l'analisi di `speed2.exe` x86 con import Direct3D 9/DirectDraw. Il recupero sul suo gioco reale resta da collaudare; non sono ancora installati componenti ReShade o DLSS.
+
+## Novità alpha.4
+
+Interfaccia ridisegnata in stile gaming: carbone/lime/blu, grafica vettoriale, scheda del gioco, dati dell'analisi in primo piano e Backup più compatto. Il motore di analisi e recupero non cambia. Dettagli: [UI-DESIGN](docs/UI-DESIGN.md).
+
+Per Smart App Control è predisposto un workflow di firma separato, manuale e bloccato se manca la configurazione. Non è attivo e non rende firmate le alpha ordinarie. Dati e passaggi per la candidatura gratuita, soggetta ad approvazione: [SIGNPATH-APPLICATION](docs/SIGNPATH-APPLICATION.md). Non sono stati attivati servizi a pagamento.

@@ -1,7 +1,35 @@
-param([Parameter(Mandatory = $true)][string]$ExecutablePath)
+param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDirectory = '')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+if ($PreviewDirectory) {
+    [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($PreviewDirectory)) | Out-Null
+    Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+public static class GamePanelCapture {
+    [StructLayout(LayoutKind.Sequential)] private struct Rect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+    public static void Save(IntPtr window, string path) {
+        Rect rect;
+        if (!GetWindowRect(window, out rect)) throw new InvalidOperationException("Window bounds unavailable.");
+        SetForegroundWindow(window);
+        using (var bitmap = new Bitmap(rect.Right - rect.Left, rect.Bottom - rect.Top, PixelFormat.Format32bppArgb)) {
+            using (var graphics = Graphics.FromImage(bitmap)) {
+                var dc = graphics.GetHdc();
+                try { if (!PrintWindow(window, dc, 2)) throw new InvalidOperationException("Window capture failed."); }
+                finally { graphics.ReleaseHdc(dc); }
+            }
+            bitmap.Save(path, ImageFormat.Png);
+        }
+    }
+}
+'@
+}
 $executable = (Resolve-Path -LiteralPath $ExecutablePath).Path
 if ([IO.Path]::GetFileName($executable) -ne 'GamePanel.exe') { throw 'Expected the newly built GamePanel.exe.' }
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('GamePanel-UI-' + [Guid]::NewGuid().ToString('N'))
@@ -45,6 +73,12 @@ try {
     Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero -and $process.MainWindowTitle -like 'GamePanel*' } 'main window'
     $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Write-Host "PASS GUI startup: $($process.MainWindowTitle)"
+    $signature = Get-AuthenticodeSignature -LiteralPath $executable
+    Write-Host "Publisher signature status: $($signature.Status)"
+    if ($PreviewDirectory) {
+        Start-Sleep -Milliseconds 800
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '00-overview.png')))
+    }
     $pathInput = Find-Element 'ExecutablePath'
     if ($null -eq $pathInput) { throw 'Editable executable path field not found.' }
     $pathInput.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('"' + $fixtureExe + '"')
@@ -59,6 +93,10 @@ try {
     $snapshot = @(Get-ChildItem -LiteralPath $fixtureStore -Directory | Where-Object { $_.Name -match '^[a-fA-F0-9]{32}$' })
     if ($snapshot.Count -ne 1) { throw 'Expected one committed snapshot.' }
     Write-Host 'PASS GUI persistent backup creation'
+    if ($PreviewDirectory) {
+        Start-Sleep -Milliseconds 300
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '01-backup.png')))
+    }
     Invoke-Button 'VerifyBackup'
     Wait-Until { Has-Heading 'Verifica completata' } 'baseline verification'
     # Delete only the unique test apphost; the selected user game is never involved.
