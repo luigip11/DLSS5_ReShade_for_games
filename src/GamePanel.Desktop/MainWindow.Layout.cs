@@ -27,6 +27,8 @@ internal sealed partial class MainWindow
         FontFamily = new FontFamily("Segoe UI Variable, Segoe UI"); FontSize = 14;
         WindowStartupLocation = WindowStartupLocation.CenterScreen; AllowDrop = true;
         Resources.Add(typeof(Button), DesignSystem.ButtonStyle());
+        Resources.Add(typeof(System.Windows.Controls.Primitives.ScrollBar), DesignSystem.ScrollBarStyle());
+        Resources.Add(typeof(ComboBox), DesignSystem.ComboBoxStyle());
         SourceInitialized += (_, _) => ApplyDarkTitlebar();
 
         var shell = new Grid();
@@ -93,6 +95,7 @@ internal sealed partial class MainWindow
         var field = new Grid();
         _path.Margin = new Thickness(0); _path.BorderBrush = DesignSystem.Line; _path.Background = DesignSystem.Panel;
         _path.Padding = new Thickness(13, 12, 13, 12); _path.MinHeight = 46;
+        _path.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
         _inputHint.Margin = new Thickness(14, 0, 8, 0); _inputHint.VerticalAlignment = VerticalAlignment.Center; _inputHint.IsHitTestVisible = false;
         field.Children.Add(_path); field.Children.Add(_inputHint); pathRow.Children.Add(field);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_path, "ExecutablePath");
@@ -119,7 +122,7 @@ internal sealed partial class MainWindow
     {
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.Children.Add(DesignSystem.Icon(PageIcons[page], active ? Accent : Muted, 19));
-        var label = Text(PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
+        var label = Text(page == 2 ? "HDR / FX" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
         if (page is 1 or 2) { var badge = DesignSystem.Chip("PRESTO", Muted, Brushes.Transparent); Grid.SetColumn(badge, 2); row.Children.Add(badge); }
         return row;
     }
@@ -140,6 +143,7 @@ internal sealed partial class MainWindow
         heroBody.Children.Add(DesignSystem.Chip(_report is null ? "IL TUO PROSSIMO SETUP PARTE QUI" : "GIOCO ANALIZZATO", Accent, DesignSystem.Color("#24372C")));
         var title = Text(_report is null ? "Il tuo gioco.\nIl tuo setup." : GameName(), _report is null ? 42 : 32, Ink, FontWeights.SemiBold);
         title.MaxHeight = 96; title.TextTrimming = TextTrimming.CharacterEllipsis;
+        title.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
         if (_report is not null) title.ToolTip = GameName();
         title.FontFamily = new FontFamily("Bahnschrift SemiCondensed"); title.LineHeight = _report is null ? 45 : 38; title.Margin = new Thickness(0, 14, 0, 10); heroBody.Children.Add(title);
         var description = Text(_report is null ? "Seleziona un EXE per riconoscere i componenti e preparare un backup verificato."

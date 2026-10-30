@@ -118,6 +118,7 @@ internal sealed partial class MainWindow : Window
             var report = await Task.Run(() => new GameInspector().Inspect(path, token), token);
             if (_closing) return;
             _path.Text = report.ExecutablePath;
+            _path.CaretIndex = _path.Text.Length;
             _report = report; _export.IsEnabled = true;
             _status.Text = "Analisi completata · Nessuna mod applicata";
         }

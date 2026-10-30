@@ -101,6 +101,79 @@ internal static class DesignSystem
                 StrokeLineJoin = PenLineJoin.Round, Opacity = .8 });
         return new Viewbox { Child = canvas, Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Right, Opacity = .8, IsHitTestVisible = false };
     }
+    public static Style ScrollBarStyle() => (Style)XamlReader.Parse("""
+        <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="ScrollBar">
+          <Setter Property="Width" Value="10" /><Setter Property="Background" Value="Transparent" />
+          <Setter Property="Focusable" Value="False" />
+          <Setter Property="Template"><Setter.Value>
+            <ControlTemplate TargetType="ScrollBar">
+              <Grid Background="Transparent" Margin="2">
+                <Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="{TemplateBinding Orientation}"
+                       Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" ViewportSize="{TemplateBinding ViewportSize}"
+                       Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                  <Track.DecreaseRepeatButton><RepeatButton x:Name="Decrease" Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" Focusable="False" /></Track.DecreaseRepeatButton>
+                  <Track.Thumb><Thumb x:Name="Grip" MinHeight="28" Background="#354A65">
+                    <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="{TemplateBinding Background}" CornerRadius="3" /></ControlTemplate></Thumb.Template>
+                  </Thumb></Track.Thumb>
+                  <Track.IncreaseRepeatButton><RepeatButton x:Name="Increase" Command="{x:Static ScrollBar.PageDownCommand}" Opacity="0" Focusable="False" /></Track.IncreaseRepeatButton>
+                </Track>
+              </Grid>
+              <ControlTemplate.Triggers>
+                <Trigger SourceName="Grip" Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="#6BA9FF" /></Trigger>
+                <Trigger Property="Orientation" Value="Horizontal">
+                  <Setter Property="Width" Value="Auto" /><Setter Property="Height" Value="10" />
+                  <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
+                  <Setter TargetName="Grip" Property="MinHeight" Value="0" /><Setter TargetName="Grip" Property="MinWidth" Value="28" />
+                  <Setter TargetName="Decrease" Property="Command" Value="{x:Static ScrollBar.PageLeftCommand}" />
+                  <Setter TargetName="Increase" Property="Command" Value="{x:Static ScrollBar.PageRightCommand}" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value></Setter>
+        </Style>
+        """);
+    public static Style ComboBoxStyle() => (Style)XamlReader.Parse("""
+        <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="ComboBox">
+          <Setter Property="Foreground" Value="#F0F5FC" /><Setter Property="Background" Value="#19283A" />
+          <Setter Property="BorderBrush" Value="#354A65" /><Setter Property="MinHeight" Value="46" />
+          <Setter Property="ItemContainerStyle"><Setter.Value>
+            <Style TargetType="ComboBoxItem">
+              <Setter Property="Foreground" Value="#F0F5FC" /><Setter Property="Padding" Value="12,10" />
+              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem">
+                <Border x:Name="Item" CornerRadius="5" Background="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter /></Border>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Item" Property="Background" Value="#273D57" /></Trigger>
+                  <Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="#263C2B" /><Setter Property="Foreground" Value="#BCFF69" /></Trigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate></Setter.Value></Setter>
+            </Style>
+          </Setter.Value></Setter>
+          <Setter Property="Template"><Setter.Value>
+            <ControlTemplate TargetType="ComboBox">
+              <Grid>
+                <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" ClickMode="Press">
+                  <ToggleButton.Template><ControlTemplate TargetType="ToggleButton">
+                    <Border Background="#19283A" BorderBrush="#354A65" BorderThickness="1" CornerRadius="9">
+                      <Path Data="M0,0 L5,5 10,0" Stroke="#9FAFC3" StrokeThickness="1.5" Width="10" Height="5" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    </Border>
+                  </ControlTemplate></ToggleButton.Template>
+                </ToggleButton>
+                <ContentPresenter IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                  Margin="14,0,38,0" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
+                  <Border Background="#19283A" BorderBrush="#354A65" BorderThickness="1" CornerRadius="9" Padding="4" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Margin="0,5,0,0">
+                    <ScrollViewer MaxHeight="260"><ItemsPresenter /></ScrollViewer>
+                  </Border>
+                </Popup>
+              </Grid>
+              <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value></Setter>
+        </Style>
+        """);
     public static ImageSource AppIcon()
     {
         var drawing = new DrawingGroup();

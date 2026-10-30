@@ -93,6 +93,12 @@ try {
     $snapshot = @(Get-ChildItem -LiteralPath $fixtureStore -Directory | Where-Object { $_.Name -match '^[a-fA-F0-9]{32}$' })
     if ($snapshot.Count -ne 1) { throw 'Expected one committed snapshot.' }
     Write-Host 'PASS GUI persistent backup creation'
+    $picker = Find-Element 'BackupSnapshotPicker'
+    $dropdown = $picker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    $dropdown.Expand()
+    Wait-Until { $dropdown.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded } 'backup selector open'
+    $dropdown.Collapse()
+    Write-Host 'PASS GUI styled backup selector opens and closes'
     if ($PreviewDirectory) {
         Start-Sleep -Milliseconds 300
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '01-backup.png')))
