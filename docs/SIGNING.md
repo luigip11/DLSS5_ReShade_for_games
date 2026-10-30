@@ -1,6 +1,6 @@
 # Smart App Control: blocco confermato e firma ancora da attivare
 
-Stato al 29 ottobre 2026: alpha.2 è compilata e supera i test del core su Windows, ma i file GamePanel non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile. Questo impedisce il collaudo sul PC interessato prima ancora dell'analisi del gioco.
+Stato al 30 ottobre 2026: i file GamePanel alpha.3 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
 
 ## Significato e limite attuale
 
@@ -28,6 +28,6 @@ Microsoft raccomanda di considerare tutti i binari distribuiti, inclusi DLL e co
 
 ## Estrazione del pacchetto
 
-L'artifact GitHub attuale contiene un secondo ZIP portabile. Devono essere estratti entrambi, fino a ottenere `GamePanel.exe` e tutte le DLL nella stessa cartella. Un percorso temporaneo di WinRAR indica un avvio dalla vista dell'archivio. L'estrazione corretta evita dipendenze mancanti, ma non aggiunge la firma che Smart App Control richiede in questo caso.
+Da alpha.3 l'artifact GitHub contiene direttamente `GamePanel.exe` e le DLL: basta estrarlo completamente una volta. Alpha.1/2 contenevano invece un secondo ZIP da estrarre. Un percorso temporaneo di WinRAR indica un avvio dalla vista dell'archivio. L'estrazione corretta evita dipendenze mancanti, ma non aggiunge la firma che Smart App Control richiede nel caso osservato.
 
 Non cambiare le impostazioni di protezione del PC per compensare questo limite di distribuzione.

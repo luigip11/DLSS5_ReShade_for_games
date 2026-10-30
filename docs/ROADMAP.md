@@ -14,6 +14,8 @@ Criterio di uscita: build portabile verificata; analisi su EXE x86 e x64 reali i
 
 ## M1 — Modifiche recuperabili
 
+**Alpha.3: implementata la prima parte**, con copie di riferimento persistenti, verifiche hash, anteprima, recupero dei mancanti e ripresa. Non sono ancora disponibili sovrascritture di file modificati o registri di installazioni grafiche: arriveranno prima del primo deployment reale. Il collaudo sul gioco dell'utente e guasti fisici come disco pieno/perdita di alimentazione restano da verificare. M1 non è dichiarato interamente concluso. Dettagli: [BACKUP](BACKUP.md).
+
 - Manifest operazioni locale, vincolato a eseguibile, cartella canonica e hash.
 - Archivio backup distinto dalla cartella d'installazione, preservato da uninstall/aggiornamenti.
 - Journal scritto prima della modifica; copia su file temporaneo e sostituzione atomica dove applicabile.

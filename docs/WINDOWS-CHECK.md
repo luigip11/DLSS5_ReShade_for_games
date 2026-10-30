@@ -1,6 +1,6 @@
 # Primo collaudo Windows — M0
 
-Nessuna modifica grafica in questa alpha. Non è richiesto installare ReShade, DLL, wrapper o driver per il collaudo dell'analisi.
+Nessuna modifica grafica in questa alpha. Non è richiesto installare ReShade, DLL, wrapper o driver per il collaudo. Da alpha.3 la pagina Backup conserva copie su richiesta e recupera file mancanti.
 
 1. Estrarre il pacchetto completo in una cartella dell'utente e avviare GamePanel.exe senza elevazione.
 2. Verificare leggibilità e navigazione a scala schermo 100%, 125% e 150%; ridimensionare la finestra.
@@ -18,3 +18,5 @@ Raccogliere: versione di Windows, driver NVIDIA, adattatori rilevati, GPU usata 
 Da completare prima di dichiarare M0 collaudato: avvio effettivo su Windows 11, DPI, drag/drop, dialoghi, enumerazione GPU e report su giochi reali. I controlli sintetici del core non sostituiscono queste prove.
 
 Per alpha.2 verificare anche che modificare il campo dopo un'analisi disabiliti l'esportazione e rimuova il pulsante di avvio del risultato precedente. Provare il trascinamento dell'EXE sia nel campo percorso sia nel resto della finestra. Un percorso mancante deve produrre **File non trovato** e restare correggibile nel campo.
+
+Per alpha.3, con il gioco chiuso, usare **Backup → Crea backup → Verifica e mostra anteprima**. Il primo collaudo sul gioco reale deve terminare con file già presenti e identici: non cancellare file del gioco per provarlo. Per testare il recupero usare una copia separata del gioco in una cartella scrivibile. I passaggi e i limiti sono in [BACKUP](BACKUP.md). Verificare anche che le copie restino elencate dopo la chiusura e riapertura dell'app, usando **Carica backup del percorso**.

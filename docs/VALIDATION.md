@@ -12,3 +12,11 @@ Data: 29 ottobre 2026. Ambiente di sviluppo Linux; nessuna GPU Windows disponibi
 Ancora da verificare: esecuzione della pipeline su Windows e dello script PowerShell, UI/DPI/drag-drop, avvio, dialoghi, adattatori GPU, analisi dei giochi reali, supporto HDR del display, scansione antivirus del pacchetto e firma Authenticode. Il workflow fornisce evidenza separata sulla propria pagina; la sua riuscita non prova il funzionamento nei giochi.
 
 Nessuna integrazione grafica è installata in questa alpha. Non esistono ancora test reali di DLSS/HDR o backup/restore perché tali funzioni non sono implementate.
+
+## Sviluppo alpha.3 — 30 ottobre 2026
+
+I dati sopra descrivono la prima pubblicazione, non lo stato di alpha.3. Per alpha.3 sono implementati backup mirati e recupero dei file mancanti. Prima della pubblicazione sono passati 44/44 controlli su Linux, inclusi copie persistenti, hash originali recuperati, conflitti, corruzione, annullamento, ripresa da temporanee parziali, errore filesystem, journal, limiti di dimensione e percorsi non ammessi.
+
+La pipeline Windows esegue gli stessi controlli, compila l'app e usa UI Automation per incollare un percorso quotato, creare un backup e recuperare un EXE di prova eliminato. L'EXE di prova è una copia dell'apphost compilato e non viene eseguito. Viene eseguito soltanto GamePanel. Lo script verifica l'hash del file recuperato e pulisce soltanto le proprie cartelle di prova. L'esito effettivo è nei log della build.
+
+Restano separati: collaudo del backup sul gioco reale, permessi della sua cartella Program Files, DPI e interazioni manuali, Smart App Control e firma, antivirus, tutti i percorsi grafici DLSS/HDR/ReShade. Non sono stati simulati un disco fisicamente pieno o una reale perdita di alimentazione.

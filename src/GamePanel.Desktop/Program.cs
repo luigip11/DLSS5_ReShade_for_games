@@ -47,10 +47,16 @@ internal sealed class MainWindow : Window
     private int _page;
     private bool _busy;
     private bool _closing;
+    private readonly BackupService _backups = new(BackupService.DefaultStore);
+    private IReadOnlyList<BackupSummary> _snapshots = [];
+    private string? _selectedBackup;
+    private string? _backupForPath;
+    private RestorePlan? _restorePlan;
+    private string _backupMessage = "Crea una copia di riferimento prima delle future modifiche grafiche.";
 
     public MainWindow()
     {
-        Title = "GamePanel · 0.1.0-alpha.2";
+        Title = "GamePanel · 0.1.0-alpha.3";
         Width = 1160; Height = 800; MinWidth = 860; MinHeight = 620;
         Background = BackgroundBrush; Foreground = Ink;
         FontFamily = new FontFamily("Segoe UI"); FontSize = 14;
@@ -66,18 +72,19 @@ internal sealed class MainWindow : Window
         var sidebar = new DockPanel { Background = Brush("#161C27"), LastChildFill = true };
         frame.Children.Add(sidebar);
         var bottom = new StackPanel { Margin = new Thickness(22) };
-        bottom.Children.Add(Text("0.1 · ALPHA 2", 12, Accent));
-        bottom.Children.Add(Text("Selezione e analisi disponibili.\nMod DLSS/HDR da integrare.", 12, Muted));
+        bottom.Children.Add(Text("0.1 · ALPHA 3", 12, Accent));
+        bottom.Children.Add(Text("Analisi e backup locali.\nMod DLSS/HDR da integrare.", 12, Muted));
         DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
         var menu = new StackPanel { Margin = new Thickness(16, 28, 16, 0) };
         menu.Children.Add(Text("GAMEPANEL", 22, Ink, FontWeights.SemiBold));
         menu.Children.Add(Text("Il tuo gioco, sotto controllo", 12, Muted));
         menu.Children.Add(new Border { Height = 28 });
-        var names = new[] { "01   Gioco", "02   DLSS", "03   HDR e immagine", "04   Diagnosi" };
+        var names = new[] { "01   Gioco", "02   DLSS", "03   HDR e immagine", "04   Backup", "05   Diagnosi" };
         for (var i = 0; i < names.Length; i++)
         {
             var page = i;
             var button = Button(names[i], (_, _) => { _page = page; Render(); });
+            if (i == 3) System.Windows.Automation.AutomationProperties.SetAutomationId(button, "BackupsPage");
             button.HorizontalContentAlignment = HorizontalAlignment.Left;
             _navigation.Add(button); menu.Children.Add(button);
         }
@@ -85,6 +92,7 @@ internal sealed class MainWindow : Window
 
         var main = new DockPanel(); Grid.SetColumn(main, 1); frame.Children.Add(main);
         var footer = new Border { BorderBrush = Brush("#2A3445"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(32, 14, 32, 14), Child = _status };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
         var header = new StackPanel { Margin = new Thickness(32, 28, 32, 16) };
         header.Children.Add(Text("Scegli da dove iniziare.", 28, Ink, FontWeights.SemiBold));
@@ -108,12 +116,14 @@ internal sealed class MainWindow : Window
         _path.TextChanged += (_, _) =>
         {
             _analyze.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
+            if (!_busy) ResetBackups();
             if (!_busy && _report is not null)
             {
                 _report = null; _export.IsEnabled = false;
                 _status.Text = "Percorso modificato · Premi Analizza percorso";
                 Render();
             }
+            else if (!_busy && _page == 3) Render();
         };
         _path.PreviewKeyDown += async (_, e) =>
         {
@@ -152,6 +162,7 @@ internal sealed class MainWindow : Window
         _path.IsReadOnly = true; _export.IsEnabled = false;
         _cancel.Visibility = Visibility.Visible;
         _report = null; _page = 0;
+        ResetBackups();
         _path.Text = path;
         _status.Text = "Analisi in corso · Nessuna esecuzione del gioco";
         _cancellation = new CancellationTokenSource();
@@ -212,6 +223,7 @@ internal sealed class MainWindow : Window
             case 0: RenderGame(); break;
             case 1: RenderDlss(); break;
             case 2: RenderHdr(); break;
+            case 3: RenderBackups(); break;
             default: RenderDiagnostics(); break;
         }
     }
@@ -224,7 +236,7 @@ internal sealed class MainWindow : Window
             Card(_busy ? "Lettura dell'eseguibile…" : "Un EXE per iniziare", _busy
                 ? "Controllo intestazioni, import grafici e componenti nelle cartelle vicine."
                 : "Seleziona o trascina l'EXE. L'analisi legge i file senza caricarli come codice e senza applicare mod.");
-            Card("Prima versione di collaudo", "Questa alpha prepara la diagnosi. Installazione, backup/ripristino, parametri DLSS e HDR arriveranno nei prossimi blocchi; in questa versione non sono attivi.");
+            Card("Prima di applicare mod", "Analizza l'EXE e apri Backup per salvare una copia dei file gestiti. Installazione e parametri DLSS/HDR saranno introdotti dopo il collaudo del recupero.");
         }
         else
         {
@@ -234,6 +246,7 @@ internal sealed class MainWindow : Window
             if (_report.HasAntiCheatIndicators)
                 Card("Da verificare prima di modificare", "La scansione ha trovato possibili indicatori anti-cheat. Questa alpha non applica mod.");
             var launch = Button("Avvia senza modifiche", (_, _) => Launch());
+            launch.IsEnabled = !_busy;
             _content.Children.Add(launch);
         }
         Card("Schermo e GPU", Hardware.DisplayDevices() + "\nSupporto HDR del display: rilevamento da integrare. La GPU da sola non conferma il supporto HDR dello schermo.");
@@ -269,6 +282,168 @@ internal sealed class MainWindow : Window
         Card("Privacy", "Il JSON esportato contiene il percorso locale dell'EXE e i nomi dei componenti. Controllalo prima di condividerlo. L'app non invia report e non effettua connessioni di rete.");
     }
 
+    private void ResetBackups()
+    {
+        _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
+        _backupMessage = "Crea una copia di riferimento prima delle future modifiche grafiche.";
+    }
+
+    private void RenderBackups()
+    {
+        Heading("Backup e ripristino", "Copie locali verificate, conservate anche dopo la chiusura dell'app.");
+        Card("Stato", _backupMessage);
+        Card("Cosa viene salvato", "EXE selezionato e componenti grafici riconosciuti dall'analisi. Sono registrati anche i nomi dei futuri loader e file di configurazione. Salvataggi e asset del gioco non fanno parte di questo backup mirato.");
+        var actions = new WrapPanel();
+        var create = Button("Crea backup", async (_, _) => await CreateBackupAsync());
+        System.Windows.Automation.AutomationProperties.SetAutomationId(create, "CreateBackup");
+        create.IsEnabled = !_busy && _report is not null;
+        var load = Button("Carica backup del percorso", async (_, _) => await LoadBackupsAsync());
+        load.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
+        actions.Children.Add(create); actions.Children.Add(load); _content.Children.Add(actions);
+        if (_snapshots.Count > 0)
+        {
+            var chooser = new ComboBox
+            {
+                Margin = new Thickness(0, 4, 0, 16), Padding = new Thickness(12),
+                ItemsSource = _snapshots.Select(s => new BackupChoice(s.Id,
+                    $"{s.CreatedAt.LocalDateTime:g} · {s.FileCount} file · {s.Bytes / (1024d * 1024):F1} MB · {s.Id[..8]}")).ToArray(),
+                DisplayMemberPath = nameof(BackupChoice.Label), SelectedValuePath = nameof(BackupChoice.Id),
+                SelectedValue = _selectedBackup, IsEnabled = !_busy
+            };
+            chooser.SelectionChanged += (_, _) =>
+            {
+                if (chooser.SelectedValue is string id && id != _selectedBackup)
+                { _selectedBackup = id; _restorePlan = null; Render(); }
+            };
+            _content.Children.Add(chooser);
+            System.Windows.Automation.AutomationProperties.SetAutomationId(chooser, "BackupSnapshotPicker");
+            var preview = Button("Verifica e mostra anteprima", async (_, _) => await PreviewBackupAsync());
+            System.Windows.Automation.AutomationProperties.SetAutomationId(preview, "VerifyBackup");
+            preview.IsEnabled = !_busy && _selectedBackup is not null;
+            _content.Children.Add(preview);
+        }
+        if (_restorePlan is not null)
+        {
+            var conflicts = _restorePlan.Files.Where(f => f.Disposition == RestoreDisposition.Conflict).Select(f => f.RelativePath).ToArray();
+            var missing = _restorePlan.Files.Where(f => f.Disposition == RestoreDisposition.Missing).Select(f => f.RelativePath).ToArray();
+            if (conflicts.Length > 0)
+                Card("Ripristino bloccato", "Questi file esistono e differiscono dalla copia di riferimento, oppure sono comparsi dopo il backup. Vanno verificati prima di procedere:\n\n" + string.Join("\n", conflicts));
+            else if (missing.Length == 0)
+            {
+                Card("Verifica completata", "Le copie salvate hanno hash validi e i file previsti sono già presenti e identici. Nessun ripristino necessario.");
+                if (_restorePlan.HasPendingRepair)
+                {
+                    var finish = Button("Concludi ripristino interrotto", async (_, _) => await RestoreBackupAsync());
+                    finish.IsEnabled = !_busy; _content.Children.Add(finish);
+                }
+            }
+            else
+            {
+                Card($"File mancanti da recuperare: {missing.Length}", string.Join("\n", missing));
+                var restore = Button($"Ripristina / riprendi ({missing.Length} file)", async (_, _) => await RestoreBackupAsync());
+                System.Windows.Automation.AutomationProperties.SetAutomationId(restore, "RestoreMissing");
+                restore.IsEnabled = !_busy; _content.Children.Add(restore);
+            }
+        }
+        Card("Protezione dei file presenti", "Questa versione recupera soltanto i file mancanti. Se un file presente è cambiato, il ripristino viene bloccato. Un recupero interrotto si può riprendere dopo aver risolto il problema; i file già recuperati restano conservati.");
+        Card("Dove sono conservate le copie", _backups.StorePath + "\nNon eliminare questa cartella: contiene i dati necessari al recupero. Le copie non sono caricate su Internet.");
+        Card("Cartelle protette", "La creazione del backup richiede lettura dei file. Il recupero richiede anche scrittura nella cartella del gioco; Windows può negarla per Program Files. In quel caso l'app segnala il problema e conserva il backup.");
+    }
+
+    private sealed record BackupChoice(string Id, string Label);
+
+    private async Task CreateBackupAsync()
+    {
+        var report = _report;
+        if (report is null) return;
+        await RunBackupTaskAsync((token, progress) =>
+        {
+            var snapshot = _backups.Create(report, token, progress);
+            return (Snapshot: snapshot, List: _backups.List(report.ExecutablePath));
+        }, result =>
+        {
+            _snapshots = result.List; _selectedBackup = result.Snapshot.Id; _backupForPath = report.ExecutablePath;
+            _restorePlan = null;
+            _backupMessage = $"Backup creato e verificato: {result.Snapshot.Files.Count(f => f.Existed)} file. Il gioco non è stato modificato.";
+        }, "Creazione del backup in corso");
+    }
+
+    private async Task LoadBackupsAsync()
+    {
+        var raw = _path.Text;
+        await RunBackupTaskAsync((_, _) =>
+        {
+            var path = Path.GetFullPath(ExecutablePath.Normalize(raw));
+            return (Path: path, List: _backups.List(path));
+        }, result =>
+        {
+            _backupForPath = result.Path; _snapshots = result.List; _selectedBackup = _snapshots.FirstOrDefault()?.Id;
+            _restorePlan = null; _backupMessage = $"Backup disponibili per questo percorso: {_snapshots.Count}.";
+        }, "Caricamento backup");
+    }
+
+    private async Task PreviewBackupAsync()
+    {
+        var path = _backupForPath; var id = _selectedBackup;
+        if (path is null || id is null) return;
+        await RunBackupTaskAsync((token, _) => _backups.Preview(path, id, token), plan =>
+        {
+            _restorePlan = plan;
+            _backupMessage = plan.HasConflicts ? "Conflitti rilevati: nessuna scrittura eseguita." : "Integrità delle copie verificata. Controlla l'anteprima.";
+        }, "Verifica delle copie e dei file del gioco");
+    }
+
+    private async Task RestoreBackupAsync()
+    {
+        var path = _backupForPath; var id = _selectedBackup;
+        if (path is null || id is null || _restorePlan is null || _restorePlan.HasConflicts) return;
+        await RunBackupTaskAsync((token, progress) =>
+        {
+            var result = _backups.Restore(path, id, token, progress);
+            return (Result: result, Plan: _backups.Preview(path, id, token));
+        }, result =>
+        {
+            _restorePlan = result.Plan; _report = null; _export.IsEnabled = false;
+            _backupMessage = $"Ripristino completato: {result.Result.Restored} file recuperati, {result.Result.Verified} file verificati. Rianalizza il gioco per aggiornare il report.";
+        }, "Recupero dei file mancanti");
+    }
+
+    private async Task RunBackupTaskAsync<T>(Func<CancellationToken, IProgress<BackupProgress>, T> work,
+        Action<T> completed, string message)
+    {
+        if (_busy) return;
+        _busy = true; _path.IsReadOnly = true; _select.IsEnabled = false; _analyze.IsEnabled = false; _export.IsEnabled = false;
+        _cancel.Content = "Interrompi operazione";
+        _cancel.Visibility = Visibility.Visible; _status.Text = message; _restorePlan = null;
+        _cancellation = new CancellationTokenSource(); Render();
+        var operation = _cancellation;
+        var progress = new Progress<BackupProgress>(p => { if (!_closing && _busy && ReferenceEquals(_cancellation, operation)) _status.Text = $"{p.Message} · {p.Completed}/{p.Total}"; });
+        try
+        {
+            var token = _cancellation.Token;
+            var result = await Task.Run(() => work(token, progress), token);
+            if (!_closing) { completed(result); _status.Text = "Operazione backup completata"; }
+        }
+        catch (OperationCanceledException)
+        {
+            if (!_closing) { _backupMessage = "Operazione interrotta. Ricarica e verifica il backup prima di riprendere. Le copie incomplete non sono offerte per il ripristino."; _status.Text = "Operazione interrotta"; }
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            if (!_closing) { _backupMessage = e.Message; _status.Text = "Operazione backup non completata"; }
+        }
+        finally
+        {
+            _cancellation.Dispose(); _cancellation = null; _busy = false;
+            if (!_closing)
+            {
+                _path.IsReadOnly = false; _select.IsEnabled = true;
+                _analyze.IsEnabled = !string.IsNullOrWhiteSpace(_path.Text); _export.IsEnabled = _report is not null;
+                _cancel.Content = "Annulla analisi"; _cancel.Visibility = Visibility.Collapsed; Render();
+            }
+        }
+    }
+
     private void Export()
     {
         if (_report is null) return;
@@ -290,7 +465,7 @@ internal sealed class MainWindow : Window
 
     private void Launch()
     {
-        if (_report is null) return;
+        if (_busy || _report is null) return;
         try
         {
             Process.Start(new ProcessStartInfo(_report.ExecutablePath)

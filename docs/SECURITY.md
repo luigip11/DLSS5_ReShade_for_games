@@ -2,7 +2,9 @@
 
 ## Cosa fa il codice attuale
 
-Legge PE, file versione e nomi dei componenti; calcola un hash; mostra i risultati. Non chiama LoadLibrary o Assembly.Load sui file selezionati, non carica add-on, non installa servizi, non scrive registro, non richiede elevazione, non modifica impostazioni HDR/driver. Nessuna connessione di rete implementata. Non scrive automaticamente profili, cache o log. L'esportazione del JSON è una scrittura richiesta dall'utente; il pulsante Avvia esegue intenzionalmente l'EXE selezionato.
+Legge PE, file versione e nomi dei componenti; calcola un hash; mostra i risultati. Non chiama LoadLibrary o Assembly.Load sui file selezionati, non carica add-on, non installa servizi, non scrive registro, non richiede elevazione, non modifica impostazioni HDR/driver. Nessuna connessione di rete implementata. L'esportazione del JSON è una scrittura richiesta dall'utente; il pulsante Avvia esegue intenzionalmente l'EXE selezionato.
+
+Da alpha.3 **Crea backup** salva copie e metadati locali su richiesta. **Ripristina / riprendi** scrive soltanto file mancanti dopo verifica e anteprima. File presenti differenti causano un conflitto. Le temporanee dell'operazione e i journal vengono gestiti per consentire la ripresa. Non vengono applicati mod grafici. Vedere [limiti e comportamento del backup](BACKUP.md).
 
 Il framework, Windows, antivirus e il gioco possono compiere attività proprie non controllate dal gestore. Questo testo descrive il codice GamePanel, non garantisce il comportamento dell'intero PC.
 

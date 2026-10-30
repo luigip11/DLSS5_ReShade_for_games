@@ -21,6 +21,7 @@ try {
     Copy-Item README.md (Join-Path $portable 'LEGGIMI.md')
     Copy-Item LICENSE (Join-Path $portable 'LICENSE-GamePanel.txt')
     Copy-Item docs/WINDOWS-CHECK.md (Join-Path $portable 'COLLAUDO-WINDOWS.md')
+    Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {
         $relative = $_.FullName.Substring($portable.Length + 1).Replace('\', '/')
         '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant(), $relative

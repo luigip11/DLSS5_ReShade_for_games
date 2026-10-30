@@ -24,11 +24,12 @@ jobs:
       - name: Checks and self-contained Windows build
         shell: pwsh
         run: ./scripts/publish.ps1
+      - name: Check desktop startup
+        shell: powershell
+        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe
       - name: Portable package and checksums
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, pinned 2026-10-29
         with:
           name: GamePanel-win-x64-alpha
-          path: |
-            artifacts/GamePanel-win-x64.zip
-            artifacts/SHA256SUMS.txt
+          path: artifacts/GamePanel-win-x64/
           if-no-files-found: error
