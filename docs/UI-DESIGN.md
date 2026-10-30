@@ -4,6 +4,10 @@
 
 Workspace scuro con superfici blu carbone, accenti lime e blu elettrico, illustrazione vettoriale originale e tipografia Segoe UI/Bahnschrift disponibile su Windows. Nessun font web, wallpaper remoto, logo di terzi o immagine di gioco scaricata automaticamente.
 
+![Panoramica reale di GamePanel alpha.4 su Windows](images/alpha4-overview.png)
+
+Schermata nativa acquisita dalla pipeline Windows del commit `cbb224ae5b57e8af788b80da412a1318482fdc05`, con nessun gioco selezionato. Il successivo aggiornamento al selettore dei backup non modifica questa panoramica.
+
 La panoramica dà priorità a selezione EXE, analisi, dati rilevati e accesso al backup. La scheda del gioco usa il nome della cartella o dell'EXE come etichetta; non identifica con certezza il titolo dal solo percorso.
 
 ## Decisioni di UX

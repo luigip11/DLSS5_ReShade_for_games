@@ -10,7 +10,7 @@ Questa prima consegna **non migliora ancora la grafica dei giochi**. Serve a col
 
 Disponibile:
 
-- Interfaccia nativa italiana con pagine Gioco, DLSS, HDR, Backup e Diagnosi.
+- Interfaccia nativa italiana con pagine Panoramica, DLSS, HDR / FX, Backup e Diagnosi.
 - Selezione, trascinamento o inserimento del percorso di un singolo EXE, indipendente dagli store. Accetta anche il percorso tra virgolette copiato da Esplora file.
 - Analisi statica PE x86/x64; indizi del renderer dagli import diretti.
 - Inventario limitato dei componenti DLSS, ReShade, proxy e add-on nelle cartelle vicine.
@@ -39,7 +39,7 @@ Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.c
 
 1. Estrarre **tutto** l'artifact scaricato in una cartella scrivibile, fuori dalle cartelle dei giochi. `GamePanel.exe` deve avere le sue DLL accanto; non avviarlo dalla vista di WinRAR. Per alpha.1/2 era necessario estrarre anche lo ZIP interno.
 2. Avviare `GamePanel.exe`. Non richiede installazione separata di .NET né privilegi amministrativi.
-3. Incollare il percorso completo nel campo **Percorso completo del gioco (.exe)** e premere **Analizza percorso** o **Invio**. In alternativa usare **Seleziona gioco .exe** o trascinare il file. Le virgolette esterne di "Copia come percorso" sono accettate. Se non emerge un'API grafica, il file potrebbe essere un launcher o caricare il renderer dinamicamente.
+3. Incollare il percorso completo nel campo **Eseguibile del gioco** e premere **Analizza gioco** o **Invio**. In alternativa usare **Scegli EXE** o trascinare il file. Le virgolette esterne di "Copia come percorso" sono accettate. Se non emerge un'API grafica, il file potrebbe essere un launcher o caricare il renderer dinamicamente.
 4. Aprire Diagnosi. Esportare il JSON in Documenti se si vuole conservarlo.
 5. Con il gioco chiuso, aprire **Backup → Crea backup → Verifica e mostra anteprima**. Una verifica senza file mancanti non modifica il gioco. Vedere [cosa salva e come recuperare](docs/BACKUP.md).
 

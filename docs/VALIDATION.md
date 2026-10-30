@@ -26,3 +26,7 @@ Restano separati: collaudo del backup sul gioco reale, permessi della sua cartel
 Il motore del core non cambia. La pipeline mantiene i 44 controlli e il ciclo GUI di analisi, backup e recupero; aggiunge screenshot della vera finestra e un controllo negativo che impedisce di considerare firmata l'alpha ordinaria. La compilazione locale del restyling WPF è stata eseguita; gli esiti Windows effettivi e le immagini sono negli artifact della build.
 
 Il workflow di firma di produzione è solo predisposto. Non viene avviato dai push e, senza le variabili e il secret di un provider approvato, si ferma prima di contattarlo. La verifica positiva di un pacchetto realmente firmato e il collaudo con SAC attivo restano bloccati dalla mancanza del servizio di firma. Il successo dell'avvio sul runner Windows non dimostra che il file sia accettato da SAC sul PC dell'utente.
+
+### Esito verificato su Windows
+
+La [build alpha.4 del commit b9a582b](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/runs/41090217812) ha completato 44/44 controlli, avvio GUI, analisi del percorso quotato, creazione della copia, apertura/chiusura del selettore ridisegnato e recupero con SHA-256 originale. Le schermate native sono state esaminate per correggere il titolo iniziale e l'etichetta del selettore dei backup. Stato della firma registrato dal runner: `NotSigned`; il controllo di firma respinge correttamente il pacchetto ordinario. Nessun esito positivo di SAC o dei giochi reali viene dedotto da questi test.
