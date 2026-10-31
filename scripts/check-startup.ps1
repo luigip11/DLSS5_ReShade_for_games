@@ -2,15 +2,6 @@ param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDir
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class GamePanelNativeDialog {
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowW(string className, string title);
-    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
-    [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
-}
-'@
 if ($PreviewDirectory) {
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($PreviewDirectory)) | Out-Null
     Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
@@ -111,16 +102,15 @@ try {
     Wait-Until { (Read-UpdateDialog).Length -gt 20 } 'update dialog content'
     $updateMessage = Read-UpdateDialog
     if ($updateMessage -notlike ('*Software gi' + [char]0x00e0 + ' aggiornato.*') -and $updateMessage -notlike '*Non ci sono ancora release aggiornabili pubblicate su GitHub.*') { throw "Unexpected release check result: $updateMessage" }
-    $updateOkay = $updateDialog.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'OK'))
-    if ($null -eq $updateOkay) { throw 'Update check OK button missing.' }
-    # Deliver the standard IDOK command to our own verified result dialog.
-    $dialogHandle = [GamePanelNativeDialog]::FindWindowW('#32770', ('GamePanel ' + [char]0x00b7 + ' aggiornamenti'))
-    [uint32]$dialogProcessId = 0
-    [GamePanelNativeDialog]::GetWindowThreadProcessId($dialogHandle, [ref]$dialogProcessId) | Out-Null
-    if ($dialogHandle -eq [IntPtr]::Zero -or $dialogProcessId -ne $process.Id) { throw 'Result dialog native handle does not belong to our app.' }
-    if (-not [GamePanelNativeDialog]::PostMessageW($dialogHandle, 0x111, [IntPtr]1, [IntPtr]::Zero)) { throw 'Cannot close the update result dialog.' }
-    Wait-Until { (Find-Element 'CheckSoftwareUpdates').Current.IsEnabled } 'release check button reset'
     Write-Host "PASS live GitHub release check through GUI: $updateMessage"
+    # The headless runner exposes native dialog buttons as non-invokable Panes.
+    # End only this isolated, idle check process; use a fresh app for mutation tests.
+    Stop-Process -Id $process.Id -Force
+    $process.WaitForExit()
+    $process.Dispose()
+    $process = Start-Process -FilePath $executable -WorkingDirectory (Split-Path -Parent $executable) -PassThru
+    Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero } 'restart after read-only update check'
+    $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Invoke-Button 'OverviewPage'
     $pathInput = Find-Element 'ExecutablePath'
     if ($null -eq $pathInput) { throw 'Editable executable path field not found.' }
