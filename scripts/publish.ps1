@@ -27,6 +27,9 @@ try {
     Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
     Copy-Item docs/RESHade-SDR.md (Join-Path $portable 'RESHade-SDR.md')
     Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
+    Copy-Item docs/ALPHA6.md (Join-Path $portable 'ALPHA6.md')
+    Copy-Item docs/WIDESCREEN-CATALOG.md (Join-Path $portable 'WIDESCREEN-CATALOG.md')
+    Copy-Item docs/licenses/ThirteenAG-MIT.txt (Join-Path $portable 'LICENSE-WidescreenFix.txt')
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {
         $relative = $_.FullName.Substring($portable.Length + 1).Replace('\', '/')
         '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant(), $relative

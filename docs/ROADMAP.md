@@ -56,3 +56,7 @@ Gioco → profilo consigliato → anteprima modifiche → Applica e avvia. DLSS 
 ## Avanzamento alpha.5
 
 M1 esteso con deployment mirato e journal a due versioni, ripresa/rollback e rimozione dei file gestiti. Primo percorso M2 sperimentale: ReShade SDR 6.8.0 x86 per Underground 2, download esplicito con catalogo fissato, preset e parametri reali. DLSS, HDR e supporto generale restano da sviluppare. Questo passaggio non dichiara M1/M2 conclusi: il collaudo sul gioco reale e sui permessi Program Files resta necessario. Nessun gioco reale è stato eseguito nell'ambiente di sviluppo.
+
+## Avanzamento alpha.6
+
+Libreria con giochi persistenti, ricerca, rinomina e ricollegamento. Cinema estende lo shader originale senza pacchetti esterni. Widescreen Fix per Underground 2 con catalogo di ZIP/componenti, journal separato e lock condiviso con ReShade. Obiettivo dell’utente: Dell esterno 3440×1440; selezione nel gioco e verifica dal log, senza affermare che l’installazione imposti già quella risoluzione. Asset/texture moderni, HDR e DLSS restano fuori dalla consegna e richiedono integrazioni separate. Il fix e la sua coesistenza nel gioco reale restano da collaudare.

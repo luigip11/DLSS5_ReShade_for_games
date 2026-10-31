@@ -1,4 +1,6 @@
-# Collaudo Windows — alpha.5 e verifiche precedenti
+# Collaudo Windows — alpha.6 e verifiche precedenti
+
+Per alpha.6 seguire [ALPHA6](ALPHA6.md): importare una volta, riaprire l’app e scegliere la scheda salvata; applicare Cinema dopo anteprima; provare separatamente il fix Schermo e scegliere 3440×1440 nel menu del gioco. Raccogliere il nuovo ReShade.log. Il passaggio a una risoluzione nativa non sostituisce texture/modelli.
 
 Alpha.5 può applicare il profilo ReShade SDR di Underground 2. Per il primo test usare una copia funzionante del gioco in una cartella scrivibile e seguire [RESHade-SDR](RESHade-SDR.md): Bilanciato, anteprima, applicazione, avvio, gara/filmati/Alt+Tab, Originale e rimozione. Riportare eventuali conflitti senza cancellare DLL esistenti. HDR e DLSS restano in sviluppo.
 

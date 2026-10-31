@@ -44,3 +44,7 @@ La verifica sul runner Windows ha rilevato per setup e DLL il certificato pubbli
 GamePanel scarica solo su richiesta e rifiuta redirect, dimensioni inattese e hash diversi. Riutilizza la cache verificata in `%LocalAppData%\GamePanel\Components`. Non esegue il setup, non scarica shader esterni e non aggiorna il catalogo online. ReShade, quando caricato nel gioco, può cercare aggiornamenti su GitHub: è comportamento del runtime upstream.
 
 Fonti: [ReShade, download e condizioni](https://reshade.me/), [sorgente v6.8.0](https://github.com/crosire/reshade/tree/v6.8.0), [licenza BSD-3-Clause](https://github.com/crosire/reshade/blob/v6.8.0/LICENSE.md). Nessuna approvazione di GamePanel da parte degli autori di ReShade è implicita.
+
+## Aggiornamento alpha.6
+
+Cinema aggiunge contrasto, bagliore e vignettatura; Bilanciato conserva i valori leggeri precedenti. Gli archivi alpha.5 sono leggibili e il nuovo shader viene applicato solo dopo anteprima, con copie di entrambe le versioni per rollback. Per libreria e risoluzione ultrawide vedere [ALPHA6](ALPHA6.md). La risoluzione resta separata da ReShade; la sola nitidezza non aumenta i pixel renderizzati.

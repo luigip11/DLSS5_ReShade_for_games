@@ -18,3 +18,7 @@ Un wrapper che traduce API non aggiunge automaticamente i dati del motore richie
 ## Alpha.5 — componente scelto
 
 ReShade 6.8.0 x86 originale per il profilo SDR di Underground 2. Non ridistribuito: download diretto esplicito dal sito ufficiale, setup non eseguito, SHA-256 e dimensioni approvati nel codice. Shader GamePanelSDR originale MIT, senza pacchetti di terzi. [Catalogo](RESHade-CATALOG.md) e [limiti](RESHade-SDR.md). Gli altri componenti restano candidati.
+
+## Alpha.6
+
+Widescreen Fix ThirteenAG per Underground 2, asset `558911953`: pacchetto originale scaricato su richiesta, senza bundling. [Catalogo](WIDESCREEN-CATALOG.md) con hash di ZIP e quattro file, configurazione display dedicata. Nessun texture pack esterno aggiunto. Il sorgente corrente del tag mobile non è prova della provenienza riproducibile dei binari dell’asset.
