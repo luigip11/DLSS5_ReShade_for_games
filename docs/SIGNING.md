@@ -1,6 +1,6 @@
 # Smart App Control: blocco confermato e firma ancora da attivare
 
-Stato al 30 ottobre 2026: i file GamePanel alpha.5 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
+Stato al 31 ottobre 2026: i file GamePanel alpha.5 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
 
 ## Significato e limite attuale
 

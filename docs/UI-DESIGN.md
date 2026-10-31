@@ -25,3 +25,11 @@ La panoramica dà priorità a selezione EXE, analisi, dati rilevati e accesso al
 La pipeline prova avvio, percorso quotato e ciclo backup/ripristino con UI Automation. Produce le immagini reali `00-overview.png` e `01-backup.png` nell'artifact **GamePanel-interface-preview**. Esito e screenshot appartengono alla specifica build; non sono mockup.
 
 Restano da collaudare sul PC reale le diverse scale DPI, il display e Smart App Control. Il restyling non attribuisce fiducia Windows: alpha.4 resta non firmata finché non è completato il percorso in SIGNING.md.
+
+## Alpha.5 — controlli immagine reali
+
+![Pannello ReShade SDR reale di GamePanel alpha.5](images/alpha5-effects.png)
+
+Schermata Windows del commit `393e70ce6f5d0540b5d763537f160ca0076971c6`, su una fixture sintetica. Nitidezza, Colore e Intensità sono raggruppati in tre schede con cursori lime, focus da tastiera e valori numerici. Originale disattiva la tecnica; Bilanciato imposta valori moderati. Qualsiasi modifica ai parametri invalida l'anteprima precedente. Dopo la preparazione, l'app porta in vista il pulsante di conferma. Durante le operazioni i controlli sono disabilitati e l'annullamento resta disponibile.
+
+L'etichetta Avvia il gioco usa lo stato attualmente applicato; non promette di escludere mod già installate. DLSS rimane in sviluppo; HDR non è abilitato da questo profilo SDR.

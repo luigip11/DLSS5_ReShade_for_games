@@ -38,3 +38,9 @@ La [build alpha.4 del commit b9a582b](https://github.com/luigip11/DLSS5_ReShade_
 Il controllo Windows aggiunge il download reale approvato e la cache (72 controlli), poi GUI completa con una fixture DX9 x86 compilata dal codice del repository. Dopo installazione gestita avvia soltanto quel renderer sintetico e cerca nel log ReShade la compilazione riuscita di GamePanelSDR.fx; se il dispositivo DX9 non è disponibile, il rendering viene esplicitamente indicato non verificato. Gli esiti effettivi sono nei log della build, non dedotti dalla compilazione locale. Il test continua con rimozione tracciata ed EXE invariato.
 
 Restano necessari sul PC reale: lancio della propria build Underground 2, gara/menu/filmati/Alt+Tab, qualità visiva e costo GPU, DPI, mod/ASI già presenti, permessi Program Files e SAC. Le prove non sono una scansione antivirus o una certificazione di compatibilità.
+
+### Build alpha.5 verificata
+
+La [build del commit bd8f080](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/runs/41188200644) ha superato 72/72 controlli su Windows, il download reale e l'intero ciclo GUI: anteprima senza scritture, backup iniziale, installazione, modifica del cursore nel preset, Originale disabilitato/Bilanciato ripristinato, aggiornamento dopo riscrittura INI da parte di ReShade e rimozione con EXE invariato. La fixture x86 Direct3D 9 è stata effettivamente eseguita: il runtime ufficiale ha caricato e compilato `GamePanelSDR.fx`; il rendering non è stato saltato. Non sono stati eseguiti giochi reali.
+
+La build registra `NotSigned` per GamePanel e il controllo di produzione rifiuta correttamente il pacchetto non firmato. Le schermate del pannello sono state esaminate. Test e immagini non dimostrano SAC o compatibilità con una build reale del gioco.
