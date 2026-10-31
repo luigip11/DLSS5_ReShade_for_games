@@ -9,6 +9,9 @@ $temporary = Join-Path ([IO.Path]::GetTempPath()) ('GamePanel-ReShade-' + [Guid]
 [IO.Directory]::CreateDirectory($temporary) | Out-Null
 function Check-Publisher([string]$Path) {
     $signature = Get-AuthenticodeSignature -LiteralPath $Path
+    Write-Host "Signature: $($signature.Status); $($signature.StatusMessage)"
+    Write-Host "Certificate: $($signature.SignerCertificate.Subject); expiry $($signature.SignerCertificate.NotAfter.ToString('o')); timestamp $($signature.TimeStamperCertificate.Subject)"
+    Write-Host "Downloaded SHA256: $((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash)"
     if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Thumbprint -ne $publisher) {
         throw "ReShade publisher verification failed: $($signature.Status), $($signature.SignerCertificate.Thumbprint)"
     }
