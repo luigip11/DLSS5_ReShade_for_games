@@ -295,6 +295,9 @@ try {
         $launched = @([Diagnostics.Process]::GetProcessesByName('speed2') | Where-Object { $_.MainModule.FileName -eq $profileExe })
         if ($launched.Count -ne 1) { throw 'Library did not launch exactly our selected synthetic renderer.' }
         $renderProcess = $launched[0]
+        # GetProcessesByName creates a detached Process object. Keep its handle
+        # open before exit; otherwise Windows PowerShell may expose a null ExitCode.
+        $libraryProbeHandle = $renderProcess.Handle
         if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw "Library-launched probe failed: $($renderProcess.ExitCode)" }
         if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Selected library executable did not execute our launcher probe.' }
         $renderProcess.Dispose(); $renderProcess = $null
