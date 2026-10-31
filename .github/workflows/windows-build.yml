@@ -21,6 +21,9 @@ jobs:
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4, pinned 2026-10-29
         with:
           global-json-file: global.json
+      - name: Inspect official ReShade source package without executing it
+        shell: pwsh
+        run: ./scripts/inspect-reshade.ps1
       - name: Checks and self-contained Windows build
         shell: pwsh
         run: ./scripts/publish.ps1
