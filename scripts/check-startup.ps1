@@ -85,6 +85,20 @@ try {
         Start-Sleep -Milliseconds 800
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '00-library.png')))
     }
+    Invoke-Button 'CheckSoftwareUpdates'
+    $updateCondition = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('GamePanel ' + [char]0x00b7 + ' aggiornamenti')))
+    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Children, $updateCondition) } 'GitHub release check dialog' 40
+    $updateDialog = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Children, $updateCondition)
+    $texts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Text))
+    $updateMessage = (@($texts | ForEach-Object { $_.Current.Name }) -join ' ')
+    if ($updateMessage -notlike ('*Software gi' + [char]0x00e0 + ' aggiornato.*') -and $updateMessage -notlike '*Non ci sono ancora release aggiornabili pubblicate su GitHub.*') { throw "Unexpected release check result: $updateMessage" }
+    $updateOkay = $updateDialog.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'OK'))
+    if ($null -eq $updateOkay) { throw 'Update check OK button missing.' }
+    $updateOkay.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Wait-Until { (Find-Element 'CheckSoftwareUpdates').Current.IsEnabled } 'release check button reset'
+    Write-Host "PASS live GitHub release check through GUI: $updateMessage"
     Invoke-Button 'OverviewPage'
     $pathInput = Find-Element 'ExecutablePath'
     if ($null -eq $pathInput) { throw 'Editable executable path field not found.' }
@@ -250,7 +264,7 @@ try {
         Invoke-Button 'ScreenPage'
         Wait-Until { $null -ne (Find-Element 'TargetDisplay') } 'display selector'
         $displayResolution = (Find-Element 'DetectedDisplayResolution').Current.Name
-        if ($displayResolution -notmatch '^\d+ × \d+$') { throw "Active display resolution was not detected: $displayResolution" }
+        if ($displayResolution -notmatch '^\d+ \u00d7 \d+$') { throw "Active display resolution was not detected: $displayResolution" }
         if ($null -eq (Find-Element 'CheckSoftwareUpdates')) { throw 'Software update button missing.' }
         Invoke-Button 'RefreshDisplays'
         if ((Find-Element 'DetectedDisplayResolution').Current.Name -ne $displayResolution) { throw 'Display enumeration unstable.' }

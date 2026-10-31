@@ -60,3 +60,8 @@ M1 esteso con deployment mirato e journal a due versioni, ripresa/rollback e rim
 ## Avanzamento alpha.6
 
 Libreria con giochi persistenti, ricerca, rinomina e ricollegamento. Cinema estende lo shader originale senza pacchetti esterni. Widescreen Fix per Underground 2 con catalogo di ZIP/componenti, journal separato e lock condiviso con ReShade. Obiettivo dell’utente: Dell esterno 3440×1440; selezione nel gioco e verifica dal log, senza affermare che l’installazione imposti già quella risoluzione. Asset/texture moderni, HDR e DLSS restano fuori dalla consegna e richiedono integrazioni separate. Il fix e la sua coesistenza nel gioco reale restano da collaudare.
+
+
+## Avanzamento alpha.7
+
+Aggiornamenti su richiesta da release GitHub pubblicate, con conferma, digest/pacchetto inventariato e helper separato. I dati utente restano esterni alla cartella app; i test includono sostituzione, file extra, journal grandi e interruzione/ripresa/rollback. Rilevamento degli schermi Windows con modalità attuale/preferita e scelta persistente. ReShade SDR esteso in modo sperimentale ai classici NFS e San Andreas x86 DX9; Widescreen Fix ancora solo Underground 2. Firma pubblica, swap DLSS, conversione HDR e asset moderni non sono risolti da queste modifiche. Il lavoro texture/modelli segue il percorso descritto in [GRAPHICS-ASSETS](GRAPHICS-ASSETS.md), partendo da Underground 2.
