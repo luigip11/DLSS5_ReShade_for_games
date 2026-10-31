@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($ExpectedPublisher)) { throw 'Expected publisher is required.' }
 $source = (Resolve-Path -LiteralPath $UnsignedDirectory).Path
 $signed = (Resolve-Path -LiteralPath $SignedDirectory).Path
-$owned = @('GamePanel.exe', 'GamePanel.dll', 'GamePanel.Core.dll')
+$owned = @('GamePanel.exe', 'GamePanel.dll', 'GamePanel.Core.dll', 'GamePanel.Updater.exe', 'GamePanel.Updater.dll')
 foreach ($name in $owned) {
     $path = Join-Path $signed $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Signed file missing: $name" }

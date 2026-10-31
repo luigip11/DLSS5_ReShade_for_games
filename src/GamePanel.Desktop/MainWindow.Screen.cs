@@ -26,9 +26,12 @@ internal sealed partial class MainWindow
     {
         _screenApplyButton = null;
         Heading("Più spazio. Più definizione.", "Underground 2 · Widescreen Fix di ThirteenAG · integrazione sperimentale.");
-        var target = new StackPanel(); target.Children.Add(DesignSystem.Chip("IL TUO DELL ULTRAWIDE", Accent));
-        var resolution = Text("3440 × 1440", 36, Ink, FontWeights.Bold); resolution.Margin = new Thickness(0, 12, 0, 6); target.Children.Add(resolution);
-        target.Children.Add(Text("Obiettivo del profilo: risoluzione nativa, proporzioni corrette, HUD e campo visivo adattati.", 13, Muted));
+        RenderDisplaySelector();
+        var detected = SelectedDisplay(); var target = new StackPanel();
+        target.Children.Add(DesignSystem.Chip(detected?.NativeWidth is not null ? "MODALITÀ PREFERITA DELLO SCHERMO" : "RISOLUZIONE WINDOWS ATTUALE", Accent));
+        var resolution = Text(detected is null ? "Da rilevare" : $"{detected.TargetWidth} × {detected.TargetHeight}", 36, Ink, FontWeights.Bold); System.Windows.Automation.AutomationProperties.SetAutomationId(resolution, "DetectedDisplayResolution"); resolution.Margin = new Thickness(0, 12, 0, 6); target.Children.Add(resolution);
+        target.Children.Add(Text(detected is null ? "Windows non ha restituito uno schermo attivo. Premi Rileva schermi."
+            : detected.Name + $" · attuale {detected.Width} × {detected.Height}" + (detected.NativeWidth is null ? " · modalità nativa non disponibile" : $" · preferita {detected.NativeWidth} × {detected.NativeHeight}"), 13, Muted));
         _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 18), Child = target });
         var status = Text(_screenMessage, 13, Muted); status.Margin = new Thickness(0, 0, 0, 18);
         System.Windows.Automation.AutomationProperties.SetAutomationId(status, "ScreenStatus"); _content.Children.Add(status);
@@ -39,7 +42,7 @@ internal sealed partial class MainWindow
         }
         else
         {
-            var reason = _report is null ? "Seleziona un gioco dalla libreria." : ReShadeProfileService.Eligibility(_report);
+            var reason = _report is null ? "Seleziona un gioco dalla libreria." : ReShadeProfileService.Eligibility(_report, widescreen: true);
             if (reason is not null) Card("Disponibilità", reason);
             var pendingPeer = _fxState?.Pending == true;
             var prepare = FxButton(_screenState?.State?.Installed == true ? "Prepara rimozione Widescreen Fix" : "Scarica fix e prepara anteprima", "PrepareScreen",
@@ -55,14 +58,16 @@ internal sealed partial class MainWindow
                 apply.Background = Accent; apply.Foreground = BackgroundBrush; _content.Children.Add(apply);
             }
         }
-        Card("Dopo l'applicazione", "Avvia il gioco sul Dell e apri le sue opzioni video. Seleziona 3440 × 1440 e conferma. Questo fix aggiunge le modalità del monitor al menu: la sola installazione non conferma la risoluzione usata. Non cambiamo la risoluzione o lo schermo principale di Windows.");
+        Card("Dopo l'applicazione", "Avvia il gioco sullo schermo scelto e apri le sue opzioni video. Seleziona "
+            + (detected is null ? "la risoluzione consigliata" : $"{detected.TargetWidth} × {detected.TargetHeight}")
+            + " e conferma. Il rilevamento dello schermo non cambia Windows né forza la risoluzione del gioco. Il fix aggiunge le modalità disponibili al menu; il log conferma quella effettivamente usata.");
         var read = FxButton("Leggi risoluzione dell'ultimo avvio", "ReadRuntimeEvidence", (_, _) => ReadRuntimeEvidence(), !_busy && _report is not null); _content.Children.Add(read);
         if (_runtimeEvidence is not null)
         {
             var e = _runtimeEvidence;
             Card("Ultimo log ReShade · " + e.LogWrittenAt.LocalDateTime.ToString("dd MMM · HH:mm"),
                 (e.Width is int w && e.Height is int h ? $"Risoluzione dichiarata: {w} × {h}." : "Risoluzione non determinata nel log.")
-                + (e.Width == 3440 && e.Height == 1440 ? " Obiettivo presente nel log." : " Verifica 3440 × 1440 nel menu video del gioco.")
+                + (detected is not null && e.Width == detected.TargetWidth && e.Height == detected.TargetHeight ? " Corrisponde allo schermo scelto." : " Confronta la risoluzione del menu video con lo schermo scelto.")
                 + (e.ShaderCompiled ? "\nShader GamePanel compilato." : "\nCompilazione shader non confermata dal log."));
         }
         Details("Compatibilità e file esistenti", "Il pacchetto originale proviene dal repository ufficiale ThirteenAG, con dimensione e SHA-256 fissati. Il fix usa un ASI loader separato da ReShade. DLL dinput8/version/winmm/dsound preesistenti, cartelle scripts con mod o wrapper sconosciuti bloccano l'installazione. La build reale di speed2.exe va collaudata: il fix modifica il gioco in memoria e non riscrive l'EXE. La combinazione ReShade + fix non è ancora collaudata sul tuo PC.");
@@ -87,7 +92,7 @@ internal sealed partial class MainWindow
         }, state =>
         {
             _screenPlan = null; _screenState = new(state, false, "");
-            _screenMessage = state.Installed ? "Fix installato. Ora scegli 3440 × 1440 nelle opzioni video del gioco."
+            _screenMessage = state.Installed ? "Fix installato. Ora scegli nelle opzioni video la risoluzione dello schermo rilevato."
                 : "Widescreen Fix rimosso." + (state.PreservedFiles.Count > 0 ? " INI modificato conservato." : "");
         }, "Applicazione Widescreen Fix");
     }

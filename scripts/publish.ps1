@@ -21,13 +21,23 @@ try {
     if (Test-Path $portable) { Remove-Item -LiteralPath $portable -Recurse -Force }
     & dotnet publish src/GamePanel.Desktop/GamePanel.Desktop.csproj -c Release --no-restore -o $portable -p:DebugType=None -p:DebugSymbols=false
     if ($LASTEXITCODE -ne 0) { throw 'Compilazione Windows non riuscita.' }
+    & dotnet restore src/GamePanel.Updater/GamePanel.Updater.csproj --locked-mode
+    if ($LASTEXITCODE -ne 0) { throw 'Restore updater non riuscito.' }
+    $updater = Join-Path $repository 'artifacts/GamePanel-updater-build'
+    if (Test-Path $updater) { Remove-Item -LiteralPath $updater -Recurse -Force }
+    & dotnet publish src/GamePanel.Updater/GamePanel.Updater.csproj -c Release --no-restore -o $updater -p:DebugType=None -p:DebugSymbols=false
+    if ($LASTEXITCODE -ne 0) { throw 'Compilazione updater non riuscita.' }
+    # Both executables use the same pinned runtime; copy the helper's own files only.
+    foreach ($name in @('GamePanel.Updater.exe', 'GamePanel.Updater.dll', 'GamePanel.Updater.deps.json', 'GamePanel.Updater.runtimeconfig.json')) {
+        Copy-Item -LiteralPath (Join-Path $updater $name) -Destination (Join-Path $portable $name)
+    }
     Copy-Item README.md (Join-Path $portable 'LEGGIMI.md')
     Copy-Item LICENSE (Join-Path $portable 'LICENSE-GamePanel.txt')
     Copy-Item docs/WINDOWS-CHECK.md (Join-Path $portable 'COLLAUDO-WINDOWS.md')
     Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
     Copy-Item docs/RESHade-SDR.md (Join-Path $portable 'RESHade-SDR.md')
     Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
-    Copy-Item docs/ALPHA6.md (Join-Path $portable 'ALPHA6.md')
+    Copy-Item docs/ALPHA7.md (Join-Path $portable 'ALPHA7.md')
     Copy-Item docs/WIDESCREEN-CATALOG.md (Join-Path $portable 'WIDESCREEN-CATALOG.md')
     Copy-Item docs/licenses/ThirteenAG-MIT.txt (Join-Path $portable 'LICENSE-WidescreenFix.txt')
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {

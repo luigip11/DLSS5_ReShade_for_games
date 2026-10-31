@@ -1,6 +1,6 @@
 # Smart App Control: blocco confermato e firma ancora da attivare
 
-Stato al 31 ottobre 2026: i file GamePanel alpha.6 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
+Stato al 31 ottobre 2026: i file GamePanel alpha.7 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
 
 ## Significato e limite attuale
 
@@ -18,7 +18,7 @@ Non è possibile trasformare questa build in una distribuzione con editore pubbl
 ## Requisiti della futura pipeline firmata
 
 - Compilare da un commit identificato e superare controlli e collaudo dell'avvio GUI su Windows.
-- Firmare `GamePanel.exe`, `GamePanel.dll` e `GamePanel.Core.dll`, più eventuale altro codice del progetto distribuito; conservare le firme originali dei componenti Microsoft. Nuove DLL/add-on di terzi richiedono una valutazione propria di provenienza, licenza e fiducia.
+- Firmare `GamePanel.exe`, `GamePanel.dll` e `GamePanel.Core.dll`, `GamePanel.Updater.exe` e `GamePanel.Updater.dll`, più eventuale altro codice del progetto distribuito; conservare le firme originali dei componenti Microsoft. Nuove DLL/add-on di terzi richiedono una valutazione propria di provenienza, licenza e fiducia.
 - Usare timestamp e verificare che Authenticode risulti valido per ciascun file del progetto e che l'editore sia quello atteso.
 - Bloccare la pubblicazione della distribuzione firmata se un file richiesto manca, la firma fallisce o non è valida. Non ripiegare silenziosamente su un pacchetto non firmato.
 - Calcolare gli hash dopo la firma e archiviare esattamente quei byte. Il solo SHA-256 non sostituisce Authenticode.

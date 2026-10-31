@@ -2,11 +2,11 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: 0.1.0-alpha.6, libreria persistente e profili legacy sperimentali
+## Stato reale: 0.1.0-alpha.7, aggiornamenti e rilevamento schermi
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Alpha.6 si apre in una libreria locale con i giochi importati salvati tra le sessioni. Aggiunge Cinema (contrasto, bagliore e vignettatura) e un percorso Widescreen Fix separato per Underground 2, con obiettivo Dell 3440×1440. La risoluzione va scelta nel menu del gioco; non è confermata dalla sola installazione. Non sono inclusi texture/modelli nuovi o una conversione in grafica moderna. [Guida alpha.6](docs/ALPHA6.md).
+Alpha.7 aggiunge il pulsante **Controlla aggiornamenti**, download verificato e sostituzione recuperabile dei file dell'app senza cancellare i dati utente. Schermo rileva monitor, risoluzione attuale e modalità preferita disponibile, con preferenza salvata. Il post-processing SDR si estende in via sperimentale ad altri classici x86 DX9; il Widescreen Fix resta specifico per Underground 2. [Guida alpha.7](docs/ALPHA7.md). Texture e modelli nuovi restano da integrare: [stato e candidati](docs/GRAPHICS-ASSETS.md).
 
 Disponibile:
 
@@ -20,7 +20,7 @@ Disponibile:
 - Avvio esplicito del gioco con i file e il profilo attualmente applicati, usando la sua cartella come working directory.
 - Lettura degli adattatori video esposti da Windows.
 - Panoramica gaming con dati reali, navigazione a icone e backup più diretto; screenshot nell'artifact `GamePanel-interface-preview`.
-- ReShade SDR per Underground 2: Originale, Bilanciato e Cinema, sei parametri reali e aggiornamento dello shader alpha.5 tracciato.
+- ReShade SDR per classici NFS/San Andreas x86 DX9 riconoscibili (sperimentale): Originale, Bilanciato e Cinema, sei parametri reali e aggiornamento dello shader alpha.5 tracciato.
 - Widescreen Fix sperimentale: pacchetto ufficiale verificato, correzioni HUD/FOV e risoluzioni native nel menu del gioco; rimozione separata.
 - Lettura della risoluzione dichiarata nell’ultimo log ReShade, con data e identità EXE.
 - Copie di riferimento dell'EXE e dei componenti riconosciuti, con hash verificati e archivio persistente nei dati utente.
@@ -28,20 +28,20 @@ Disponibile:
 
 Non ancora disponibile:
 
-- Gestione generale dei mod, swap DLSS e aggiornamenti automatici.
+- Gestione generale dei mod, texture/modelli HD e swap DLSS.
 - Sovrascrittura di file modificati da altri strumenti; concatenamento di loader preesistenti.
 - Regolazione DLSS/HDR e conversione HDR del gioco.
 - Identificazione certa del gioco, compatibilità certificata, rilevamento HDR del display.
 - Integrazione con launcher che richiedono URL/argomenti specifici.
 - Neural Rendering collaudato su Underground 1/2 o sui giochi moderni del proprietario.
 
-I nomi dei file e le risorse versione sono indizi, non verifiche di firma o sicurezza. Non vengono caricati come codice gli EXE/DLL analizzati. L'app non contiene telemetria, servizi o aggiornamenti automatici. Le preparazioni esplicite scaricano ReShade da reshade.me e Widescreen Fix dal repository ufficiale GitHub/CDN con cataloghi fissati; dimensioni e SHA-256 sono verificati. Il setup ReShade non viene eseguito. ReShade può cercare aggiornamenti quando caricato dal gioco. I binari ReShade non sono redistribuiti nello ZIP.
+I nomi dei file e le risorse versione sono indizi, non verifiche di firma o sicurezza. Non vengono caricati come codice gli EXE/DLL analizzati. L'app non contiene telemetria, servizi o controlli di aggiornamento all'avvio. Il pulsante aggiornamenti interroga GitHub soltanto su richiesta e scarica una nuova versione soltanto dopo Sì. Le preparazioni esplicite scaricano ReShade da reshade.me e Widescreen Fix dal repository ufficiale GitHub/CDN con cataloghi fissati; dimensioni e SHA-256 sono verificati. Il setup ReShade non viene eseguito. ReShade può cercare aggiornamenti quando caricato dal gioco. I binari ReShade non sono redistribuiti nello ZIP.
 
 ## Uso sul PC Windows
 
-Per il primo test consultare [la guida alpha.6](docs/ALPHA6.md), usando una copia funzionante del gioco in una cartella scrivibile. Alla prima apertura importare gli EXE una volta: dopo la riapertura restano nella libreria.
+Per il primo test consultare [la guida alpha.7](docs/ALPHA7.md), usando una copia funzionante del gioco in una cartella scrivibile. Alla prima apertura importare gli EXE una volta: dopo la riapertura restano nella libreria.
 
-Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.com/luigip11/DLSS5_ReShade_for_games). Per scaricare una build, aprire [Actions](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/workflows/windows-build.yml), scegliere una compilazione riuscita e scaricare l'artifact `GamePanel-win-x64-alpha` dopo l'accesso a GitHub. Da alpha.3 l'artifact contiene direttamente i file portabili e `FILES-SHA256SUMS.txt`, senza un secondo ZIP interno. Se il workflow non è ancora terminato, non è ancora disponibile una build verificata da Actions.
+Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.com/luigip11/DLSS5_ReShade_for_games). Scaricare **GamePanel-win-x64.zip** da [Releases](https://github.com/luigip11/DLSS5_ReShade_for_games/releases). Per le build di sviluppo rimangono gli artifact delle compilazioni riuscite in [Actions](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/workflows/windows-build.yml), accessibili dopo login. La prima alpha.7 va scaricata manualmente, perché alpha.6 non ha il pulsante aggiornamenti. Usare lo stesso account Windows per ritrovare la libreria.
 
 1. Estrarre **tutto** l'artifact scaricato in una cartella scrivibile, fuori dalle cartelle dei giochi. `GamePanel.exe` deve avere le sue DLL accanto; non avviarlo dalla vista di WinRAR. Per alpha.1/2 era necessario estrarre anche lo ZIP interno.
 2. Avviare `GamePanel.exe` e premere **Importa gioco** nella libreria. Non serve installare .NET separatamente. La consultazione/analisi non richiede elevazione; scrivere in Program Files può richiederla.
@@ -70,7 +70,8 @@ Il core e i suoi controlli si eseguono anche su Linux. La compilazione WPF si ef
 
 ```text
 src/GamePanel.Core       Lettura PE, inventario, copie di riferimento e recupero dei mancanti
-src/GamePanel.Desktop    Interfaccia WPF, dialoghi file, avvio scelto dall'utente
+src/GamePanel.Desktop    Interfaccia WPF, schermi, libreria e aggiornamenti
+src/GamePanel.Updater    Sostituzione e recupero dei file dell'app a finestra chiusa
 tests/GamePanel.Checks   Controlli PE e scenari backup/ripristino su file di prova
 scripts                 Pubblicazione Windows portabile
 docs                    Specifica, percorso di sviluppo, sicurezza, collaudo
@@ -110,3 +111,8 @@ Le prove automatiche usano una fixture sintetica; non dimostrano compatibilità 
 ## Novità alpha.6
 
 Libreria persistente e avvio con nuova analisi, senza reinserire il percorso. Profilo Cinema con contrasto/bagliore/vignettatura e migrazione recuperabile dello shader alpha.5. Widescreen Fix separato e verificato, con obiettivo 3440×1440 e verifica dal log. Nessun texture pack, DLSS o HDR aggiunto. Le prove sintetiche non certificano il fix sul gioco reale. [ALPHA6](docs/ALPHA6.md), [catalogo widescreen](docs/WIDESCREEN-CATALOG.md).
+
+
+## Novità alpha.7
+
+Aggiornamenti da GitHub su richiesta, helper portabile, verifica di digest e inventario, recupero dopo interruzioni. Rilevamento Windows degli schermi e preferenza persistente, senza forzare le impostazioni del sistema o del gioco. Profili SDR sperimentali per i classici indicati; solo il fix schermo resta specifico per Underground 2. Analizzato l'archivio SweetFX condiviso senza eseguirlo o copiarne i binari: [risultati](docs/LEGACY-SWEETFX.md).

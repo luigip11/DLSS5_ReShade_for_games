@@ -90,8 +90,8 @@ internal sealed partial class MainWindow : Window
             if (!_busy && e.Data.GetData(DataFormats.FileDrop) is string[] { Length: 1 } paths)
                 await InspectAsync(paths[0]);
         };
-        Closing += (_, _) => { _closing = true; _cancellation?.Cancel(); };
-        Loaded += (_, _) => _path.Focus();
+        Closing += (_, _) => { _closing = true; _cancellation?.Cancel(); _checkUpdatesCancellation?.Cancel(); };
+        Loaded += (_, _) => { InitializeDisplays(); if (_page != 5) _path.Focus(); };
         Render();
     }
 
@@ -163,6 +163,7 @@ internal sealed partial class MainWindow : Window
 
     private void Render()
     {
+        _updatesButton.IsEnabled = !_busy && !_checkingUpdates;
         _sectionName.Text = PageTitles[_page].ToUpperInvariant();
         _gameContext.Text = GameName();
         _inputHint.Visibility = _path.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;

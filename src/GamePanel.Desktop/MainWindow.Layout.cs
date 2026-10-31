@@ -20,7 +20,7 @@ internal sealed partial class MainWindow
 
     private void BuildShell()
     {
-        Title = "GamePanel · 0.1.0-alpha.6";
+        Title = "GamePanel · " + AppVersion.Current;
         Width = Math.Min(1360, Math.Max(1000, SystemParameters.WorkArea.Width - 64));
         Height = Math.Min(900, Math.Max(680, SystemParameters.WorkArea.Height - 64));
         MinWidth = 1000; MinHeight = 680;
@@ -40,8 +40,11 @@ internal sealed partial class MainWindow
         var sidebar = new DockPanel { Background = DesignSystem.Sidebar, LastChildFill = true };
         shell.Children.Add(sidebar);
         var bottom = new StackPanel { Margin = new Thickness(20, 12, 20, 22) };
-        bottom.Children.Add(DesignSystem.Chip("ALPHA 06", Accent));
-        var local = Text("Sul tuo PC. Sotto controllo.", 11, Muted); local.Margin = new Thickness(0, 12, 0, 0); bottom.Children.Add(local);
+        bottom.Children.Add(DesignSystem.Chip(AppVersion.Current.PreRelease?.Replace('.', ' ').ToUpperInvariant() ?? "STABILE", Accent));
+        _updatesButton = Button("Controlla aggiornamenti", async (_, _) => await CheckSoftwareUpdatesAsync());
+        _updatesButton.FontSize = 11; _updatesButton.Padding = new Thickness(9, 9, 9, 9); _updatesButton.Margin = new Thickness(0, 10, 0, 0);
+        _updatesButton.ToolTip = "Controlla le release GitHub di GamePanel. Scarica e sostituisce l'app solo dopo la tua conferma.";
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_updatesButton, "CheckSoftwareUpdates"); bottom.Children.Add(_updatesButton);
         DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
         var menu = new StackPanel { Margin = new Thickness(14, 28, 14, 0) };
         var brand = new StackPanel { Margin = new Thickness(10, 0, 0, 20) };
@@ -78,7 +81,7 @@ internal sealed partial class MainWindow
         _status.FontSize = 11; _status.TextWrapping = TextWrapping.NoWrap; _status.TextTrimming = TextTrimming.CharacterEllipsis;
         _status.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _status });
         statusRow.Children.Add(_status); footerGrid.Children.Add(statusRow);
-        var version = Text("GAMEPANEL  /  0.1.0-alpha.6", 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
+        var version = Text("GAMEPANEL  /  " + AppVersion.Current, 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
         var footer = new Border { BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(30, 14, 30, 14), Child = footerGrid };
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
@@ -197,7 +200,7 @@ internal sealed partial class MainWindow
         }
         if (string.Equals(Path.GetFileName(_report?.ExecutablePath), "speed2.exe", StringComparison.OrdinalIgnoreCase))
         {
-            var screen = Button("Schermo ultrawide · obiettivo 3440 × 1440  →", (_, _) => { _page = 6; Render(); _pageScroll.ScrollToTop(); });
+            var screen = Button("Schermo e risoluzione rilevata  →", (_, _) => { _page = 6; Render(); _pageScroll.ScrollToTop(); });
             screen.IsEnabled = !_busy; _content.Children.Add(screen);
         }
         var gpu = Hardware.DisplayDevices();

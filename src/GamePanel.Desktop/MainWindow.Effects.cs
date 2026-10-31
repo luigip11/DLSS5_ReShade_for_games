@@ -34,7 +34,7 @@ internal sealed partial class MainWindow
     private void RenderEffects()
     {
         _fxApplyButton = null;
-        Heading("La tua immagine. Il tuo stile.", "Underground 2 · ReShade SDR · sperimentale, da collaudare nel gioco.");
+        Heading("La tua immagine. Il tuo stile.", "ReShade SDR DX9 · classici NFS / San Andreas · sperimentale per ogni build.");
         var state = _fxState;
         var stateLabel = Text(_fxMessage, 13, Muted);
         _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 16), Child = stateLabel });

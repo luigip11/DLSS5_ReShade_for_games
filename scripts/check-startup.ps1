@@ -248,6 +248,13 @@ try {
         if ((Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash -ne $profileHash) { throw 'Removal changed the fixture executable.' }
         Write-Host 'PASS GUI tracked removal: loader removed and fixture EXE unchanged'
         Invoke-Button 'ScreenPage'
+        Wait-Until { $null -ne (Find-Element 'TargetDisplay') } 'display selector'
+        $displayResolution = (Find-Element 'DetectedDisplayResolution').Current.Name
+        if ($displayResolution -notmatch '^\d+ × \d+$') { throw "Active display resolution was not detected: $displayResolution" }
+        if ($null -eq (Find-Element 'CheckSoftwareUpdates')) { throw 'Software update button missing.' }
+        Invoke-Button 'RefreshDisplays'
+        if ((Find-Element 'DetectedDisplayResolution').Current.Name -ne $displayResolution) { throw 'Display enumeration unstable.' }
+        Write-Host "PASS Windows display enumeration, resolution $displayResolution, display selector and updater entry point"
         Invoke-Button 'PrepareScreen'
         Wait-Until { $null -ne (Find-Element 'ApplyScreen') -and (Find-Element 'ApplyScreen').Current.IsEnabled } 'widescreen download and preview' 120
         if (Test-Path -LiteralPath (Join-Path $fixtureGame 'dinput8.dll')) { throw 'Widescreen preview wrote game files.' }

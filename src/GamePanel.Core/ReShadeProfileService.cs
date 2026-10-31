@@ -44,10 +44,13 @@ public sealed class ReShadeProfileService
     { _store = Path.GetFullPath(store); _running = running ?? IsGameRunning; _widescreen = widescreen; }
     public static ReShadeProfileService ForWidescreen(string store, Func<string, bool>? running = null) => new(store, running, true);
 
-    public static string? Eligibility(GameReport report)
+    public static string? Eligibility(GameReport report, bool widescreen = false)
     {
-        if (!Path.GetFileName(report.ExecutablePath).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase))
-            return "Profilo sperimentale riservato a speed2.exe di Underground 2.";
+        var file = Path.GetFileName(report.ExecutablePath);
+        if (widescreen ? !file.Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
+            : !new[] { "speed2.exe", "speed.exe", "nfsc.exe", "gta_sa.exe" }.Contains(file, StringComparer.OrdinalIgnoreCase))
+            return widescreen ? "Questo Widescreen Fix è riservato a Underground 2."
+                : "Profilo SDR sperimentale per i classici NFS e San Andreas: seleziona l'EXE reale compatibile.";
         if (report.Architecture != "x86 (32 bit)" || !report.GraphicsApis.Contains("Direct3D 9"))
             return "Il profilo richiede un EXE x86 con import Direct3D 9. Nessun wrapper viene installato.";
         if (report.HasAntiCheatIndicators || report.ScanWasLimited)
@@ -256,7 +259,7 @@ public sealed class ReShadeProfileService
     {
         CheckIdentity(report, token);
         var fresh = new GameInspector().Inspect(report.ExecutablePath, token);
-        var reason = Eligibility(fresh);
+        var reason = Eligibility(fresh, _widescreen);
         if (reason is not null) throw new InvalidDataException(reason);
         if (fresh.Sha256 != report.Sha256) throw new InvalidDataException("EXE cambiato: rianalizza il gioco.");
     }
