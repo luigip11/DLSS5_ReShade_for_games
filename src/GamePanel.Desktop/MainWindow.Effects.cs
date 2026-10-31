@@ -41,6 +41,7 @@ internal sealed partial class MainWindow
         System.Windows.Automation.AutomationProperties.SetAutomationId(stateLabel, "EffectsStatus");
         var reason = _report is null ? "Seleziona e analizza prima l'eseguibile del gioco." : ReShadeProfileService.Eligibility(_report);
         if (reason is not null) Card("Disponibilità", reason);
+        if (_screenState?.Pending == true) Card("Prima recupera Schermo", "Un'operazione Widescreen Fix è interrotta. Apri Schermo e riprendila o annullala prima di aggiornare ReShade.");
         if (state?.Pending == true)
         {
             var recovery = new WrapPanel();
