@@ -40,6 +40,7 @@ jobs:
         shell: pwsh
         run: ./scripts/check-signature-gate.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
       - name: Interface screenshots
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: GamePanel-interface-preview

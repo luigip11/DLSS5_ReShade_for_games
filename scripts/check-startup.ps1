@@ -59,6 +59,9 @@ function Wait-Until([scriptblock]$Condition, [string]$Description, [int]$Timeout
         if (& $Condition) { return }
         Start-Sleep -Milliseconds 200
     }
+    $processCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id)
+    $diagnostic = [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Descendants, $processCondition)
+    Write-Host ('GUI diagnostic: ' + (@($diagnostic | ForEach-Object { $_.Current.ControlType.ProgrammaticName + ':' + $_.Current.Name }) -join ' | '))
     throw "Timeout: $Description"
 }
 function Find-Element([string]$Id) {
@@ -89,8 +92,8 @@ try {
     $updateCondition = [Windows.Automation.AndCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('GamePanel ' + [char]0x00b7 + ' aggiornamenti')))
-    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Children, $updateCondition) } 'GitHub release check dialog' 40
-    $updateDialog = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Children, $updateCondition)
+    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition) } 'GitHub release check dialog' 40
+    $updateDialog = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition)
     $texts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Text))
     $updateMessage = (@($texts | ForEach-Object { $_.Current.Name }) -join ' ')
     if ($updateMessage -notlike ('*Software gi' + [char]0x00e0 + ' aggiornato.*') -and $updateMessage -notlike '*Non ci sono ancora release aggiornabili pubblicate su GitHub.*') { throw "Unexpected release check result: $updateMessage" }
