@@ -5,6 +5,10 @@ $version = '6.8.0'
 $url = "https://reshade.me/downloads/ReShade_Setup_$version.exe"
 # Published by reshade.me on the download page. A changed certificate requires review.
 $publisher = '589690208A5E52FB96980C4A6698F50ACD47C49F'
+# Reviewed bytes obtained directly from the official HTTPS URL. ReShade's own
+# long-lived certificate is not a Windows-trusted root; this is an exact-hash
+# component approval, NOT an Authenticode/SAC certification.
+$setupHash = '207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4'
 $temporary = Join-Path ([IO.Path]::GetTempPath()) ('GamePanel-ReShade-' + [Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($temporary) | Out-Null
 function Check-Publisher([string]$Path) {
@@ -12,7 +16,7 @@ function Check-Publisher([string]$Path) {
     Write-Host "Signature: $($signature.Status); $($signature.StatusMessage)"
     Write-Host "Certificate: $($signature.SignerCertificate.Subject); expiry $($signature.SignerCertificate.NotAfter.ToString('o')); timestamp $($signature.TimeStamperCertificate.Subject)"
     Write-Host "Downloaded SHA256: $((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash)"
-    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Thumbprint -ne $publisher) {
+    if ($signature.SignerCertificate.Thumbprint -ne $publisher -or $signature.Status -in @('HashMismatch', 'NotSigned', 'NotSupportedFileFormat')) {
         throw "ReShade publisher verification failed: $($signature.Status), $($signature.SignerCertificate.Thumbprint)"
     }
     $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($Path)
@@ -22,6 +26,7 @@ try {
     $setup = Join-Path $temporary 'ReShade-setup.exe'
     Invoke-WebRequest -Uri $url -OutFile $setup -MaximumRedirection 0
     if ((Get-Item -LiteralPath $setup).Length -gt 32MB) { throw 'ReShade setup exceeds the size limit.' }
+    if ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash -ne $setupHash) { throw 'Official ReShade setup differs from reviewed bytes.' }
     Check-Publisher $setup
     $data = [IO.File]::ReadAllBytes($setup)
     $offset = -1
@@ -50,5 +55,5 @@ try {
     $json = $catalog | ConvertTo-Json
     [IO.File]::WriteAllText((Join-Path ([IO.Path]::GetFullPath($OutputDirectory)) 'catalog.json'), $json, [Text.UTF8Encoding]::new($false))
     Write-Host $json
-    Write-Host 'PASS official setup and x86 DLL: trusted publisher, pinned certificate and version. Neither file was executed or published.'
+    Write-Host 'PASS exact reviewed setup hash, extracted x86 DLL, certificate fingerprint and version. Windows publisher trust is NOT established. Neither file was executed or published.'
 } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Recurse -Force } }
