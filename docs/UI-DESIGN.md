@@ -33,3 +33,13 @@ Restano da collaudare sul PC reale le diverse scale DPI, il display e Smart App 
 Schermata Windows del commit `393e70ce6f5d0540b5d763537f160ca0076971c6`, su una fixture sintetica. Nitidezza, Colore e Intensità sono raggruppati in tre schede con cursori lime, focus da tastiera e valori numerici. Originale disattiva la tecnica; Bilanciato imposta valori moderati. Qualsiasi modifica ai parametri invalida l'anteprima precedente. Dopo la preparazione, l'app porta in vista il pulsante di conferma. Durante le operazioni i controlli sono disabilitati e l'annullamento resta disponibile.
 
 L'etichetta Avvia il gioco usa lo stato attualmente applicato; non promette di escludere mod già installate. DLSS rimane in sviluppo; HDR non è abilitato da questo profilo SDR.
+
+## Alpha.6 — libreria e Cinema
+
+![Libreria persistente alpha.6](images/alpha6-library.png)
+
+![Profilo Cinema alpha.6](images/alpha6-cinema.png)
+
+Schermate native della build `105d9a5`, con fixture sintetiche. La libreria è la pagina iniziale e nasconde il campo percorso: importazione una volta, schede salvate, ricerca, avvio e gestione dei collegamenti. Non sono usati store, copertine remote o dati prestazionali inventati. Nomi/API delle schede provengono dall'ultima analisi e sono rianalizzati quando si apre o avvia il gioco.
+
+Il pannello Immagine aggiunge Cinema e tre nuove regolazioni; la pagina Schermo distingue l'obiettivo 3440×1440 dalla risoluzione dichiarata nell'ultimo log. Le due installazioni hanno anteprima e rimozione distinte. Il menu resta leggibile anche nella finestra minima; le pagine lunghe scorrono verticalmente.
