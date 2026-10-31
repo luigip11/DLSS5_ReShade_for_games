@@ -34,6 +34,9 @@ $executable = (Resolve-Path -LiteralPath $ExecutablePath).Path
 if ([IO.Path]::GetFileName($executable) -ne 'GamePanel.exe') { throw 'Expected the newly built GamePanel.exe.' }
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('GamePanel-UI-' + [Guid]::NewGuid().ToString('N'))
 $fixtureGame = [IO.Path]::GetFullPath((Join-Path $fixtureRoot 'Program Files (x86)/Test Game'))
+$fixtureData = Join-Path $fixtureRoot 'data'
+$previousDataRoot = [Environment]::GetEnvironmentVariable('GAMEPANEL_DATA_ROOT')
+[Environment]::SetEnvironmentVariable('GAMEPANEL_DATA_ROOT', $fixtureData)
 [IO.Directory]::CreateDirectory($fixtureGame) | Out-Null
 $fixtureExe = [IO.Path]::GetFullPath((Join-Path $fixtureGame 'gamepanel-fixture.exe'))
 # Copy the apphost only for static inspection. This copy is never executed.
@@ -42,7 +45,7 @@ $originalHash = (Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $key = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($fixtureExe.ToUpperInvariant()))).Replace('-', '').ToLowerInvariant() }
 finally { $sha.Dispose() }
-$fixtureStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Backups/$key"
+$fixtureStore = Join-Path $fixtureData "Backups/$key"
 if (Test-Path -LiteralPath $fixtureStore) { throw 'Fixture backup path unexpectedly exists.' }
 $process = $null
 $renderProcess = $null
@@ -80,8 +83,9 @@ try {
     Write-Host "Publisher signature status: $($signature.Status)"
     if ($PreviewDirectory) {
         Start-Sleep -Milliseconds 800
-        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '00-overview.png')))
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '00-library.png')))
     }
+    Invoke-Button 'OverviewPage'
     $pathInput = Find-Element 'ExecutablePath'
     if ($null -eq $pathInput) { throw 'Editable executable path field not found.' }
     $pathInput.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue('"' + $fixtureExe + '"')
@@ -132,8 +136,8 @@ try {
             $profileKey = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($profileExe.ToUpperInvariant()))).Replace('-', '').ToLowerInvariant()
             $folderKey = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($fixtureGame.ToUpperInvariant()))).Replace('-', '').ToLowerInvariant()
         } finally { $sha.Dispose() }
-        $profileBackupStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Backups/$profileKey"
-        $profileStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Profiles/$folderKey"
+        $profileBackupStore = Join-Path $fixtureData "Backups/$profileKey"
+        $profileStore = Join-Path $fixtureData "Profiles/$folderKey"
         if ((Test-Path -LiteralPath $profileBackupStore) -or (Test-Path -LiteralPath $profileStore)) { throw 'Unexpected existing profile fixture state.' }
         $pathInput.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($profileExe)
         Invoke-Button 'AnalyzePath'
@@ -172,6 +176,18 @@ try {
         Invoke-Button 'ApplyProfile'
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'balanced profile application'
         Write-Host 'PASS GUI parameter slider, Original technique disabled, Balanced profile restored'
+        Invoke-Button 'CinemaProfile'
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'cinema profile preview'
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'cinema profile application'
+        if ((Get-Content -LiteralPath $preset -Raw) -notmatch 'Contrast=0\.3500') { throw 'Cinema profile is not connected to the preset.' }
+        if ($PreviewDirectory) {
+            (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '03-cinema.png')))
+        }
+
         # This is our compiled synthetic renderer. No user-selected game/crack is executed.
         $renderProcess = Start-Process -FilePath $profileExe -WorkingDirectory $fixtureGame -PassThru
         if (-not $renderProcess.WaitForExit(45000)) { throw 'Synthetic renderer did not exit.' }
@@ -187,6 +203,13 @@ try {
             }
             Write-Host 'PASS synthetic x86 DX9 renderer: official ReShade loaded and GamePanelSDR.fx compiled'
         }
+        $renderAvailable = $renderProcess.ExitCode -eq 0
+        $cinemaPixel = $null
+        if ($renderAvailable) {
+            $pixelPath = Join-Path $fixtureGame 'fixture-pixel.txt'
+            if (-not (Test-Path -LiteralPath $pixelPath)) { throw 'Synthetic renderer did not record a rendered screen pixel.' }
+            $cinemaPixel = @((Get-Content -LiteralPath $pixelPath -Raw).Trim().Split(' ') | ForEach-Object { [int]$_ })
+        }
         $renderProcess.Dispose(); $renderProcess = $null
         # Runtime may rewrite its INI/preset. Re-analyze and verify that modified
         # configs are preserved during removal, never forcibly overwritten.
@@ -200,6 +223,23 @@ try {
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'post-runtime parameter update'
         if ((Get-Content -LiteralPath $preset -Raw) -notmatch 'Sharpness=0\.5500') { throw 'Runtime-rewritten config prevented a valid parameter update.' }
         Write-Host 'PASS GUI settings update after ReShade runtime configuration rewrite'
+        if ($renderAvailable) {
+            Invoke-Button 'OriginalProfile'
+            Invoke-Button 'PrepareProfile'
+            Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'original image comparison preview'
+            Invoke-Button 'ApplyProfile'
+            Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'original image comparison application'
+            Remove-Item -LiteralPath $pixelPath
+            $renderProcess = Start-Process -FilePath $profileExe -WorkingDirectory $fixtureGame -PassThru
+            if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw 'Original image comparison failed.' }
+            $renderProcess.Dispose(); $renderProcess = $null
+            $originalPixel = @((Get-Content -LiteralPath $pixelPath -Raw).Trim().Split(' ') | ForEach-Object { [int]$_ })
+            $difference = 0
+            for ($channel = 0; $channel -lt 3; $channel++) { $difference += [Math]::Abs($cinemaPixel[$channel] - $originalPixel[$channel]) }
+            if ($difference -lt 3) { throw "Cinema did not produce a different rendered pixel: $cinemaPixel vs $originalPixel" }
+            Write-Host "PASS rendered pixel comparison: Cinema RGB=$cinemaPixel; Original RGB=$originalPixel; difference=$difference"
+        }
+
         Invoke-Button 'PrepareRemoveProfile'
         Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'profile removal preview'
         Invoke-Button 'ApplyProfile'
@@ -207,10 +247,50 @@ try {
         if (Test-Path -LiteralPath $loader) { throw 'Managed loader remains after removal.' }
         if ((Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash -ne $profileHash) { throw 'Removal changed the fixture executable.' }
         Write-Host 'PASS GUI tracked removal: loader removed and fixture EXE unchanged'
+        Invoke-Button 'ScreenPage'
+        Invoke-Button 'PrepareScreen'
+        Wait-Until { $null -ne (Find-Element 'ApplyScreen') -and (Find-Element 'ApplyScreen').Current.IsEnabled } 'widescreen download and preview' 120
+        if (Test-Path -LiteralPath (Join-Path $fixtureGame 'dinput8.dll')) { throw 'Widescreen preview wrote game files.' }
+        Invoke-Button 'ApplyScreen'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'widescreen static install'
+        if ((Get-FileHash -LiteralPath (Join-Path $fixtureGame 'dinput8.dll') -Algorithm SHA256).Hash -ne 'd5a059aa467a7a7127c8f6169f79fa63ff0f55986ee9eb2fd9a281bebf2aa2e6') { throw 'Widescreen loader hash mismatch.' }
+        if ($PreviewDirectory) {
+            (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '04-ultrawide.png')))
+        }
+        # Never execute the game-specific ASI against this synthetic renderer.
+        Invoke-Button 'PrepareScreen'
+        Wait-Until { $null -ne (Find-Element 'ApplyScreen') -and (Find-Element 'ApplyScreen').Current.IsEnabled } 'widescreen removal preview'
+        Invoke-Button 'ApplyScreen'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'widescreen static removal'
+        if (Test-Path -LiteralPath (Join-Path $fixtureGame 'dinput8.dll')) { throw 'Widescreen loader remains after removal.' }
+        Write-Host 'PASS GUI verified widescreen download, static install and removal; game-specific ASI NOT executed'
+        $libraryPath = Join-Path $fixtureData 'Library/library.json'
+        $library = Get-Content -LiteralPath $libraryPath -Raw | ConvertFrom-Json
+        $libraryGame = @($library.Games | Where-Object { $_.ExecutablePath -eq $profileExe })
+        if ($libraryGame.Count -ne 1 -or @($library.Games).Count -ne 2) { throw 'Library entries were not saved or deduplicated.' }
+        $process.CloseMainWindow() | Out-Null
+        if (-not $process.WaitForExit(5000)) { Stop-Process -Id $process.Id -Force }
+        $process.Dispose()
+        $process = Start-Process -FilePath $executable -WorkingDirectory (Split-Path -Parent $executable) -PassThru
+        Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero } 'library restart'
+        $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+        Wait-Until { $null -ne (Find-Element ('LibraryOpen-' + $libraryGame[0].Id)) } 'persisted library card'
+        if ($PreviewDirectory) {
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '05-library-populated.png')))
+        }
+        Invoke-Button ('LibraryOpen-' + $libraryGame[0].Id)
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'open stored game without entering path'
+        if ((Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne $profileExe) { throw 'Library opened another executable.' }
+        Write-Host 'PASS GUI library persistence after restart and game selection without re-entering its path'
+
     }
     Write-Host 'This checks the CI desktop; it does not certify SAC, antivirus safety or game compatibility.'
 }
 finally {
+    [Environment]::SetEnvironmentVariable('GAMEPANEL_DATA_ROOT', $previousDataRoot)
     if ($null -ne $renderProcess) { if (-not $renderProcess.HasExited) { Stop-Process -Id $renderProcess.Id -Force }; $renderProcess.Dispose() }
     if ($null -ne $process) {
         $process.Refresh()
@@ -218,7 +298,4 @@ finally {
         $process.Dispose()
     }
     if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }
-    if (Test-Path -LiteralPath $fixtureStore) { Remove-Item -LiteralPath $fixtureStore -Recurse -Force }
-    if ($profileBackupStore -and (Test-Path -LiteralPath $profileBackupStore)) { Remove-Item -LiteralPath $profileBackupStore -Recurse -Force }
-    if ($profileStore -and (Test-Path -LiteralPath $profileStore)) { Remove-Item -LiteralPath $profileStore -Recurse -Force }
 }

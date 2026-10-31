@@ -41,10 +41,10 @@ internal sealed partial class MainWindow : Window
     private Button _analyze = null!;
     private Button _export = null!;
     private Button _cancel = null!;
-    private readonly List<Button> _navigation = [];
+    private readonly Dictionary<int, Button> _navigation = [];
     private GameReport? _report;
     private CancellationTokenSource? _cancellation;
-    private int _page;
+    private int _page = 5;
     private bool _busy;
     private bool _closing;
     private readonly BackupService _backups = new(BackupService.DefaultStore);
@@ -56,6 +56,7 @@ internal sealed partial class MainWindow : Window
 
     public MainWindow()
     {
+        LoadLibrary();
         BuildShell();
         _path.TextChanged += (_, _) =>
         {
@@ -121,7 +122,9 @@ internal sealed partial class MainWindow : Window
             _path.Text = report.ExecutablePath;
             _path.CaretIndex = _path.Text.Length;
             _report = report; _export.IsEnabled = true;
+            RememberGame(report);
             await RefreshEffectsAsync(report.ExecutablePath);
+            await RefreshScreenAsync(report.ExecutablePath);
             _status.Text = "Analisi completata · File letti senza modifiche";
         }
         catch (OperationCanceledException) { if (!_closing) _status.Text = "Analisi annullata"; }
@@ -164,11 +167,12 @@ internal sealed partial class MainWindow : Window
         _gameContext.Text = GameName();
         _inputHint.Visibility = _path.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         _content.Children.Clear();
-        for (var i = 0; i < _navigation.Count; i++)
+        _importFields.Visibility = _page == 5 ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var (i, navigation) in _navigation)
         {
-            _navigation[i].Background = i == _page ? DesignSystem.Color("#203127") : Brushes.Transparent;
-            _navigation[i].BorderBrush = i == _page ? DesignSystem.Color("#3C5536") : Brushes.Transparent;
-            _navigation[i].Content = NavigationContent(i, i == _page);
+            navigation.Background = i == _page ? DesignSystem.Color("#203127") : Brushes.Transparent;
+            navigation.BorderBrush = i == _page ? DesignSystem.Color("#3C5536") : Brushes.Transparent;
+            navigation.Content = NavigationContent(i, i == _page);
         }
         switch (_page)
         {
@@ -176,7 +180,9 @@ internal sealed partial class MainWindow : Window
             case 1: RenderDlss(); break;
             case 2: RenderHdr(); break;
             case 3: RenderBackups(); break;
-            default: RenderDiagnostics(); break;
+            case 4: RenderDiagnostics(); break;
+            case 5: RenderLibrary(); break;
+            case 6: RenderScreen(); break;
         }
     }
 
@@ -209,6 +215,7 @@ internal sealed partial class MainWindow : Window
     private void ResetBackups()
     {
         ResetEffects();
+        ResetScreen();
         _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
         _backupMessage = "Crea una copia di riferimento prima di modificare il profilo del gioco.";
     }
@@ -395,10 +402,17 @@ internal sealed partial class MainWindow : Window
         if (_busy || _report is null) return;
         try
         {
-            if (_profiles.Status(_report.ExecutablePath).Pending)
+            if (_profiles.Status(_report.ExecutablePath).Pending || _widescreen.Status(_report.ExecutablePath).Pending)
                 throw new InvalidOperationException("Completa o annulla l'operazione del profilo in HDR / FX prima di avviare il gioco.");
-            Process.Start(new ProcessStartInfo(_report.ExecutablePath)
+            var started = Process.Start(new ProcessStartInfo(_report.ExecutablePath)
             { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = true });
+            if (started is not null)
+            {
+                started.Dispose();
+                try { _library = _libraryStore.MarkPlayed(_report.ExecutablePath); }
+                catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+                { _libraryMessage = "Gioco avviato; ultimo accesso non salvato: " + e.Message; }
+            }
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         { MessageBox.Show(this, e.Message, "Avvio non completato", MessageBoxButton.OK, MessageBoxImage.Information); }

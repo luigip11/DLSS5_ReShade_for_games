@@ -51,10 +51,12 @@ internal sealed partial class MainWindow
         }
         var choices = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
         var original = FxButton("Originale", "OriginalProfile", (_, _) => SelectSettings(SdrSettings.Original), !_busy);
+        var cinema = FxButton("Cinema", "CinemaProfile", (_, _) => SelectSettings(SdrSettings.Cinema), !_busy);
         var balanced = FxButton("Bilanciato", "BalancedProfile", (_, _) => SelectSettings(SdrSettings.Balanced), !_busy);
         if (_fxSettings == SdrSettings.Original) original.BorderBrush = Accent;
         if (_fxSettings == SdrSettings.Balanced) balanced.BorderBrush = Accent;
-        choices.Children.Add(original); choices.Children.Add(balanced);
+        if (_fxSettings == SdrSettings.Cinema) cinema.BorderBrush = Accent;
+        choices.Children.Add(original); choices.Children.Add(balanced); choices.Children.Add(cinema);
         var enabled = new CheckBox { Content = "Effetti attivi", IsChecked = _fxSettings.Enabled, Foreground = Ink, Margin = new Thickness(12, 12, 0, 10), IsEnabled = !_busy };
         enabled.Checked += (_, _) => { _fxSettings = _fxSettings with { Enabled = true }; InvalidateFxPlan(); };
         enabled.Unchecked += (_, _) => { _fxSettings = _fxSettings with { Enabled = false }; InvalidateFxPlan(); };
@@ -66,7 +68,15 @@ internal sealed partial class MainWindow
             FxSlider("Intensità", "Quanto effetto mescolare all'originale.", "Intensity", _fxSettings.Intensity, value => _fxSettings = _fxSettings with { Intensity = value }) };
         for (var i = 0; i < cards.Length; i++) { controls.ColumnDefinitions.Add(new ColumnDefinition()); Grid.SetColumn(cards[i], i); controls.Children.Add(cards[i]); }
         _content.Children.Add(controls);
-        var prepare = FxButton(state?.State?.Installed == true ? "Prepara aggiornamento" : "Scarica ReShade e prepara anteprima", "PrepareProfile", async (_, _) => await PrepareProfileAsync(false), !_busy && reason is null);
+        var look = new Grid { Margin = new Thickness(0, 0, 0, 18) };
+        var lookCards = new[] {
+            FxSlider("Contrasto", "Curva più incisiva tra ombre e luci.", "Contrast", _fxSettings.Contrast, value => _fxSettings = _fxSettings with { Contrast = value }),
+            FxSlider("Bagliore", "Alone sulle luci; riduci se il gioco è già luminoso.", "Bloom", _fxSettings.Bloom, value => _fxSettings = _fxSettings with { Bloom = value }),
+            FxSlider("Vignettatura", "Oscuramento leggero verso i bordi.", "Vignette", _fxSettings.Vignette, value => _fxSettings = _fxSettings with { Vignette = value }) };
+        for (var i = 0; i < lookCards.Length; i++) { look.ColumnDefinitions.Add(new ColumnDefinition()); Grid.SetColumn(lookCards[i], i); look.Children.Add(lookCards[i]); }
+        _content.Children.Add(look);
+
+        var prepare = FxButton(state?.State?.Installed == true ? "Prepara aggiornamento" : "Scarica ReShade e prepara anteprima", "PrepareProfile", async (_, _) => await PrepareProfileAsync(false), !_busy && reason is null && _screenState?.Pending != true);
         prepare.Background = Accent; prepare.Foreground = BackgroundBrush; prepare.BorderBrush = Accent;
         _content.Children.Add(prepare);
         if (state?.State?.Installed == true)
@@ -101,6 +111,7 @@ internal sealed partial class MainWindow
         {
             var id = System.Windows.Automation.AutomationProperties.GetAutomationId(choice);
             if (id == "OriginalProfile") choice.BorderBrush = _fxSettings == SdrSettings.Original ? Accent : DesignSystem.Line;
+            if (id == "CinemaProfile") choice.BorderBrush = _fxSettings == SdrSettings.Cinema ? Accent : DesignSystem.Line;
             if (id == "BalancedProfile") choice.BorderBrush = _fxSettings == SdrSettings.Balanced ? Accent : DesignSystem.Line;
         }
         var container = _content.Children.OfType<StackPanel>().FirstOrDefault(p => System.Windows.Automation.AutomationProperties.GetAutomationId(p) == "ProfilePreview");
@@ -171,8 +182,10 @@ internal sealed partial class MainWindow
             if (!_closing)
             {
                 _fxPlan = null;
-                if (_report is not null) await RefreshEffectsAsync(_report.ExecutablePath);
+                if (_report is not null) { await RefreshEffectsAsync(_report.ExecutablePath); await RefreshScreenAsync(_report.ExecutablePath); }
+                _screenPlan = null;
                 _fxMessage = e is OperationCanceledException ? "Operazione interrotta. Se il journal è aperto, riprendi o annulla il recupero." : e.Message;
+                if (_page == 6) _screenMessage = _fxMessage;
                 _status.Text = "Operazione profilo non completata";
             }
         }
@@ -185,6 +198,8 @@ internal sealed partial class MainWindow
                 _cancel.Content = "Annulla analisi"; _cancel.Visibility = Visibility.Collapsed; Render();
                 if (_page == 2) _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
                 { if (_closing || _page != 2) return; if (_fxPlan is not null) _fxApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
+                if (_page == 6) _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+                { if (_closing || _page != 6) return; if (_screenPlan is not null) _screenApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
             }
         }
     }

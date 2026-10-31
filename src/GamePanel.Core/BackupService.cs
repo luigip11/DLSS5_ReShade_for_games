@@ -45,15 +45,7 @@ public sealed class BackupService
         _gameIsRunning = gameIsRunning ?? IsGameRunning;
     }
 
-    public static string DefaultStore
-    {
-        get
-        {
-            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            if (string.IsNullOrWhiteSpace(local)) throw new InvalidOperationException("Cartella dati utente non disponibile.");
-            return Path.Combine(local, "GamePanel", "Backups");
-        }
-    }
+    public static string DefaultStore => Path.Combine(GamePanelPaths.Root, "Backups");
     public string StorePath => _store;
 
     public BackupManifest Create(GameReport report, CancellationToken token = default, IProgress<BackupProgress>? progress = null)

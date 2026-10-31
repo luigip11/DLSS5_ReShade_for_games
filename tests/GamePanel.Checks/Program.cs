@@ -146,7 +146,10 @@ Check("Scansione non segue collegamenti", () =>
     finally { if (Directory.Exists(link)) Directory.Delete(link); Directory.Delete(target, true); }
 });
 BackupChecks.Register(Check, temp);
+LibraryChecks.Register(Check, temp, Fixture);
 ProfileChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-reshade", StringComparer.Ordinal));
+var localWideAt = Array.IndexOf(args, "--widescreen-package");
+WideChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-reshade", StringComparer.Ordinal), localWideAt >= 0 && localWideAt + 1 < args.Length ? args[localWideAt + 1] : null);
 var failed = 0;
 var skipped = 0;
 try

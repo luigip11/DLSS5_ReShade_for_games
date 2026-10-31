@@ -14,12 +14,13 @@ internal sealed partial class MainWindow
     private readonly TextBlock _gameContext = DesignSystem.Label("Nessun gioco selezionato", 13, Ink, true);
     private readonly TextBlock _inputHint = DesignSystem.Label("Incolla il percorso del gioco oppure scegli il suo EXE", 13, Muted);
     private ScrollViewer _pageScroll = null!;
-    private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi"];
-    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan"];
+    private StackPanel _importFields = null!;
+    private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi", "Libreria", "Schermo ultrawide"];
+    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen"];
 
     private void BuildShell()
     {
-        Title = "GamePanel · 0.1.0-alpha.5";
+        Title = "GamePanel · 0.1.0-alpha.6";
         Width = Math.Min(1360, Math.Max(1000, SystemParameters.WorkArea.Width - 64));
         Height = Math.Min(900, Math.Max(680, SystemParameters.WorkArea.Height - 64));
         MinWidth = 1000; MinHeight = 680;
@@ -39,32 +40,34 @@ internal sealed partial class MainWindow
         var sidebar = new DockPanel { Background = DesignSystem.Sidebar, LastChildFill = true };
         shell.Children.Add(sidebar);
         var bottom = new StackPanel { Margin = new Thickness(20, 12, 20, 22) };
-        bottom.Children.Add(DesignSystem.Chip("ALPHA 05", Accent));
+        bottom.Children.Add(DesignSystem.Chip("ALPHA 06", Accent));
         var local = Text("Sul tuo PC. Sotto controllo.", 11, Muted); local.Margin = new Thickness(0, 12, 0, 0); bottom.Children.Add(local);
         DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
         var menu = new StackPanel { Margin = new Thickness(14, 28, 14, 0) };
-        var brand = new StackPanel { Margin = new Thickness(10, 0, 0, 32) };
+        var brand = new StackPanel { Margin = new Thickness(10, 0, 0, 20) };
         var brandRow = new StackPanel { Orientation = Orientation.Horizontal };
         brandRow.Children.Add(new Border { Width = 5, Height = 26, Background = Accent, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 10, 0) });
         brandRow.Children.Add(new TextBlock { Text = "GAMEPANEL", FontSize = 24, Foreground = Ink, FontWeight = FontWeights.Bold, FontFamily = new FontFamily("Bahnschrift SemiCondensed") });
         brand.Children.Add(brandRow);
         brand.Children.Add(Text("IL TUO SETUP, UN SOLO POSTO", 9, Muted)); menu.Children.Add(brand);
         var libraryLabel = Text("WORKSPACE", 10, Muted, FontWeights.SemiBold); libraryLabel.Margin = new Thickness(12, 0, 0, 12); menu.Children.Add(libraryLabel);
-        for (var i = 0; i < PageTitles.Length; i++)
+        foreach (var i in new[] { 5, 0, 2, 6, 1, 3, 4 })
         {
             var page = i;
             var nav = Button("", (_, _) => { _page = page; Render(); _pageScroll.ScrollToTop(); });
             nav.Content = NavigationContent(i, i == 0);
-            nav.Margin = new Thickness(0, 0, 0, 7); nav.Padding = new Thickness(12, 14, 12, 14);
+            nav.Margin = new Thickness(0, 0, 0, 5); nav.Padding = new Thickness(12, 10, 12, 10);
             nav.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             if (i == 3) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "BackupsPage");
             if (i == 0) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "OverviewPage");
             if (i == 1) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "DlssPage");
             if (i == 2) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "HdrPage");
-            _navigation.Add(nav); menu.Children.Add(nav);
+            if (i == 5) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "LibraryPage");
+            if (i == 6) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "ScreenPage");
+            _navigation.Add(i, nav); menu.Children.Add(nav);
         }
-        menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 22, 12, 20) });
-        var note = Text("Analizza il gioco, verifica i file e crea una copia prima di intervenire.", 12, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 20; menu.Children.Add(note);
+        menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 12, 12, 12) });
+        var note = Text("Importa una volta. Ritrova i tuoi giochi e i loro profili.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 20; menu.Children.Add(note);
         sidebar.Children.Add(menu);
 
         var main = new DockPanel(); Grid.SetColumn(main, 1); shell.Children.Add(main);
@@ -75,7 +78,7 @@ internal sealed partial class MainWindow
         _status.FontSize = 11; _status.TextWrapping = TextWrapping.NoWrap; _status.TextTrimming = TextTrimming.CharacterEllipsis;
         _status.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _status });
         statusRow.Children.Add(_status); footerGrid.Children.Add(statusRow);
-        var version = Text("GAMEPANEL  /  0.1.0-alpha.5", 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
+        var version = Text("GAMEPANEL  /  0.1.0-alpha.6", 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
         var footer = new Border { BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(30, 14, 30, 14), Child = footerGrid };
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
@@ -88,8 +91,9 @@ internal sealed partial class MainWindow
         _gameContext.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _gameContext });
         gameLabel.Children.Add(DesignSystem.Icon("game", DesignSystem.Blue, 17)); _gameContext.Margin = new Thickness(9, 0, 0, 0); gameLabel.Children.Add(_gameContext);
         Grid.SetColumn(gameLabel, 1); context.Children.Add(gameLabel); header.Children.Add(context);
+        _importFields = new StackPanel(); header.Children.Add(_importFields);
         var pathLabel = new Label { Content = "ESEGUIBILE DEL GIOCO", Target = _path, Foreground = Muted, FontSize = 10, FontWeight = FontWeights.SemiBold, Padding = new Thickness(0), Margin = new Thickness(0, 22, 0, 8) };
-        header.Children.Add(pathLabel);
+        _importFields.Children.Add(pathLabel);
         var pathRow = new Grid();
         pathRow.ColumnDefinitions.Add(new ColumnDefinition());
         pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -108,13 +112,13 @@ internal sealed partial class MainWindow
         _analyze.Margin = new Thickness(8, 0, 0, 0); _analyze.MinHeight = 46;
         _analyze.Background = Accent; _analyze.Foreground = BackgroundBrush; _analyze.BorderBrush = Accent; _analyze.IsEnabled = false;
         System.Windows.Automation.AutomationProperties.SetAutomationId(_analyze, "AnalyzePath");
-        Grid.SetColumn(_analyze, 2); pathRow.Children.Add(_analyze); header.Children.Add(pathRow);
+        Grid.SetColumn(_analyze, 2); pathRow.Children.Add(_analyze); _importFields.Children.Add(pathRow);
         var tools = new Grid { Margin = new Thickness(0, 10, 0, 0) }; tools.ColumnDefinitions.Add(new ColumnDefinition()); tools.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var tip = Text("Incolla un percorso, anche tra virgolette, oppure trascina l'EXE.", 11, Muted); tip.VerticalAlignment = VerticalAlignment.Center; tools.Children.Add(tip);
         var toolActions = new StackPanel { Orientation = Orientation.Horizontal };
         _export = Button("Esporta analisi", (_, _) => Export()); _export.IsEnabled = false; _export.FontSize = 11; _export.Padding = new Thickness(10, 6, 10, 6); _export.Margin = new Thickness(0); _export.Background = Brushes.Transparent;
         _cancel = Button("Annulla analisi", (_, _) => _cancellation?.Cancel()); _cancel.FontSize = 11; _cancel.Padding = new Thickness(10, 6, 10, 6); _cancel.Margin = new Thickness(8, 0, 0, 0); _cancel.Visibility = Visibility.Collapsed;
-        toolActions.Children.Add(_export); toolActions.Children.Add(_cancel); Grid.SetColumn(toolActions, 1); tools.Children.Add(toolActions); header.Children.Add(tools);
+        toolActions.Children.Add(_export); toolActions.Children.Add(_cancel); Grid.SetColumn(toolActions, 1); tools.Children.Add(toolActions); _importFields.Children.Add(tools);
         DockPanel.SetDock(header, Dock.Top); main.Children.Add(header);
         _content.Margin = new Thickness(30, 22, 30, 20);
         _pageScroll = new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -126,7 +130,7 @@ internal sealed partial class MainWindow
     {
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.Children.Add(DesignSystem.Icon(PageIcons[page], active ? Accent : Muted, 19));
-        var label = Text(page == 2 ? "HDR / FX" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
+        var label = Text(page == 2 ? "HDR / FX" : page == 6 ? "Schermo" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
         if (page == 1) { var badge = DesignSystem.Chip("PRESTO", Muted, Brushes.Transparent); Grid.SetColumn(badge, 2); row.Children.Add(badge); }
         return row;
     }
@@ -134,6 +138,8 @@ internal sealed partial class MainWindow
     private string GameName()
     {
         if (_report is null) return "Nessun gioco selezionato";
+        var saved = _library.Games.FirstOrDefault(g => string.Equals(g.ExecutablePath, _report.ExecutablePath, StringComparison.OrdinalIgnoreCase));
+        if (saved is not null) return saved.Title;
         var name = Path.GetFileName(Path.GetDirectoryName(_report.ExecutablePath));
         return string.IsNullOrWhiteSpace(name) || new[] { "bin", "win64", "win32", "binaries" }.Contains(name.ToLowerInvariant())
             ? Path.GetFileNameWithoutExtension(_report.ExecutablePath) : name;
@@ -188,6 +194,11 @@ internal sealed partial class MainWindow
             var play = Button("Avvia il gioco  →", (_, _) => Launch()); play.IsEnabled = !_busy;
             play.ToolTip = "Avvia usando i file e il profilo attualmente applicati. Per togliere l'effetto scegli Originale in HDR / FX.";
             _content.Children.Add(play);
+        }
+        if (string.Equals(Path.GetFileName(_report?.ExecutablePath), "speed2.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            var screen = Button("Schermo ultrawide · obiettivo 3440 × 1440  →", (_, _) => { _page = 6; Render(); _pageScroll.ScrollToTop(); });
+            screen.IsEnabled = !_busy; _content.Children.Add(screen);
         }
         var gpu = Hardware.DisplayDevices();
         Card("Il tuo hardware", gpu + "\nIl supporto HDR dello schermo verrà verificato nella fase di integrazione.");

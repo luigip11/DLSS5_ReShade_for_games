@@ -29,16 +29,25 @@ public sealed class ReShadeProfileService
 {
     private readonly string _store;
     private readonly Func<string, bool> _running;
+    private readonly bool _widescreen;
+    private IReadOnlyList<string> Targets => _widescreen ? WidescreenCatalog.Targets : SdrProfile.Targets;
+    private string ComponentVersion => _widescreen ? WidescreenCatalog.Version : ReShadeCatalog.Version;
+    private string StateFile => _widescreen ? "widescreen-state.json" : "state.json";
+    private string OperationFile => _widescreen ? "widescreen-operation.json" : "operation.json";
+    private string ProfileName => _widescreen ? "Widescreen Fix" : "ReShade";
     private sealed record Operation(int SchemaVersion, string Id, string ExecutablePath, string ExecutableSha256,
         string Status, ProfileState? Previous, ProfileState Next, IReadOnlyList<ProfileChange> Changes);
-    public static string DefaultStore => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamePanel", "Profiles");
+    public static string DefaultStore => Path.Combine(GamePanelPaths.Root, "Profiles");
     public ReShadeProfileService(string store, Func<string, bool>? running = null)
-    { _store = Path.GetFullPath(store); _running = running ?? IsGameRunning; }
+        : this(store, running, false) { }
+    private ReShadeProfileService(string store, Func<string, bool>? running, bool widescreen)
+    { _store = Path.GetFullPath(store); _running = running ?? IsGameRunning; _widescreen = widescreen; }
+    public static ReShadeProfileService ForWidescreen(string store, Func<string, bool>? running = null) => new(store, running, true);
 
     public static string? Eligibility(GameReport report)
     {
         if (!Path.GetFileName(report.ExecutablePath).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase))
-            return "Alpha.5: profilo sperimentale riservato a speed2.exe di Underground 2.";
+            return "Profilo sperimentale riservato a speed2.exe di Underground 2.";
         if (report.Architecture != "x86 (32 bit)" || !report.GraphicsApis.Contains("Direct3D 9"))
             return "Il profilo richiede un EXE x86 con import Direct3D 9. Nessun wrapper viene installato.";
         if (report.HasAntiCheatIndicators || report.ScanWasLimited)
@@ -54,46 +63,64 @@ public sealed class ReShadeProfileService
         var state = LoadState(folder, executable);
         return new(state, operation?.Status == "Pending", operation?.Status == "Pending"
             ? "Operazione interrotta: riprendila o annullala prima di modificare il profilo."
-            : state?.Installed == true ? "ReShade installato da GamePanel · collaudo nel gioco ancora necessario."
+            : state?.Installed == true ? ProfileName + " installato da GamePanel · collaudo nel gioco ancora necessario."
             : "Profilo rimosso." + (state?.PreservedFiles.Count > 0 ? " Conservati file cambiati fuori da GamePanel: " + string.Join(", ", state.PreservedFiles) : ""));
     }
 
     public ProfilePlan PrepareApply(GameReport report, VerifiedReShade package, SdrSettings settings, CancellationToken token = default)
+    {
+        if (_widescreen) throw new InvalidOperationException("Servizio del profilo non corrispondente.");
+        GuardPath(package.Path);
+        if (HashFile(package.Path, token) != package.Sha256) throw new InvalidDataException("Il componente ReShade verificato è cambiato.");
+        var payloads = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            [SdrProfile.LoaderPath] = File.ReadAllBytes(package.Path), [SdrProfile.ConfigPath] = SdrProfile.Configuration,
+            [SdrProfile.PresetPath] = SdrProfile.Preset(settings), [SdrProfile.ShaderPath] = Encoding.UTF8.GetBytes(SdrProfile.Shader)
+        };
+        return PrepareFiles(report, payloads, settings, token);
+    }
+    public ProfilePlan PrepareWidescreen(GameReport report, VerifiedWidescreen package, CancellationToken token = default)
+    {
+        if (!_widescreen) throw new InvalidOperationException("Servizio del profilo non corrispondente.");
+        return PrepareFiles(report, package.Files, SdrSettings.Original, token);
+    }
+    private ProfilePlan PrepareFiles(GameReport report, IReadOnlyDictionary<string, byte[]> desired, SdrSettings settings, CancellationToken token)
     {
         settings.Validate(); CheckReport(report, token);
         var executable = Full(report.ExecutablePath); var root = Path.GetDirectoryName(executable)!;
         var folder = Folder(executable); CheckNoPending(folder, executable);
         var previous = LoadState(folder, executable);
         if (previous is not null && previous.ExecutableSha256 != report.Sha256) throw new InvalidDataException("L'EXE è cambiato dopo la gestione del profilo: verifica il gioco prima di procedere.");
-        var payloads = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-        var changes = new List<ProfileChange>();
+        if (desired.Count != Targets.Count || Targets.Any(p => !desired.ContainsKey(p))) throw new InvalidDataException("Elenco componenti del profilo non valido.");
+        var payloads = new Dictionary<string, byte[]>(StringComparer.Ordinal); var changes = new List<ProfileChange>();
         IReadOnlyList<ProfileFile> nextFiles;
         if (previous?.Installed == true)
         {
             VerifyInstalled(root, previous, token, allowRuntimeConfig: true);
-            var preset = previous.Files.Single(f => f.Path == SdrProfile.PresetPath);
-            var bytes = SdrProfile.Preset(settings); var hash = Hash(bytes);
-            if (hash != preset.Sha256) { changes.Add(new(preset.Path, preset.Sha256, hash)); payloads.Add(preset.Path, bytes); }
-            nextFiles = previous.Files.Select(f => f.Path == preset.Path ? new ProfileFile(f.Path, hash, bytes.Length) : f).ToArray();
+            var files = new List<ProfileFile>();
+            foreach (var file in previous.Files)
+            {
+                // ReShade owns and rewrites its runtime INI; do not replace it.
+                if (!_widescreen && file.Path == SdrProfile.ConfigPath) { files.Add(file); continue; }
+                var bytes = desired[file.Path]; var hash = Hash(bytes);
+                if (hash != file.Sha256) { changes.Add(new(file.Path, file.Sha256, hash)); payloads.Add(file.Path, bytes); }
+                files.Add(new(file.Path, hash, bytes.LongLength));
+            }
+            nextFiles = files;
         }
         else
         {
-            CheckOtherLoaders(root);
-            if (AttributesOrMissing(GameFile(root, "GamePanelFX")) is not null)
+            CheckOtherLoaders(root, installing: true);
+            if (!_widescreen && AttributesOrMissing(GameFile(root, "GamePanelFX")) is not null)
                 throw new InvalidDataException("La cartella GamePanelFX è già presente. Conserva i suoi contenuti prima di procedere.");
-            foreach (var path in SdrProfile.Targets)
+            foreach (var path in Targets)
                 if (AttributesOrMissing(GameFile(root, path)) is not null) throw new InvalidDataException($"File già presente: {path}. GamePanel non lo sovrascrive.");
-            GuardPath(package.Path);
-            if (HashFile(package.Path, token) != package.Sha256) throw new InvalidDataException("Il componente ReShade verificato è cambiato.");
-            payloads.Add(SdrProfile.LoaderPath, File.ReadAllBytes(package.Path));
-            payloads.Add(SdrProfile.ConfigPath, SdrProfile.Configuration);
-            payloads.Add(SdrProfile.PresetPath, SdrProfile.Preset(settings));
-            payloads.Add(SdrProfile.ShaderPath, Encoding.UTF8.GetBytes(SdrProfile.Shader));
+            foreach (var (path, bytes) in desired) payloads.Add(path, bytes);
             nextFiles = payloads.Select(p => new ProfileFile(p.Key, Hash(p.Value), p.Value.LongLength)).ToArray();
             changes.AddRange(nextFiles.Select(f => new ProfileChange(f.Path, null, f.Sha256)));
         }
         var next = new ProfileState(1, Guid.NewGuid().ToString("N"), executable, report.Sha256,
-            ReShadeCatalog.Version, true, settings, nextFiles, []);
+            ComponentVersion, true, settings, nextFiles, []);
         return new(report, previous, next, changes, payloads);
     }
 
@@ -111,7 +138,7 @@ public sealed class ReShadeProfileService
             var hash = LiveHash(root, file.Path, token);
             if (hash is null) continue;
             if (hash == file.Sha256) changes.Add(new(file.Path, hash, null));
-            else if (file.Path == SdrProfile.ConfigPath || file.Path == SdrProfile.PresetPath) preserved.Add(file.Path);
+            else if (Mutable(file.Path)) preserved.Add(file.Path);
             else throw new InvalidDataException($"File modificato esternamente: {file.Path}. Rimozione bloccata.");
         }
         var next = previous with { Revision = Guid.NewGuid().ToString("N"), Installed = false, Files = [], PreservedFiles = preserved };
@@ -127,7 +154,7 @@ public sealed class ReShadeProfileService
         CheckNoPending(folder, report.ExecutablePath);
         var state = LoadState(folder, report.ExecutablePath);
         if (state?.Revision != plan.Previous?.Revision) throw new InvalidDataException("Stato del profilo cambiato: ripeti l'anteprima.");
-        if (!plan.Removing && state?.Installed != true) CheckOtherLoaders(Path.GetDirectoryName(report.ExecutablePath)!);
+        if (!plan.Removing && state?.Installed != true) CheckOtherLoaders(Path.GetDirectoryName(report.ExecutablePath)!, installing: true);
         ValidateChanges(plan.Changes);
         foreach (var c in plan.Changes)
             if (LiveHash(Path.GetDirectoryName(report.ExecutablePath)!, c.Path, token) != c.BeforeSha256)
@@ -153,7 +180,7 @@ public sealed class ReShadeProfileService
         }
         CheckIdentity(report, token);
         var operation = new Operation(1, id, report.ExecutablePath, report.Sha256, "Pending", state, plan.Next, plan.Changes);
-        WriteJson(Path.Combine(folder, "operation.json"), operation);
+        WriteJson(Path.Combine(folder, OperationFile), operation);
         return Transition(folder, operation, false, token, progress)!;
     }
 
@@ -215,12 +242,12 @@ public sealed class ReShadeProfileService
             GuardPath(temporary); if (File.Exists(temporary)) File.Delete(temporary);
         }
         var result = rollback ? operation.Previous : operation.Next;
-        var statePath = Path.Combine(folder, "state.json"); GuardPath(statePath);
+        var statePath = Path.Combine(folder, StateFile); GuardPath(statePath);
         if (result is null) { if (File.Exists(statePath)) File.Delete(statePath); }
         else WriteJson(statePath, result);
-        WriteJson(Path.Combine(folder, "operation.json"), operation with { Status = rollback ? "RolledBack" : "Complete" });
+        WriteJson(Path.Combine(folder, OperationFile), operation with { Status = rollback ? "RolledBack" : "Complete" });
         // Never recursively remove directories: runtime-generated or user files remain intact.
-        var effects = GameFile(root, "GamePanelFX");
+        var effects = GameFile(root, _widescreen ? "scripts" : "GamePanelFX");
         if (Directory.Exists(effects) && !Directory.EnumerateFileSystemEntries(effects).Any()) Directory.Delete(effects);
         return result;
     }
@@ -239,7 +266,7 @@ public sealed class ReShadeProfileService
         var executable = Full(report.ExecutablePath); _ = Folder(executable); EnsureStopped(executable);
         if (HashFile(executable, token) != report.Sha256) throw new InvalidDataException("EXE cambiato: rianalizza il gioco.");
     }
-    private static void VerifyInstalled(string root, ProfileState state, CancellationToken token, bool allowRuntimeConfig)
+    private void VerifyInstalled(string root, ProfileState state, CancellationToken token, bool allowRuntimeConfig)
     {
         foreach (var file in state.Files)
         {
@@ -247,7 +274,7 @@ public sealed class ReShadeProfileService
             if (actual != file.Sha256 && !(allowRuntimeConfig && file.Path == SdrProfile.ConfigPath && actual is not null))
                 throw new InvalidDataException($"Componente gestito cambiato o mancante: {file.Path}. Non viene sovrascritto.");
         }
-        ValidateRuntimeConfiguration(root);
+        if (!_widescreen) ValidateRuntimeConfiguration(root);
         CheckOtherLoaders(root);
     }
     private static void ValidateRuntimeConfiguration(string root)
@@ -275,8 +302,19 @@ public sealed class ReShadeProfileService
             if (!SamePath(actual, GameFile(root, expected))) throw new InvalidDataException("Percorsi ReShade modificati esternamente: aggiornamento sospeso.");
         }
     }
-    private static void CheckOtherLoaders(string root)
+    private void CheckOtherLoaders(string root, bool installing = false)
     {
+        if (_widescreen && installing)
+        {
+            foreach (var name in new[] { "dinput8.dll", "dinput.dll", "dsound.dll", "version.dll", "winmm.dll" })
+                if (AttributesOrMissing(GameFile(root, name)) is not null) throw new InvalidDataException($"Loader già presente: {name}. Il fix non lo sostituisce.");
+            var scripts = GameFile(root, "scripts");
+            if (Directory.Exists(scripts) && Directory.EnumerateFileSystemEntries(scripts).Any())
+                throw new InvalidDataException("La cartella scripts contiene già mod: controllale prima di aggiungere un ASI loader.");
+            var d3d9 = GameFile(root, "d3d9.dll");
+            if (AttributesOrMissing(d3d9) is not null && HashFile(d3d9, default) != ReShadeCatalog.DllSha256)
+                throw new InvalidDataException("d3d9.dll non corrisponde al ReShade approvato: combinazione non verificata.");
+        }
         foreach (var name in new[] { "dxgi.dll", "d3d11.dll", "d3d12.dll", "ddraw.dll", "dxvk.conf", "dgVoodoo.conf" })
             if (AttributesOrMissing(GameFile(root, name)) is not null) throw new InvalidDataException($"Renderer o wrapper già presente: {name}. Questo percorso non è supportato da alpha.5.");
     }
@@ -309,39 +347,43 @@ public sealed class ReShadeProfileService
     { var path = Path.Combine(folder, $"{i:D4}-{(after ? "after" : "before")}.bin"); GuardPath(path); return path; }
     private static void DurableBytes(string path, byte[] bytes)
     { GuardPath(path); using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None); stream.Write(bytes); stream.Flush(true); }
-    private static void CheckNoPending(string folder, string executable)
-    { if (LoadOperation(folder, executable)?.Status == "Pending") throw new InvalidOperationException("Riprendi o annulla l'operazione interrotta prima di procedere."); }
-    private static ProfileState? LoadState(string folder, string executable)
+    private void CheckNoPending(string folder, string executable)
     {
-        var path = Path.Combine(folder, "state.json"); GuardPath(path);
+        if (LoadOperation(folder, executable)?.Status == "Pending"
+            || new ReShadeProfileService(_store, _running, !_widescreen).LoadOperation(folder, executable)?.Status == "Pending")
+            throw new InvalidOperationException("Riprendi o annulla l'operazione interrotta del profilo immagine/schermo prima di procedere.");
+    }
+    private ProfileState? LoadState(string folder, string executable)
+    {
+        var path = Path.Combine(folder, StateFile); GuardPath(path);
         if (!File.Exists(path)) return null;
         var state = ReadJson<ProfileState>(path); ValidateState(state, executable); return state;
     }
-    private static void ValidateState(ProfileState s, string executable)
+    private void ValidateState(ProfileState s, string executable)
     {
         if (s is null || s.SchemaVersion != 1 || !ValidId(s.Revision) || !SamePath(s.ExecutablePath, executable) || !ValidHash(s.ExecutableSha256)
-            || s.Version != ReShadeCatalog.Version || s.Files is null || s.PreservedFiles is null || s.Settings is null)
+            || s.Version != ComponentVersion || s.Files is null || s.PreservedFiles is null || s.Settings is null)
             throw new InvalidDataException("Stato del profilo non valido o legato a un altro eseguibile.");
         s.Settings.Validate();
-        if (s.Installed ? s.Files.Count != SdrProfile.Targets.Count : s.Files.Count != 0) throw new InvalidDataException("Elenco componenti del profilo non valido.");
+        if (s.Installed ? s.Files.Count != Targets.Count : s.Files.Count != 0) throw new InvalidDataException("Elenco componenti del profilo non valido.");
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var f in s.Files)
-            if (f is null || !SdrProfile.Targets.Contains(f.Path) || !names.Add(f.Path) || !ValidHash(f.Sha256) || f.Bytes is < 1 or > 32 * 1024 * 1024)
+            if (f is null || !Targets.Contains(f.Path) || !names.Add(f.Path) || !ValidHash(f.Sha256) || f.Bytes is < 1 or > 32 * 1024 * 1024)
                 throw new InvalidDataException("Componente nel registro non valido.");
-        if (s.PreservedFiles.Count > 2 || s.PreservedFiles.Any(p => p != SdrProfile.ConfigPath && p != SdrProfile.PresetPath)) throw new InvalidDataException("File conservati non validi.");
+        if (s.PreservedFiles.Count > 2 || s.PreservedFiles.Any(p => !Mutable(p))) throw new InvalidDataException("File conservati non validi.");
     }
-    private static void ValidateChanges(IReadOnlyList<ProfileChange> changes)
+    private void ValidateChanges(IReadOnlyList<ProfileChange> changes)
     {
-        if (changes is null || changes.Count > SdrProfile.Targets.Count) throw new InvalidDataException("Operazione del profilo non valida.");
+        if (changes is null || changes.Count > Targets.Count) throw new InvalidDataException("Operazione del profilo non valida.");
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var c in changes)
-            if (c is null || !SdrProfile.Targets.Contains(c.Path) || !names.Add(c.Path)
+            if (c is null || !Targets.Contains(c.Path) || !names.Add(c.Path)
                 || (c.BeforeSha256 is not null && !ValidHash(c.BeforeSha256)) || (c.AfterSha256 is not null && !ValidHash(c.AfterSha256))
                 || c.BeforeSha256 == c.AfterSha256) throw new InvalidDataException("Percorsi o hash dell'operazione non validi.");
     }
-    private static Operation? LoadOperation(string folder, string executable)
+    private Operation? LoadOperation(string folder, string executable)
     {
-        var path = Path.Combine(folder, "operation.json"); GuardPath(path);
+        var path = Path.Combine(folder, OperationFile); GuardPath(path);
         if (!File.Exists(path)) return null;
         var op = ReadJson<Operation>(path);
         if (op.SchemaVersion != 1 || !ValidId(op.Id) || !SamePath(op.ExecutablePath, executable) || !ValidHash(op.ExecutableSha256)
@@ -358,5 +400,6 @@ public sealed class ReShadeProfileService
         }
         return op;
     }
+    private bool Mutable(string path) => _widescreen ? path == WidescreenCatalog.Ini : path == SdrProfile.ConfigPath || path == SdrProfile.PresetPath;
     private static bool SamePath(string a, string b) => string.Equals(a, b, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 }

@@ -1,6 +1,7 @@
 // GamePanel contributors, MIT. Synthetic DX9 x86 renderer; no game assets or DRM.
 #include <windows.h>
 #include <d3d9.h>
+#include <cstdio>
 
 LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w, LPARAM l)
 {
@@ -18,11 +19,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         100, 100, 640, 480, nullptr, nullptr, instance, nullptr);
     if (!window) return 3;
     ShowWindow(window, SW_SHOW);
+    SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     IDirect3D9* api = Direct3DCreate9(D3D_SDK_VERSION);
     if (!api) return 77;
     D3DPRESENT_PARAMETERS presentation = {};
     presentation.Windowed = TRUE;
-    presentation.SwapEffect = D3DSWAPEFFECT_DISCARD;
+    presentation.SwapEffect = D3DSWAPEFFECT_COPY;
+    presentation.BackBufferWidth = 640;
+    presentation.BackBufferHeight = 480;
     presentation.hDeviceWindow = window;
     presentation.BackBufferFormat = D3DFMT_UNKNOWN;
     presentation.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -35,12 +39,25 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     {
         while (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&message); DispatchMessage(&message); }
         if (message.message == WM_QUIT) break;
-        if (FAILED(device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_XRGB(85, 110, 140), 1.0f, 0))) { result = E_FAIL; break; }
+        if (FAILED(device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_XRGB(64, 128, 192), 1.0f, 0))) { result = E_FAIL; break; }
         if (FAILED(device->BeginScene())) { result = E_FAIL; break; }
         device->EndScene();
         result = device->Present(nullptr, nullptr, nullptr, nullptr);
         if (FAILED(result)) break;
         Sleep(16);
+        if (frame == 300)
+        {
+            RECT client = {}; GetClientRect(window, &client);
+            HDC dc = GetDC(window);
+            COLORREF color = GetPixel(dc, (client.right - client.left) / 2, (client.bottom - client.top) / 2);
+            ReleaseDC(window, dc);
+            FILE* output = nullptr;
+            if (color != CLR_INVALID && fopen_s(&output, "fixture-pixel.txt", "w") == 0 && output)
+            {
+                fprintf(output, "%u %u %u\n", static_cast<unsigned>(GetRValue(color)), static_cast<unsigned>(GetGValue(color)), static_cast<unsigned>(GetBValue(color)));
+                fclose(output);
+            }
+        }
     }
     device->Release(); api->Release(); DestroyWindow(window);
     return SUCCEEDED(result) ? 0 : 4;

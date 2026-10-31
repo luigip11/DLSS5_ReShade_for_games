@@ -32,7 +32,7 @@ public sealed class ReShadePackageSource
 {
     private readonly string _cache;
     private readonly Func<HttpClient> _client;
-    public static string DefaultCache => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamePanel", "Components");
+    public static string DefaultCache => Path.Combine(GamePanelPaths.Root, "Components");
     public ReShadePackageSource(string cache) : this(cache, () => new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(3) }) { }
     internal ReShadePackageSource(string cache, Func<HttpClient> client) { _cache = Path.GetFullPath(cache); _client = client; }
 
