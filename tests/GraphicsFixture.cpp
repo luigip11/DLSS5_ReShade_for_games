@@ -10,6 +10,15 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w, LPARAM l)
 }
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
+    // Launcher testing is independent of graphics/device availability. This flag
+    // is created only inside the disposable fixture by check-startup.ps1.
+    if (GetFileAttributesW(L"GamePanelLibraryProbe.request") != INVALID_FILE_ATTRIBUTES)
+    {
+        FILE* output = nullptr;
+        if (fopen_s(&output, "GamePanelLibraryProbe.result", "w") != 0 || !output) return 5;
+        fprintf(output, "GamePanel-library-launch-ok"); fclose(output);
+        Sleep(4000); return 0;
+    }
     WNDCLASS definition = {};
     definition.lpfnWndProc = WindowProcedure;
     definition.hInstance = instance;

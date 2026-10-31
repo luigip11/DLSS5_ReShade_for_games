@@ -285,6 +285,7 @@ try {
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'open stored game without entering path'
         if ((Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne $profileExe) { throw 'Library opened another executable.' }
         Write-Host 'PASS GUI library persistence after restart and game selection without re-entering its path'
+        [IO.File]::WriteAllText((Join-Path $fixtureGame 'GamePanelLibraryProbe.request'), 'Synthetic launcher-only probe; no rendering required.')
         Invoke-Button 'LibraryPage'
         Invoke-Button ('LibraryPlay-' + $libraryGame[0].Id)
         Wait-Until {
@@ -294,7 +295,8 @@ try {
         $launched = @([Diagnostics.Process]::GetProcessesByName('speed2') | Where-Object { $_.MainModule.FileName -eq $profileExe })
         if ($launched.Count -ne 1) { throw 'Library did not launch exactly our selected synthetic renderer.' }
         $renderProcess = $launched[0]
-        if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw 'Library-launched renderer failed.' }
+        if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw "Library-launched probe failed: $($renderProcess.ExitCode)" }
+        if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Selected library executable did not execute our launcher probe.' }
         $renderProcess.Dispose(); $renderProcess = $null
         Write-Host 'PASS GUI launch directly from saved library card and persisted last-played timestamp'
 
