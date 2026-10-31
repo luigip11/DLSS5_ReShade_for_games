@@ -146,6 +146,7 @@ Check("Scansione non segue collegamenti", () =>
     finally { if (Directory.Exists(link)) Directory.Delete(link); Directory.Delete(target, true); }
 });
 BackupChecks.Register(Check, temp);
+ProfileChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-reshade", StringComparer.Ordinal));
 var failed = 0;
 var skipped = 0;
 try

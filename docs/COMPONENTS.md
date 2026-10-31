@@ -14,3 +14,7 @@ Riferimenti consultati il 29 ottobre 2026. Ogni integrazione richiede una nuova 
 | NVIDIA DLSS/Streamline | Runtime proprietari e/o SDK applicabili | Origine ufficiale quando disponibile, firme, diritti di distribuzione, coppie versione/driver supportate |
 
 Un wrapper che traduce API non aggiunge automaticamente i dati del motore richiesti da tutte le funzioni DLSS. SR, FG, RR e Neural Rendering richiedono valutazioni separate. Nessun pacchetto da Discord o mirror va assunto sicuro solo perché citato da un progetto.
+
+## Alpha.5 — componente scelto
+
+ReShade 6.8.0 x86 originale per il profilo SDR di Underground 2. Non ridistribuito: download diretto esplicito dal sito ufficiale, setup non eseguito, SHA-256 e dimensioni approvati nel codice. Shader GamePanelSDR originale MIT, senza pacchetti di terzi. [Catalogo](RESHade-CATALOG.md) e [limiti](RESHade-SDR.md). Gli altri componenti restano candidati.

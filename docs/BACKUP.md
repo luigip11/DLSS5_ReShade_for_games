@@ -24,7 +24,7 @@ Limiti: 256 percorsi, 512 MiB per file, 2 GiB per snapshot. Le copie incomplete 
 - **Presente ma diverso, oppure comparso dopo il backup:** conflitto; l'intero recupero viene bloccato prima di iniziare.
 - **Assente sia all'origine sia ora:** nessuna azione.
 
-Non viene forzata la sovrascrittura di aggiornamenti, crack, preset o mod esterni. Il tracciamento dei file installati da GamePanel e il loro ripristino controllato saranno introdotti insieme al primo percorso grafico, prima che l'app installi mod reali.
+Non viene forzata la sovrascrittura di aggiornamenti, crack, preset o mod esterni. Da alpha.5 i quattro file del profilo SDR hanno un registro separato e un journal con entrambe le versioni, per ripresa o annullamento delle sole operazioni gestite. Questo non estende il backup generale alla sovrascrittura di file esterni. Vedere [RESHade-SDR](RESHade-SDR.md).
 
 Se manca anche l'EXE, incollare il suo percorso originario, aprire **Backup** e usare **Carica backup del percorso**: non serve riuscire a rianalizzarlo. Il percorso deve corrispondere allo snapshot. Uno spostamento o una reinstallazione in un'altra cartella non vengono adattati automaticamente.
 

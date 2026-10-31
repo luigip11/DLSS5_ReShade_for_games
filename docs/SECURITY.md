@@ -2,7 +2,7 @@
 
 ## Cosa fa il codice attuale
 
-Legge PE, file versione e nomi dei componenti; calcola un hash; mostra i risultati. Non chiama LoadLibrary o Assembly.Load sui file selezionati, non carica add-on, non installa servizi, non scrive registro, non richiede elevazione, non modifica impostazioni HDR/driver. Nessuna connessione di rete implementata. L'esportazione del JSON è una scrittura richiesta dall'utente; il pulsante Avvia esegue intenzionalmente l'EXE selezionato.
+Legge PE, file versione e nomi dei componenti; calcola un hash; mostra i risultati. Non chiama LoadLibrary o Assembly.Load sui file selezionati, non carica add-on, non installa servizi, non scrive registro, non richiede elevazione, non modifica impostazioni HDR/driver. Da alpha.5 è implementato il download esplicito del pacchetto ReShade originale, con URL/versione/dimensioni/hash fissati nel codice, redirect rifiutati e nessuna esecuzione del setup. Il runtime ReShade caricato intenzionalmente dal gioco può contattare GitHub. L'esportazione del JSON è una scrittura richiesta dall'utente; il pulsante Avvia esegue intenzionalmente l'EXE selezionato.
 
 Da alpha.3 **Crea backup** salva copie e metadati locali su richiesta. **Ripristina / riprendi** scrive soltanto file mancanti dopo verifica e anteprima. File presenti differenti causano un conflitto. Le temporanee dell'operazione e i journal vengono gestiti per consentire la ripresa. Non vengono applicati mod grafici. Vedere [limiti e comportamento del backup](BACKUP.md).
 
@@ -27,3 +27,9 @@ Non usare ancora con l'aspettativa di ottenere DLSS o HDR: le pagine relative di
 ## Vulnerabilità
 
 Non esiste ancora un canale pubblico del progetto. Segnalare nel canale di sviluppo privato i passi minimi, versione/commit e comportamento osservato. Non inserire token, eseguibili del gioco o dump contenenti dati personali nelle issue pubbliche.
+
+## Modifiche alpha.5
+
+Il profilo SDR può scrivere solo i quattro percorsi documentati in [RESHade-SDR](RESHade-SDR.md). Primo deployment solo su target assenti; aggiornamento solo del preset di proprietà con hash atteso. Registro e copie di entrambe le versioni precedono le scritture, con ripresa o annullamento. Percorsi canonici, reparse point, identità EXE, stato dell'anteprima e processi sono ricontrollati. Conflitti esterni sono bloccati; configurazioni/preset modificati sono conservati alla rimozione. Una sequenza multi-file può restare parziale dopo guasto: il journal serve a recuperarla. Non è una protezione contro manipolazioni intenzionali da amministratore locale.
+
+Il download approvato via SHA-256 non equivale a un certificato Windows attendibile. Il certificato ReShade pubblicato termina in radice non attendibile sul runner; nessun certificato è aggiunto a Windows. Nessuna scansione antivirus completa o garanzia di assenza di malware viene dedotta da hash o test.

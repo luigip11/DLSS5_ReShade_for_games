@@ -40,10 +40,13 @@ jobs:
           global-json-file: global.json
       - name: Build and test source
         shell: pwsh
-        run: ./scripts/publish.ps1
+        run: ./scripts/publish.ps1 -VerifyOfficialComponent
+      - name: Compile the synthetic DX9 fixture
+        shell: pwsh
+        run: ./scripts/build-graphics-fixture.ps1
       - name: Test the desktop flow
         shell: powershell
-        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe
+        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe
       - name: Upload source package for the trusted build connector
         id: signing-input
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

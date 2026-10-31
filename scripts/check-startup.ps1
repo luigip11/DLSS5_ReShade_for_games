@@ -1,4 +1,4 @@
-param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDirectory = '')
+param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDirectory = '', [string]$GraphicsFixturePath = '')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
@@ -33,7 +33,7 @@ public static class GamePanelCapture {
 $executable = (Resolve-Path -LiteralPath $ExecutablePath).Path
 if ([IO.Path]::GetFileName($executable) -ne 'GamePanel.exe') { throw 'Expected the newly built GamePanel.exe.' }
 $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('GamePanel-UI-' + [Guid]::NewGuid().ToString('N'))
-$fixtureGame = Join-Path $fixtureRoot 'Program Files (x86)/Test Game'
+$fixtureGame = [IO.Path]::GetFullPath((Join-Path $fixtureRoot 'Program Files (x86)/Test Game'))
 [IO.Directory]::CreateDirectory($fixtureGame) | Out-Null
 $fixtureExe = [IO.Path]::GetFullPath((Join-Path $fixtureGame 'gamepanel-fixture.exe'))
 # Copy the apphost only for static inspection. This copy is never executed.
@@ -45,8 +45,11 @@ finally { $sha.Dispose() }
 $fixtureStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Backups/$key"
 if (Test-Path -LiteralPath $fixtureStore) { throw 'Fixture backup path unexpectedly exists.' }
 $process = $null
-function Wait-Until([scriptblock]$Condition, [string]$Description) {
-    $deadline = [DateTime]::UtcNow.AddSeconds(30)
+$renderProcess = $null
+$profileBackupStore = $null
+$profileStore = $null
+function Wait-Until([scriptblock]$Condition, [string]$Description, [int]$TimeoutSeconds = 30) {
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
     while ([DateTime]::UtcNow -lt $deadline) {
         $process.Refresh()
         if ($process.HasExited) { throw "GamePanel exited during $Description. Exit code: $($process.ExitCode)" }
@@ -119,9 +122,88 @@ try {
     } 'restore through UI'
     if ((Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash -ne $originalHash) { throw 'Restored file differs from the original fixture.' }
     Write-Host 'PASS GUI backup/restore round trip: original SHA-256 recovered'
+    if ($GraphicsFixturePath) {
+        $fixtureBinary = (Resolve-Path -LiteralPath $GraphicsFixturePath).Path
+        $profileExe = Join-Path $fixtureGame 'speed2.exe'
+        Copy-Item -LiteralPath $fixtureBinary -Destination $profileExe
+        $profileHash = (Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try {
+            $profileKey = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($profileExe.ToUpperInvariant()))).Replace('-', '').ToLowerInvariant()
+            $folderKey = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($fixtureGame.ToUpperInvariant()))).Replace('-', '').ToLowerInvariant()
+        } finally { $sha.Dispose() }
+        $profileBackupStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Backups/$profileKey"
+        $profileStore = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "GamePanel/Profiles/$folderKey"
+        if ((Test-Path -LiteralPath $profileBackupStore) -or (Test-Path -LiteralPath $profileStore)) { throw 'Unexpected existing profile fixture state.' }
+        $pathInput.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($profileExe)
+        Invoke-Button 'AnalyzePath'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'x86 DX9 fixture analysis'
+        Invoke-Button 'HdrPage'
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'verified official download and preview' 120
+        if (Test-Path -LiteralPath (Join-Path $fixtureGame 'd3d9.dll')) { throw 'Preview wrote a loader into the fixture game.' }
+        if ($PreviewDirectory) {
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '02-effects.png')))
+        }
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'profile application'
+        $loader = Join-Path $fixtureGame 'd3d9.dll'
+        if ((Get-FileHash -LiteralPath $loader -Algorithm SHA256).Hash -ne '538998f66c0197adcdeadfe8e5ea19dd6ca3253e40399476d291f385ce518b88') { throw 'Installed loader differs from the approved catalog.' }
+        if ((Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash -ne $profileHash) { throw 'Profile changed the fixture executable.' }
+        Write-Host 'PASS GUI official download, no-write preview, baseline backup and tracked profile application'
+        (Find-Element 'Sharpness').GetCurrentPattern([Windows.Automation.RangeValuePattern]::Pattern).SetValue(60)
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'parameter update preview'
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'parameter application'
+        $preset = Join-Path $fixtureGame 'GamePanelPreset.ini'
+        if ((Get-Content -LiteralPath $preset -Raw) -notmatch 'Sharpness=0\.6000') { throw 'Slider is not connected to the saved preset.' }
+        Invoke-Button 'OriginalProfile'
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'original profile preview'
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'original profile application'
+        if ((Get-Content -LiteralPath $preset -Raw) -notmatch '^Techniques=\r?\n') { throw 'Original profile did not disable the technique.' }
+        Invoke-Button 'BalancedProfile'
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'balanced profile preview'
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'balanced profile application'
+        Write-Host 'PASS GUI parameter slider, Original technique disabled, Balanced profile restored'
+        # This is our compiled synthetic renderer. No user-selected game/crack is executed.
+        $renderProcess = Start-Process -FilePath $profileExe -WorkingDirectory $fixtureGame -PassThru
+        if (-not $renderProcess.WaitForExit(45000)) { throw 'Synthetic renderer did not exit.' }
+        if ($renderProcess.ExitCode -eq 77) { Write-Host 'UNVERIFIED DX9 rendering: CI adapter unavailable; real-game rendering still needs testing.' }
+        elseif ($renderProcess.ExitCode -ne 0) { throw "Synthetic renderer failed: $($renderProcess.ExitCode)" }
+        else {
+            $runtimeLog = Join-Path $fixtureGame 'ReShade.log'
+            if (-not (Test-Path -LiteralPath $runtimeLog)) { throw 'ReShade runtime did not produce a log.' }
+            $runtimeText = Get-Content -LiteralPath $runtimeLog -Raw
+            if ($runtimeText -notmatch "Successfully compiled '[^']*GamePanelSDR\.fx'" -or $runtimeText -match "Failed to compile '[^']*GamePanelSDR\.fx'") {
+                Write-Host $runtimeText
+                throw 'Our SDR shader did not compile successfully in the actual x86 DX9 runtime.'
+            }
+            Write-Host 'PASS synthetic x86 DX9 renderer: official ReShade loaded and GamePanelSDR.fx compiled'
+        }
+        $renderProcess.Dispose(); $renderProcess = $null
+        # Runtime may rewrite its INI/preset. Re-analyze and verify that modified
+        # configs are preserved during removal, never forcibly overwritten.
+        Invoke-Button 'AnalyzePath'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'post-render analysis'
+        Invoke-Button 'HdrPage'
+        Invoke-Button 'PrepareRemoveProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'profile removal preview'
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'profile removal'
+        if (Test-Path -LiteralPath $loader) { throw 'Managed loader remains after removal.' }
+        if ((Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash -ne $profileHash) { throw 'Removal changed the fixture executable.' }
+        Write-Host 'PASS GUI tracked removal: loader removed and fixture EXE unchanged'
+    }
     Write-Host 'This checks the CI desktop; it does not certify SAC, antivirus safety or game compatibility.'
 }
 finally {
+    if ($null -ne $renderProcess) { if (-not $renderProcess.HasExited) { Stop-Process -Id $renderProcess.Id -Force }; $renderProcess.Dispose() }
     if ($null -ne $process) {
         $process.Refresh()
         if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
@@ -129,4 +211,6 @@ finally {
     }
     if (Test-Path -LiteralPath $fixtureRoot) { Remove-Item -LiteralPath $fixtureRoot -Recurse -Force }
     if (Test-Path -LiteralPath $fixtureStore) { Remove-Item -LiteralPath $fixtureStore -Recurse -Force }
+    if ($profileBackupStore -and (Test-Path -LiteralPath $profileBackupStore)) { Remove-Item -LiteralPath $profileBackupStore -Recurse -Force }
+    if ($profileStore -and (Test-Path -LiteralPath $profileStore)) { Remove-Item -LiteralPath $profileStore -Recurse -Force }
 }

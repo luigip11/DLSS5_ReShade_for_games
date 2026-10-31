@@ -52,3 +52,7 @@ ZIP portabile come distribuzione principale; installer opzionale solo quando uti
 ## Interfaccia finale
 
 Gioco → profilo consigliato → anteprima modifiche → Applica e avvia. DLSS e HDR separati e collegati allo stesso profilo. Controlli avanzati chiusi, aiuto in una frase, reset al profilo consigliato, indicazione "riavvio necessario". Stato per gioco: verificato sulla build indicata / sperimentale / non determinato / incompatibile. Il semplice riconoscimento di una DLL non attribuisce lo stato "verificato".
+
+## Avanzamento alpha.5
+
+M1 esteso con deployment mirato e journal a due versioni, ripresa/rollback e rimozione dei file gestiti. Primo percorso M2 sperimentale: ReShade SDR 6.8.0 x86 per Underground 2, download esplicito con catalogo fissato, preset e parametri reali. DLSS, HDR e supporto generale restano da sviluppare. Questo passaggio non dichiara M1/M2 conclusi: il collaudo sul gioco reale e sui permessi Program Files resta necessario. Nessun gioco reale è stato eseguito nell'ambiente di sviluppo.

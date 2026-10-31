@@ -26,10 +26,13 @@ jobs:
         run: ./scripts/inspect-reshade.ps1
       - name: Checks and self-contained Windows build
         shell: pwsh
-        run: ./scripts/publish.ps1
+        run: ./scripts/publish.ps1 -VerifyOfficialComponent
+      - name: Compile synthetic DX9 x86 fixture
+        shell: pwsh
+        run: ./scripts/build-graphics-fixture.ps1
       - name: Check desktop startup
         shell: powershell
-        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview
+        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe
       - name: Verify that unsigned files cannot pass the production-signing gate
         shell: pwsh
         run: ./scripts/check-signature-gate.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64

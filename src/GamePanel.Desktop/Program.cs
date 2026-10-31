@@ -120,6 +120,7 @@ internal sealed partial class MainWindow : Window
             _path.Text = report.ExecutablePath;
             _path.CaretIndex = _path.Text.Length;
             _report = report; _export.IsEnabled = true;
+            await RefreshEffectsAsync(report.ExecutablePath);
             _status.Text = "Analisi completata · Nessuna mod applicata";
         }
         catch (OperationCanceledException) { if (!_closing) _status.Text = "Analisi annullata"; }
@@ -192,16 +193,7 @@ internal sealed partial class MainWindow : Window
         Details("Disponibilità e giochi legacy", "Questa alpha riconosce i componenti ma non installa o regola DLSS. I profili per Underground 1 e 2 richiedono collaudo specifico; l'eventuale helper x64 resterà sperimentale finché non verificato.");
     }
 
-    private void RenderHdr()
-    {
-        Heading("La luce giusta per ogni gioco.", "Un percorso immagine coerente, con parametri comprensibili e profili per titolo.");
-        FeatureCards(("HDR", "Luminosità di riferimento e picco, dopo la verifica dello schermo.", "sun"),
-            ("ReShade", "Preset e regolazioni immagine, con recupero dei file gestiti.", "scan"));
-        Card("Schermo HDR · da verificare", "L'app non ha ancora verificato il supporto HDR del monitor. Nessun preset o effetto viene applicato da questa versione.");
-        Card("ReShade e componenti esistenti", _report is null ? "Seleziona un gioco per leggere i componenti presenti."
-            : string.Join("\n", _report.Components.Where(c => c.Kind.Contains("ReShade", StringComparison.Ordinal) || c.Kind.Contains("proxy", StringComparison.Ordinal) || c.Kind.Contains("Add-on", StringComparison.Ordinal))
-                .Select(c => $"{c.RelativePath} · {c.Kind}").DefaultIfEmpty("Nessun componente riconosciuto nella scansione limitata.")));
-    }
+    private void RenderHdr() => RenderEffects();
 
     private void RenderDiagnostics()
     {
@@ -210,11 +202,12 @@ internal sealed partial class MainWindow : Window
         Card("Controlli e limiti", string.Join("\n\n", _report.Notes));
         Card("SHA-256 dell'eseguibile", _report.Sha256 + "\nIdentifica i byte letti; non è un certificato di sicurezza.");
         Card("Componenti riconosciuti", string.Join("\n", _report.Components.Select(c => $"{c.RelativePath}\n{c.Kind} · {c.Version}").DefaultIfEmpty("Nessuno nella scansione limitata.")));
-        Card("Privacy", "Il JSON esportato contiene il percorso locale dell'EXE e i nomi dei componenti. Controllalo prima di condividerlo. L'app non invia report e non effettua connessioni di rete.");
+        Card("Privacy", "Il JSON esportato contiene il percorso locale dell'EXE e i nomi dei componenti. Controllalo prima di condividerlo. L'app non invia report. Il download esplicito ReShade contatta soltanto reshade.me; ReShade può cercare aggiornamenti quando avvii il gioco.");
     }
 
     private void ResetBackups()
     {
+        ResetEffects();
         _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
         _backupMessage = "Crea una copia di riferimento prima delle future modifiche grafiche.";
     }
@@ -401,10 +394,12 @@ internal sealed partial class MainWindow : Window
         if (_busy || _report is null) return;
         try
         {
+            if (_profiles.Status(_report.ExecutablePath).Pending)
+                throw new InvalidOperationException("Completa o annulla l'operazione del profilo in HDR / FX prima di avviare il gioco.");
             Process.Start(new ProcessStartInfo(_report.ExecutablePath)
             { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = true });
         }
-        catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         { MessageBox.Show(this, e.Message, "Avvio non completato", MessageBoxButton.OK, MessageBoxImage.Information); }
     }
 

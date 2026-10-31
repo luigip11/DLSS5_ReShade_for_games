@@ -1,3 +1,4 @@
+param([switch]$VerifyOfficialComponent)
 $ErrorActionPreference = 'Stop'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
@@ -9,7 +10,9 @@ try {
     }
     & dotnet restore tests/GamePanel.Checks/GamePanel.Checks.csproj --locked-mode
     if ($LASTEXITCODE -ne 0) { throw 'Restore controlli non riuscito.' }
-    & dotnet run --project tests/GamePanel.Checks/GamePanel.Checks.csproj -c Release --no-restore
+    $checkArguments = @()
+    if ($VerifyOfficialComponent) { $checkArguments += '--verify-official-reshade' }
+    & dotnet run --project tests/GamePanel.Checks/GamePanel.Checks.csproj -c Release --no-restore -- @checkArguments
     if ($LASTEXITCODE -ne 0) { throw 'Controlli non superati. Pubblicazione interrotta.' }
     & dotnet restore src/GamePanel.Desktop/GamePanel.Desktop.csproj --locked-mode
     if ($LASTEXITCODE -ne 0) { throw 'Restore Windows non riuscito.' }
@@ -22,6 +25,8 @@ try {
     Copy-Item LICENSE (Join-Path $portable 'LICENSE-GamePanel.txt')
     Copy-Item docs/WINDOWS-CHECK.md (Join-Path $portable 'COLLAUDO-WINDOWS.md')
     Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
+    Copy-Item docs/RESHade-SDR.md (Join-Path $portable 'RESHade-SDR.md')
+    Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {
         $relative = $_.FullName.Substring($portable.Length + 1).Replace('\', '/')
         '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant(), $relative

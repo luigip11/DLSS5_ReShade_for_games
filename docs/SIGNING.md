@@ -1,6 +1,6 @@
 # Smart App Control: blocco confermato e firma ancora da attivare
 
-Stato al 30 ottobre 2026: i file GamePanel alpha.4 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
+Stato al 30 ottobre 2026: i file GamePanel alpha.5 non hanno una firma Authenticode di un editore attendibile. È stato osservato un blocco di Controllo intelligente delle app per editore non verificabile con alpha.2. Successivamente l'utente ha condiviso un report di analisi riuscita, senza confermare quale impostazione di protezione o build abbia usato. Questo non risolve né certifica la compatibilità della nuova build con SAC attivo.
 
 ## Significato e limite attuale
 
@@ -35,3 +35,5 @@ Non cambiare le impostazioni di protezione del PC per compensare questo limite d
 ## Predisposizione alpha.4
 
 La candidatura pronta da completare dal proprietario è in [SIGNPATH-APPLICATION](SIGNPATH-APPLICATION.md). Il workflow manuale `windows-signed-build.yml` richiede configurazione e approvazione del provider prima di chiamare servizi esterni. Non viene eseguito sui push e non è stato attivato. L'alpha ordinaria resta non firmata; il controllo automatico rifiuta esplicitamente il suo passaggio come pacchetto firmato. Non è stata verificata una firma di produzione reale perché manca l'identità autorizzata.
+
+Alpha.5 non cambia questa situazione. Il binario ReShade viene scaricato direttamente dall'utente e non incluso nell'artifact firmato GamePanel. Sul runner il suo certificato pubblicato risulta con radice non attendibile: la firma futura di GamePanel non conferisce fiducia a quel componente. [Catalogo e stato](RESHade-CATALOG.md).

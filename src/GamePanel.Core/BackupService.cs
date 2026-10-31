@@ -353,11 +353,11 @@ public sealed class BackupService
     }
     private static string FullExecutable(string path) => Path.GetFullPath(ExecutablePath.Normalize(path));
     private static string Canonical(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
-    private static bool Inside(string path, string root) => string.Equals(Canonical(path), Canonical(root), PathComparison)
+    internal static bool Inside(string path, string root) => string.Equals(Canonical(path), Canonical(root), PathComparison)
         || Path.GetRelativePath(root, path) is var relative && relative != ".." && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) && !Path.IsPathRooted(relative);
-    private static bool ValidId(string? id) => id is { Length: 32 } && id.All(Uri.IsHexDigit);
-    private static bool ValidHash(string? hash) => hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
-    private static string ValidateRelative(string? relative)
+    internal static bool ValidId(string? id) => id is { Length: 32 } && id.All(Uri.IsHexDigit);
+    internal static bool ValidHash(string? hash) => hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
+    internal static string ValidateRelative(string? relative)
     {
         if (string.IsNullOrWhiteSpace(relative) || relative.Length > 240 || Path.IsPathRooted(relative)
             || relative.Contains(':') || relative.Contains('\0')) throw new InvalidDataException("Percorso nel backup non valido.");
@@ -372,7 +372,7 @@ public sealed class BackupService
         }
         return string.Join('/', parts);
     }
-    private static string GameFile(string root, string relative)
+    internal static string GameFile(string root, string relative)
     {
         var path = Path.GetFullPath(Path.Combine(root, ValidateRelative(relative).Replace('/', Path.DirectorySeparatorChar)));
         if (!Inside(path, root)) throw new InvalidDataException("File fuori dalla cartella del gioco.");
@@ -382,13 +382,13 @@ public sealed class BackupService
     {
         var path = Path.Combine(folder, "files", $"{index:D4}.bin"); GuardPath(path); return path;
     }
-    private static FileAttributes? AttributesOrMissing(string path)
+    internal static FileAttributes? AttributesOrMissing(string path)
     {
         try { return File.GetAttributes(path); }
         catch (FileNotFoundException) { return null; }
         catch (DirectoryNotFoundException) { return null; }
     }
-    private static void GuardPath(string path)
+    internal static void GuardPath(string path)
     {
         var full = Path.GetFullPath(path);
         while (true)
@@ -412,13 +412,13 @@ public sealed class BackupService
         catch (Exception e) { throw new InvalidOperationException("Impossibile verificare che il gioco sia chiuso. Operazione bloccata.", e); }
         if (running) throw new InvalidOperationException("Chiudi il gioco prima di creare o ripristinare il backup.");
     }
-    private static bool IsGameRunning(string executable)
+    internal static bool IsGameRunning(string executable)
     {
         var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(executable));
         try { return processes.Length > 0; }
         finally { foreach (var process in processes) process.Dispose(); }
     }
-    private static (string Hash, long Length) CopyVerified(string source, string destination, CancellationToken token, long available)
+    internal static (string Hash, long Length) CopyVerified(string source, string destination, CancellationToken token, long available)
     {
         GuardPath(source); GuardPath(destination);
         (string Hash, long Length) result;
@@ -433,7 +433,7 @@ public sealed class BackupService
             throw new InvalidDataException("Verifica della copia di backup non riuscita.");
         return result;
     }
-    private static string HashFile(string path, CancellationToken token)
+    internal static string HashFile(string path, CancellationToken token)
     {
         GuardPath(path);
         using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -452,7 +452,7 @@ public sealed class BackupService
         token.ThrowIfCancellationRequested();
         return (Convert.ToHexString(digest.GetHashAndReset()).ToLowerInvariant(), total);
     }
-    private static T ReadJson<T>(string path)
+    internal static T ReadJson<T>(string path)
     {
         GuardPath(path);
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -460,7 +460,7 @@ public sealed class BackupService
         try { return JsonSerializer.Deserialize<T>(stream) ?? throw new InvalidDataException("Metadati backup mancanti."); }
         catch (JsonException e) { throw new InvalidDataException("Metadati backup non leggibili.", e); }
     }
-    private static void WriteJson<T>(string path, T value)
+    internal static void WriteJson<T>(string path, T value)
     {
         GuardPath(path);
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";

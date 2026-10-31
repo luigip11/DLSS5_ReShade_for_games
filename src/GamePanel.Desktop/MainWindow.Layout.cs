@@ -18,7 +18,7 @@ internal sealed partial class MainWindow
 
     private void BuildShell()
     {
-        Title = "GamePanel · 0.1.0-alpha.4";
+        Title = "GamePanel · 0.1.0-alpha.5";
         Width = Math.Min(1360, Math.Max(1000, SystemParameters.WorkArea.Width - 64));
         Height = Math.Min(900, Math.Max(680, SystemParameters.WorkArea.Height - 64));
         MinWidth = 1000; MinHeight = 680;
@@ -37,7 +37,7 @@ internal sealed partial class MainWindow
         var sidebar = new DockPanel { Background = DesignSystem.Sidebar, LastChildFill = true };
         shell.Children.Add(sidebar);
         var bottom = new StackPanel { Margin = new Thickness(20, 12, 20, 22) };
-        bottom.Children.Add(DesignSystem.Chip("ALPHA 04", Accent));
+        bottom.Children.Add(DesignSystem.Chip("ALPHA 05", Accent));
         var local = Text("Sul tuo PC. Sotto controllo.", 11, Muted); local.Margin = new Thickness(0, 12, 0, 0); bottom.Children.Add(local);
         DockPanel.SetDock(bottom, Dock.Bottom); sidebar.Children.Add(bottom);
         var menu = new StackPanel { Margin = new Thickness(14, 28, 14, 0) };
@@ -73,7 +73,7 @@ internal sealed partial class MainWindow
         _status.FontSize = 11; _status.TextWrapping = TextWrapping.NoWrap; _status.TextTrimming = TextTrimming.CharacterEllipsis;
         _status.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _status });
         statusRow.Children.Add(_status); footerGrid.Children.Add(statusRow);
-        var version = Text("GAMEPANEL  /  0.1.0-alpha.4", 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
+        var version = Text("GAMEPANEL  /  0.1.0-alpha.5", 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
         var footer = new Border { BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(30, 14, 30, 14), Child = footerGrid };
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
@@ -123,7 +123,7 @@ internal sealed partial class MainWindow
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.Children.Add(DesignSystem.Icon(PageIcons[page], active ? Accent : Muted, 19));
         var label = Text(page == 2 ? "HDR / FX" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
-        if (page is 1 or 2) { var badge = DesignSystem.Chip("PRESTO", Muted, Brushes.Transparent); Grid.SetColumn(badge, 2); row.Children.Add(badge); }
+        if (page == 1) { var badge = DesignSystem.Chip("PRESTO", Muted, Brushes.Transparent); Grid.SetColumn(badge, 2); row.Children.Add(badge); }
         return row;
     }
 
@@ -176,7 +176,7 @@ internal sealed partial class MainWindow
         var steps = new Grid(); steps.ColumnDefinitions.Add(new ColumnDefinition()); steps.ColumnDefinitions.Add(new ColumnDefinition());
         var backup = ActionTile("shield", "Prima metti al sicuro i file", "Una copia di riferimento verificata prima di qualsiasi futura modifica.", "Apri backup", (_, _) => { _page = 3; Render(); }, Accent);
         backup.Margin = new Thickness(0, 0, 7, 14); steps.Children.Add(backup);
-        var diagnosis = ActionTile("scan", "Conosci il tuo gioco", "Architettura, librerie dichiarate e componenti già presenti, in un unico report.", "Apri diagnosi", (_, _) => { _page = 4; Render(); }, DesignSystem.Blue);
+        var diagnosis = ActionTile("sun", "Dai forma alla tua immagine", "Profilo ReShade SDR per Underground 2: anteprima, parametri e rimozione gestita.", "Apri immagine", (_, _) => { _page = 2; Render(); }, DesignSystem.Blue);
         diagnosis.Margin = new Thickness(7, 0, 0, 14); Grid.SetColumn(diagnosis, 1); steps.Children.Add(diagnosis); _content.Children.Add(steps);
         if (_report?.HasAntiCheatIndicators == true) Card("Da verificare", "Sono presenti possibili indicatori anti-cheat. Controlla la compatibilità prima delle future modifiche.");
         if (_report is not null)

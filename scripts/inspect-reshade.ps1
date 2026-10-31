@@ -44,6 +44,7 @@ try {
         try { $source.CopyTo($target) } finally { $target.Dispose(); $source.Dispose() }
     } finally { $archive.Dispose(); $stream.Dispose() }
     Check-Publisher $dll
+    if ((Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash -ne '538998f66c0197adcdeadfe8e5ea19dd6ca3253e40399476d291f385ce518b88') { throw 'Extracted DLL differs from reviewed catalog.' }
     $catalog = [ordered]@{
         SchemaVersion = 1; Version = $version; SetupUrl = $url; SignerThumbprint = $publisher
         SetupSha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()

@@ -30,3 +30,11 @@ Il workflow di firma di produzione è solo predisposto. Non viene avviato dai pu
 ### Esito verificato su Windows
 
 La [build alpha.4 del commit b9a582b](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/runs/41090217812) ha completato 44/44 controlli, avvio GUI, analisi del percorso quotato, creazione della copia, apertura/chiusura del selettore ridisegnato e recupero con SHA-256 originale. Le schermate native sono state esaminate per correggere il titolo iniziale e l'etichetta del selettore dei backup. Stato della firma registrato dal runner: `NotSigned`; il controllo di firma respinge correttamente il pacchetto ordinario. Nessun esito positivo di SAC o dei giochi reali viene dedotto da questi test.
+
+## Alpha.5 — test del profilo SDR
+
+70/70 controlli locali superati su Linux, inclusi installazione/rimozione dei quattro file, EXE invariato, rifiuto di loader e wrapper preesistenti, nuovo anti-cheat, report obsoleto, parametri e Originale, configurazione/preset cambiati, interruzione a ciascuno dei quattro passi con ripresa/annullamento da nuova istanza, rollback di update/rimozione, payload corrotto, traversal, processi, symlink, archivio dentro gioco, redirect, dimensioni dichiarate/effettive ingannevoli, SHA-256 errato e annullamento prima del download. Le fixture unitarie non caricano DLL né eseguono EXE.
+
+Il controllo Windows aggiunge il download reale approvato e la cache (71 controlli), poi GUI completa con una fixture DX9 x86 compilata dal codice del repository. Dopo installazione gestita avvia soltanto quel renderer sintetico e cerca nel log ReShade la compilazione riuscita di GamePanelSDR.fx; se il dispositivo DX9 non è disponibile, il rendering viene esplicitamente indicato non verificato. Gli esiti effettivi sono nei log della build, non dedotti dalla compilazione locale. Il test continua con rimozione tracciata ed EXE invariato.
+
+Restano necessari sul PC reale: lancio della propria build Underground 2, gara/menu/filmati/Alt+Tab, qualità visiva e costo GPU, DPI, mod/ASI già presenti, permessi Program Files e SAC. Le prove non sono una scansione antivirus o una certificazione di compatibilità.
