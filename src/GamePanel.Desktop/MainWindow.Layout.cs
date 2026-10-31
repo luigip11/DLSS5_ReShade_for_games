@@ -185,7 +185,9 @@ internal sealed partial class MainWindow
         if (_report?.HasAntiCheatIndicators == true) Card("Da verificare", "Sono presenti possibili indicatori anti-cheat. Controlla la compatibilità prima delle future modifiche.");
         if (_report is not null)
         {
-            var play = Button("Avvia il gioco senza modifiche  →", (_, _) => Launch()); play.IsEnabled = !_busy; _content.Children.Add(play);
+            var play = Button("Avvia il gioco  →", (_, _) => Launch()); play.IsEnabled = !_busy;
+            play.ToolTip = "Avvia usando i file e il profilo attualmente applicati. Per togliere l'effetto scegli Originale in HDR / FX.";
+            _content.Children.Add(play);
         }
         var gpu = Hardware.DisplayDevices();
         Card("Il tuo hardware", gpu + "\nIl supporto HDR dello schermo verrà verificato nella fase di integrazione.");

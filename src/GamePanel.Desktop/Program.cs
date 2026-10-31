@@ -52,7 +52,7 @@ internal sealed partial class MainWindow : Window
     private string? _selectedBackup;
     private string? _backupForPath;
     private RestorePlan? _restorePlan;
-    private string _backupMessage = "Crea una copia di riferimento prima delle future modifiche grafiche.";
+    private string _backupMessage = "Crea una copia di riferimento prima di modificare il profilo del gioco.";
 
     public MainWindow()
     {
@@ -122,7 +122,7 @@ internal sealed partial class MainWindow : Window
             _path.CaretIndex = _path.Text.Length;
             _report = report; _export.IsEnabled = true;
             await RefreshEffectsAsync(report.ExecutablePath);
-            _status.Text = "Analisi completata · Nessuna mod applicata";
+            _status.Text = "Analisi completata · File letti senza modifiche";
         }
         catch (OperationCanceledException) { if (!_closing) _status.Text = "Analisi annullata"; }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or BadImageFormatException or ArgumentException or InvalidOperationException)
@@ -210,7 +210,7 @@ internal sealed partial class MainWindow : Window
     {
         ResetEffects();
         _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
-        _backupMessage = "Crea una copia di riferimento prima delle future modifiche grafiche.";
+        _backupMessage = "Crea una copia di riferimento prima di modificare il profilo del gioco.";
     }
 
     private void RenderBackups()

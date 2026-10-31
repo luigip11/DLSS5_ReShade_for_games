@@ -16,7 +16,7 @@ Disponibile:
 - Inventario limitato dei componenti DLSS, ReShade, proxy e add-on nelle cartelle vicine.
 - Calcolo SHA-256; avvisi su possibili indicatori anti-cheat e scansione parziale.
 - Esportazione JSON locale su richiesta, fuori dalla cartella del gioco.
-- Avvio esplicito del gioco senza modifiche, con la sua cartella come working directory.
+- Avvio esplicito del gioco con i file e il profilo attualmente applicati, usando la sua cartella come working directory.
 - Lettura degli adattatori video esposti da Windows.
 - Panoramica gaming con dati reali, navigazione a icone e backup più diretto; screenshot nell'artifact `GamePanel-interface-preview`.
 - Profilo ReShade SDR sperimentale per Underground 2, parametri collegati al preset, anteprima obbligatoria e rimozione dei file gestiti.
