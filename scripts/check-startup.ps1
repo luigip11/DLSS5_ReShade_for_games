@@ -6,6 +6,8 @@ Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 public static class GamePanelNativeDialog {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowW(string className, string title);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
     [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
 }
 '@
@@ -112,7 +114,11 @@ try {
     $updateOkay = $updateDialog.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'OK'))
     if ($null -eq $updateOkay) { throw 'Update check OK button missing.' }
     # Deliver the standard IDOK command to our own verified result dialog.
-    if (-not [GamePanelNativeDialog]::PostMessageW([IntPtr]$updateDialog.Current.NativeWindowHandle, 0x111, [IntPtr]1, [IntPtr]::Zero)) { throw 'Cannot close the update result dialog.' }
+    $dialogHandle = [GamePanelNativeDialog]::FindWindowW('#32770', ('GamePanel ' + [char]0x00b7 + ' aggiornamenti'))
+    [uint32]$dialogProcessId = 0
+    [GamePanelNativeDialog]::GetWindowThreadProcessId($dialogHandle, [ref]$dialogProcessId) | Out-Null
+    if ($dialogHandle -eq [IntPtr]::Zero -or $dialogProcessId -ne $process.Id) { throw 'Result dialog native handle does not belong to our app.' }
+    if (-not [GamePanelNativeDialog]::PostMessageW($dialogHandle, 0x111, [IntPtr]1, [IntPtr]::Zero)) { throw 'Cannot close the update result dialog.' }
     Wait-Until { (Find-Element 'CheckSoftwareUpdates').Current.IsEnabled } 'release check button reset'
     Write-Host "PASS live GitHub release check through GUI: $updateMessage"
     Invoke-Button 'OverviewPage'
