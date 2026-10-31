@@ -175,6 +175,34 @@ internal static class DesignSystem
           </Setter.Value></Setter>
         </Style>
         """);
+    public static Style SliderStyle() => (Style)XamlReader.Parse("""
+        <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="Slider">
+          <Setter Property="MinHeight" Value="30" />
+          <Setter Property="Template"><Setter.Value>
+            <ControlTemplate TargetType="Slider">
+              <Grid Background="Transparent">
+                <Border x:Name="Focus" BorderBrush="#6BA9FF" BorderThickness="1" CornerRadius="7" Opacity="0" Margin="-5,0" />
+                <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                  <Track.DecreaseRepeatButton><RepeatButton Command="{x:Static Slider.DecreaseLarge}" Focusable="False">
+                    <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="#BCFF69" Height="4" CornerRadius="2" VerticalAlignment="Center" /></ControlTemplate></RepeatButton.Template>
+                  </RepeatButton></Track.DecreaseRepeatButton>
+                  <Track.Thumb><Thumb Width="16" Height="20" Cursor="Hand">
+                    <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#BCFF69" BorderBrush="#203127" BorderThickness="2" CornerRadius="8" Width="16" Height="16" /></ControlTemplate></Thumb.Template>
+                  </Thumb></Track.Thumb>
+                  <Track.IncreaseRepeatButton><RepeatButton Command="{x:Static Slider.IncreaseLarge}" Focusable="False">
+                    <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="#354A65" Height="4" CornerRadius="2" VerticalAlignment="Center" /></ControlTemplate></RepeatButton.Template>
+                  </RepeatButton></Track.IncreaseRepeatButton>
+                </Track>
+              </Grid>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Focus" Property="Opacity" Value="1" /></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value></Setter>
+        </Style>
+        """);
     public static ImageSource AppIcon()
     {
         var drawing = new DrawingGroup();

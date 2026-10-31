@@ -79,6 +79,13 @@ internal static class ProfileChecks
             File.WriteAllText(f.File("d3d9.dll"), "loader esterno"); Refused(() => f.Service.PrepareRemove(f.Report()));
             Require(File.ReadAllText(f.File(SdrProfile.PresetPath)) == "preset esterno", "Preset esterno perso.");
         });
+        check("Profilo: configurazione reindirizzata impedisce aggiornamenti apparenti del preset", () =>
+        {
+            using var f = new Fixture(testRoot, makeExe); f.Service.Execute(f.Plan());
+            var path = f.File("ReShade.ini"); var config = File.ReadAllText(path); var preset = Hash(f.File(SdrProfile.PresetPath));
+            File.WriteAllText(path, config.Replace("PresetPath=.\\GamePanelPreset.ini", "PresetPath=.\\OtherPreset.ini", StringComparison.Ordinal));
+            Refused(() => f.Plan(SdrSettings.Original)); Require(Hash(f.File(SdrProfile.PresetPath)) == preset, "Preset aggiornato con percorso reindirizzato.");
+        });
         check("Profilo: interruzione a ogni passo ripresa e annullata da una nuova istanza", () =>
         {
             foreach (var rollback in new[] { false, true })

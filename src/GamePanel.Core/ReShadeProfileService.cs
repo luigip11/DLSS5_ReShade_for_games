@@ -247,7 +247,33 @@ public sealed class ReShadeProfileService
             if (actual != file.Sha256 && !(allowRuntimeConfig && file.Path == SdrProfile.ConfigPath && actual is not null))
                 throw new InvalidDataException($"Componente gestito cambiato o mancante: {file.Path}. Non viene sovrascritto.");
         }
+        ValidateRuntimeConfiguration(root);
         CheckOtherLoaders(root);
+    }
+    private static void ValidateRuntimeConfiguration(string root)
+    {
+        var path = GameFile(root, SdrProfile.ConfigPath);
+        if (new FileInfo(path).Length > 256 * 1024) throw new InvalidDataException("Configurazione ReShade oltre il limite.");
+        var keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var section = "";
+        foreach (var raw in File.ReadLines(path))
+        {
+            var line = raw.Trim(); if (line.Length == 0 || line[0] is ';' or '/') continue;
+            if (line.StartsWith('[') && line.EndsWith(']')) { section = line[1..^1]; continue; }
+            var at = line.IndexOf('='); if (at < 1) continue;
+            var key = line[..at].Trim(); var value = line[(at + 1)..].Trim();
+            if (section.Equals("INSTALL", StringComparison.OrdinalIgnoreCase) && key.Equals("BasePath", StringComparison.OrdinalIgnoreCase) && value.Length != 0)
+                throw new InvalidDataException("ReShade è stato reindirizzato a un'altra configurazione: aggiornamento sospeso.");
+            if (!section.Equals("GENERAL", StringComparison.OrdinalIgnoreCase) || key is not ("PresetPath" or "StartupPresetPath" or "EffectSearchPaths")) continue;
+            if (!keys.TryAdd(key, value)) throw new InvalidDataException("Percorsi duplicati nella configurazione ReShade.");
+        }
+        foreach (var (key, expected) in new[] { ("PresetPath", SdrProfile.PresetPath), ("StartupPresetPath", SdrProfile.PresetPath), ("EffectSearchPaths", "GamePanelFX") })
+        {
+            if (!keys.TryGetValue(key, out var value) || value.Contains(',') || value.Contains('*') || value.Contains('\0'))
+                throw new InvalidDataException("La configurazione ReShade non usa più il profilo GamePanel: aggiornamento sospeso.");
+            var actual = Path.GetFullPath(Path.Combine(root, value.Replace('\\', Path.DirectorySeparatorChar)));
+            if (!SamePath(actual, GameFile(root, expected))) throw new InvalidDataException("Percorsi ReShade modificati esternamente: aggiornamento sospeso.");
+        }
     }
     private static void CheckOtherLoaders(string root)
     {

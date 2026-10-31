@@ -13,6 +13,7 @@ internal sealed partial class MainWindow
     private readonly TextBlock _sectionName = DesignSystem.Label("PANORAMICA", 11, Muted, true);
     private readonly TextBlock _gameContext = DesignSystem.Label("Nessun gioco selezionato", 13, Ink, true);
     private readonly TextBlock _inputHint = DesignSystem.Label("Incolla il percorso del gioco oppure scegli il suo EXE", 13, Muted);
+    private ScrollViewer _pageScroll = null!;
     private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi"];
     private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan"];
 
@@ -29,6 +30,7 @@ internal sealed partial class MainWindow
         Resources.Add(typeof(Button), DesignSystem.ButtonStyle());
         Resources.Add(typeof(System.Windows.Controls.Primitives.ScrollBar), DesignSystem.ScrollBarStyle());
         Resources.Add(typeof(ComboBox), DesignSystem.ComboBoxStyle());
+        Resources.Add(typeof(Slider), DesignSystem.SliderStyle());
         SourceInitialized += (_, _) => ApplyDarkTitlebar();
 
         var shell = new Grid();
@@ -51,7 +53,7 @@ internal sealed partial class MainWindow
         for (var i = 0; i < PageTitles.Length; i++)
         {
             var page = i;
-            var nav = Button("", (_, _) => { _page = page; Render(); });
+            var nav = Button("", (_, _) => { _page = page; Render(); _pageScroll.ScrollToTop(); });
             nav.Content = NavigationContent(i, i == 0);
             nav.Margin = new Thickness(0, 0, 0, 7); nav.Padding = new Thickness(12, 14, 12, 14);
             nav.HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -115,7 +117,9 @@ internal sealed partial class MainWindow
         toolActions.Children.Add(_export); toolActions.Children.Add(_cancel); Grid.SetColumn(toolActions, 1); tools.Children.Add(toolActions); header.Children.Add(tools);
         DockPanel.SetDock(header, Dock.Top); main.Children.Add(header);
         _content.Margin = new Thickness(30, 22, 30, 20);
-        main.Children.Add(new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        _pageScroll = new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_pageScroll, "PageScroll");
+        main.Children.Add(_pageScroll);
     }
 
     private static FrameworkElement NavigationContent(int page, bool active)

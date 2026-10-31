@@ -143,6 +143,7 @@ try {
         Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'verified official download and preview' 120
         if (Test-Path -LiteralPath (Join-Path $fixtureGame 'd3d9.dll')) { throw 'Preview wrote a loader into the fixture game.' }
         if ($PreviewDirectory) {
+            (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
             Start-Sleep -Milliseconds 300
             [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '02-effects.png')))
         }
@@ -192,6 +193,13 @@ try {
         Invoke-Button 'AnalyzePath'
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'post-render analysis'
         Invoke-Button 'HdrPage'
+        (Find-Element 'Sharpness').GetCurrentPattern([Windows.Automation.RangeValuePattern]::Pattern).SetValue(55)
+        Invoke-Button 'PrepareProfile'
+        Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'post-runtime config compatibility' 60
+        Invoke-Button 'ApplyProfile'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'post-runtime parameter update'
+        if ((Get-Content -LiteralPath $preset -Raw) -notmatch 'Sharpness=0\.5500') { throw 'Runtime-rewritten config prevented a valid parameter update.' }
+        Write-Host 'PASS GUI settings update after ReShade runtime configuration rewrite'
         Invoke-Button 'PrepareRemoveProfile'
         Wait-Until { $null -ne (Find-Element 'ApplyProfile') -and (Find-Element 'ApplyProfile').Current.IsEnabled } 'profile removal preview'
         Invoke-Button 'ApplyProfile'

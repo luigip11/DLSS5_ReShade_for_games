@@ -112,6 +112,7 @@ internal sealed partial class MainWindow : Window
         _status.Text = "Analisi in corso · Nessuna esecuzione del gioco";
         _cancellation = new CancellationTokenSource();
         Render();
+        _pageScroll.ScrollToTop();
         try
         {
             var token = _cancellation.Token;
