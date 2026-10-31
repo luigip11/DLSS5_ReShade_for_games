@@ -2,6 +2,13 @@ param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDir
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class GamePanelNativeDialog {
+    [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+}
+'@
 if ($PreviewDirectory) {
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($PreviewDirectory)) | Out-Null
     Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
@@ -94,15 +101,18 @@ try {
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('GamePanel ' + [char]0x00b7 + ' aggiornamenti')))
     Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition) } 'GitHub release check dialog' 40
     $updateDialog = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition)
-    # The native dialog enters the automation tree before its child controls.
-    $textCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Text)
-    Wait-Until { $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, $textCondition).Count -gt 0 } 'update dialog content'
-    $texts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, $textCondition)
-    $updateMessage = (@($texts | ForEach-Object { $_.Current.Name }) -join ' ')
+    # Native static/button controls can be exposed as Panes in the CI session.
+    function Read-UpdateDialog {
+        $parts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+        return (@($parts | ForEach-Object { $_.Current.Name }) -join ' ')
+    }
+    Wait-Until { (Read-UpdateDialog).Length -gt 20 } 'update dialog content'
+    $updateMessage = Read-UpdateDialog
     if ($updateMessage -notlike ('*Software gi' + [char]0x00e0 + ' aggiornato.*') -and $updateMessage -notlike '*Non ci sono ancora release aggiornabili pubblicate su GitHub.*') { throw "Unexpected release check result: $updateMessage" }
     $updateOkay = $updateDialog.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'OK'))
     if ($null -eq $updateOkay) { throw 'Update check OK button missing.' }
-    $updateOkay.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    # Deliver the standard IDOK command to our own verified result dialog.
+    if (-not [GamePanelNativeDialog]::PostMessageW([IntPtr]$updateDialog.Current.NativeWindowHandle, 0x111, [IntPtr]1, [IntPtr]::Zero)) { throw 'Cannot close the update result dialog.' }
     Wait-Until { (Find-Element 'CheckSoftwareUpdates').Current.IsEnabled } 'release check button reset'
     Write-Host "PASS live GitHub release check through GUI: $updateMessage"
     Invoke-Button 'OverviewPage'
