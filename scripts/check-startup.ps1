@@ -94,7 +94,10 @@ try {
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('GamePanel ' + [char]0x00b7 + ' aggiornamenti')))
     Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition) } 'GitHub release check dialog' 40
     $updateDialog = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $updateCondition)
-    $texts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Text))
+    # The native dialog enters the automation tree before its child controls.
+    $textCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Text)
+    Wait-Until { $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, $textCondition).Count -gt 0 } 'update dialog content'
+    $texts = $updateDialog.FindAll([Windows.Automation.TreeScope]::Descendants, $textCondition)
     $updateMessage = (@($texts | ForEach-Object { $_.Current.Name }) -join ' ')
     if ($updateMessage -notlike ('*Software gi' + [char]0x00e0 + ' aggiornato.*') -and $updateMessage -notlike '*Non ci sono ancora release aggiornabili pubblicate su GitHub.*') { throw "Unexpected release check result: $updateMessage" }
     $updateOkay = $updateDialog.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'OK'))
