@@ -1,0 +1,48 @@
+name: Read-only UG2 diagnostic check
+on:
+  push:
+    branches: ['diagnostics/ug2-runtime']
+permissions:
+  contents: read
+jobs:
+  read-only:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile harmless x86 process; no commercial game files
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $build = Join-Path $env:RUNNER_TEMP 'GamePanel-Diagnostic-Fixture'
+          New-Item $build -ItemType Directory -Force | Out-Null
+          $source = (Resolve-Path 'diagnostics/ReadOnlyFixture.cpp').Path
+          $batch = Join-Path $build 'build.cmd'
+          @("@call `"$vs\VC\Auxiliary\Build\vcvars32.bat`"", "cl /nologo /O2 /MT /Fe:`"$build\speed2.exe`" `"$source`" /link /SUBSYSTEM:WINDOWS /DYNAMICBASE:NO /BASE:0x400000") | Set-Content $batch
+          & cmd /c $batch
+          if ($LASTEXITCODE -ne 0) { throw 'Fixture compilation failed.' }
+      - name: Run read-only probe against the isolated harmless process
+        shell: powershell
+        run: |
+          $fixtureExe = Join-Path $env:RUNNER_TEMP 'GamePanel-Diagnostic-Fixture/speed2.exe'
+          $out = Join-Path $env:RUNNER_TEMP 'GamePanel-Diagnostic-Report'
+          New-Item $out -ItemType Directory -Force | Out-Null
+          $before = (Get-FileHash $fixtureExe -Algorithm SHA256).Hash
+          $p = Start-Process -FilePath $fixtureExe -PassThru
+          $retained = $p.Handle
+          try {
+            Start-Sleep -Milliseconds 500
+            & ./diagnostics/GamePanel-TextureCheck.ps1 -OutputDirectory $out
+            $files = @(Get-ChildItem $out -Filter '*.json')
+            if ($files.Count -ne 1) { throw 'Expected exactly one diagnostic report.' }
+            $report = Get-Content $files[0].FullName -Raw | ConvertFrom-Json
+            if ($report.Mode -ne 'ReadOnlyRuntimeSnapshot' -or $report.ProcessId -ne $p.Id -or $report.TotalCalls -ne 82 -or $report.MatchingCalls -ne 0 -or -not $report.HeaderStableDuringCheck -or -not $report.PreferredBaseMatches) { throw 'Unexpected diagnostic fixture result.' }
+            if ($p.HasExited -or (Get-FileHash $fixtureExe -Algorithm SHA256).Hash -ne $before) { throw 'Probe changed/stopped the test executable.' }
+            Write-Host 'PASS read-only diagnostic, real PE header read and 82 bounded callsite results; target running and file unchanged'
+          }
+          finally {
+            if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+            $p.Dispose()
+          }
