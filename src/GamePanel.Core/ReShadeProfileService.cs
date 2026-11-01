@@ -131,6 +131,7 @@ public sealed class ReShadeProfileService
     {
         CheckIdentity(report, token); var executable = Full(report.ExecutablePath);
         var folder = Folder(executable); CheckNoPending(folder, executable);
+        CheckAssetDependency(executable);
         var previous = LoadState(folder, executable);
         if (previous?.Installed != true) throw new InvalidOperationException("Nessuna installazione GamePanel da rimuovere.");
         if (previous.ExecutableSha256 != report.Sha256) throw new InvalidDataException("L'EXE è cambiato: rimozione sospesa.");
@@ -155,6 +156,7 @@ public sealed class ReShadeProfileService
         var folder = Folder(report.ExecutablePath); GuardPath(folder); Directory.CreateDirectory(folder); GuardPath(folder);
         using var lease = Acquire(folder);
         CheckNoPending(folder, report.ExecutablePath);
+        if (plan.Removing) CheckAssetDependency(report.ExecutablePath);
         var state = LoadState(folder, report.ExecutablePath);
         if (state?.Revision != plan.Previous?.Revision) throw new InvalidDataException("Stato del profilo cambiato: ripeti l'anteprima.");
         if (!plan.Removing && state?.Installed != true) CheckOtherLoaders(Path.GetDirectoryName(report.ExecutablePath)!, installing: true);
@@ -353,8 +355,14 @@ public sealed class ReShadeProfileService
     private void CheckNoPending(string folder, string executable)
     {
         if (LoadOperation(folder, executable)?.Status == "Pending"
-            || new ReShadeProfileService(_store, _running, !_widescreen).LoadOperation(folder, executable)?.Status == "Pending")
+            || new ReShadeProfileService(_store, _running, !_widescreen).LoadOperation(folder, executable)?.Status == "Pending"
+            || new AssetProfileService(_store, _running).Status(executable).Pending)
             throw new InvalidOperationException("Riprendi o annulla l'operazione interrotta del profilo immagine/schermo prima di procedere.");
+    }
+    private void CheckAssetDependency(string executable)
+    {
+        if (_widescreen && new AssetProfileService(_store, _running).Status(executable).State?.Packs.Any(p => p.Manifest.Kind == "Textures") == true)
+            throw new InvalidOperationException("Rimuovi prima i pacchetti texture: usano l'ASI loader del Widescreen Fix.");
     }
     private ProfileState? LoadState(string folder, string executable)
     {

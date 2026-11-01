@@ -125,6 +125,7 @@ internal sealed partial class MainWindow : Window
             RememberGame(report);
             await RefreshEffectsAsync(report.ExecutablePath);
             await RefreshScreenAsync(report.ExecutablePath);
+            await RefreshAssetsAsync(report.ExecutablePath);
             _status.Text = "Analisi completata · File letti senza modifiche";
         }
         catch (OperationCanceledException) { if (!_closing) _status.Text = "Analisi annullata"; }
@@ -184,6 +185,7 @@ internal sealed partial class MainWindow : Window
             case 4: RenderDiagnostics(); break;
             case 5: RenderLibrary(); break;
             case 6: RenderScreen(); break;
+            case 7: RenderAssets(); break;
         }
     }
 
@@ -217,6 +219,7 @@ internal sealed partial class MainWindow : Window
     {
         ResetEffects();
         ResetScreen();
+        ResetAssets();
         _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
         _backupMessage = "Crea una copia di riferimento prima di modificare il profilo del gioco.";
     }

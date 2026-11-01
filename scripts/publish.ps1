@@ -12,6 +12,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Restore controlli non riuscito.' }
     $checkArguments = @()
     if ($VerifyOfficialComponent) { $checkArguments += '--verify-official-reshade' }
+    $asphalt = Join-Path $repository 'artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip'
+    if (Test-Path -LiteralPath $asphalt) { $checkArguments += @('--asphalt-package', $asphalt) }
     & dotnet run --project tests/GamePanel.Checks/GamePanel.Checks.csproj -c Release --no-restore -- @checkArguments
     if ($LASTEXITCODE -ne 0) { throw 'Controlli non superati. Pubblicazione interrotta.' }
     & dotnet restore src/GamePanel.Desktop/GamePanel.Desktop.csproj --locked-mode
@@ -37,7 +39,9 @@ try {
     Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
     Copy-Item docs/RESHade-SDR.md (Join-Path $portable 'RESHade-SDR.md')
     Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
-    Copy-Item docs/ALPHA7.md (Join-Path $portable 'ALPHA7.md')
+    Copy-Item docs/ALPHA8.md (Join-Path $portable 'ALPHA8.md')
+    Copy-Item docs/ASSET-PACKS.md (Join-Path $portable 'ASSET-PACKS.md')
+    Copy-Item docs/TEXWIZARD-CATALOG.md (Join-Path $portable 'TEXWIZARD-CATALOG.md')
     Copy-Item docs/WIDESCREEN-CATALOG.md (Join-Path $portable 'WIDESCREEN-CATALOG.md')
     Copy-Item docs/licenses/ThirteenAG-MIT.txt (Join-Path $portable 'LICENSE-WidescreenFix.txt')
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {

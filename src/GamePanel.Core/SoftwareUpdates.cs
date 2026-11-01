@@ -23,7 +23,7 @@ public static class PackageInventory
     {
         var name = ValidateRelative(relative);
         var first = name.Split('/')[0];
-        if (new[] { "Library", "Backups", "Profiles", "Components", "Updates", "Settings", "library.json", "d3d9.dll", "dinput8.dll", "dxgi.dll", "speed2.exe" }.Contains(first, StringComparer.OrdinalIgnoreCase)
+        if (new[] { "Library", "Backups", "Profiles", "Components", "AssetPacks", "Updates", "Settings", "library.json", "d3d9.dll", "dinput8.dll", "dxgi.dll", "speed2.exe" }.Contains(first, StringComparer.OrdinalIgnoreCase)
             || first.StartsWith(".gamepanel", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Il pacchetto contiene dati o componenti di gioco non ammessi.");
         return name;
     }

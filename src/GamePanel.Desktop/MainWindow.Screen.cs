@@ -44,11 +44,13 @@ internal sealed partial class MainWindow
         {
             var reason = _report is null ? "Seleziona un gioco dalla libreria." : ReShadeProfileService.Eligibility(_report, widescreen: true);
             if (reason is not null) Card("Disponibilità", reason);
-            var pendingPeer = _fxState?.Pending == true;
+            var pendingPeer = _fxState?.Pending == true || _assetState?.Pending == true;
+            var textureDependency = _screenState?.State?.Installed == true && _assetState?.State?.Packs.Any(p => p.Manifest.Kind == "Textures") == true;
             var prepare = FxButton(_screenState?.State?.Installed == true ? "Prepara rimozione Widescreen Fix" : "Scarica fix e prepara anteprima", "PrepareScreen",
-                async (_, _) => await PrepareScreenAsync(_screenState?.State?.Installed == true), !_busy && reason is null && !pendingPeer);
+                async (_, _) => await PrepareScreenAsync(_screenState?.State?.Installed == true), !_busy && reason is null && !pendingPeer && !textureDependency);
             prepare.Background = Accent; prepare.Foreground = BackgroundBrush; _content.Children.Add(prepare);
-            if (pendingPeer) Card("Prima recupera il profilo immagine", "Un'operazione ReShade è interrotta. Apri HDR / FX e riprendila o annullala.");
+            if (pendingPeer) Card("Prima recupera il profilo", "Un'operazione immagine o asset è interrotta. Riprendila o annullala nella relativa pagina.");
+            if (textureDependency) Card("Loader condiviso dalle texture", "Rimuovi prima i pacchetti texture nella pagina Texture e modelli. Il loro runtime usa l'ASI loader di questo fix.");
             if (_screenPlan is not null)
             {
                 Card(_screenPlan.Removing ? "Rimozione pronta" : "Installazione pronta", string.Join("\n", _screenPlan.Changes.Select(c => $"{(c.AfterSha256 is null ? "Rimuovi" : "Aggiungi")} · {c.Path}"))

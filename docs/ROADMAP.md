@@ -65,3 +65,8 @@ Libreria con giochi persistenti, ricerca, rinomina e ricollegamento. Cinema este
 ## Avanzamento alpha.7
 
 Aggiornamenti su richiesta da release GitHub pubblicate, con conferma, digest/pacchetto inventariato e helper separato. I dati utente restano esterni alla cartella app; i test includono sostituzione, file extra, journal grandi e interruzione/ripresa/rollback. Rilevamento degli schermi Windows con modalità attuale/preferita e scelta persistente. ReShade SDR esteso in modo sperimentale ai classici NFS e San Andreas x86 DX9; Widescreen Fix ancora solo Underground 2. Firma pubblica, swap DLSS, conversione HDR e asset moderni non sono risolti da queste modifiche. Il lavoro texture/modelli segue il percorso descritto in [GRAPHICS-ASSETS](GRAPHICS-ASSETS.md), partendo da Underground 2.
+
+
+## Avanzamento alpha.8
+
+Gestore texture/modelli con inventario, cache verificata, anteprima, streaming delle copie, baseline originali e journal prima/dopo. Primo pack procedurale originale di tre superfici asfalto a 2K; TexWizard1.3 da catalogo indipendente, preflight di tutti82CALL, loader Widescreen condiviso. Inputdata-onlyGeometry/Textures per auto esistenti, non converter generico di RAR/TPF/Binary. Geometrie modernizzate collaudate e una sostituzione ampia delle texture restano da realizzare dopo l'audit dei pacchetti e il test della copia reale.

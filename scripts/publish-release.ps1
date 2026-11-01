@@ -1,4 +1,4 @@
-param([Parameter(Mandatory = $true)][string]$PackageDirectory)
+param([Parameter(Mandatory = $true)][string]$PackageDirectory, [Parameter(Mandatory = $true)][string]$AsphaltPackagePath)
 $ErrorActionPreference = 'Stop'
 $repository = 'luigip11/DLSS5_ReShade_for_games'
 if ($env:GITHUB_REPOSITORY -cne $repository -or $env:GITHUB_SHA -notmatch '^[a-f0-9]{40}$') { throw 'Unexpected release repository or commit.' }
@@ -24,6 +24,8 @@ $zip = Join-Path $output 'GamePanel-win-x64.zip'
 Compress-Archive -Path "$folder/*" -DestinationPath $zip -CompressionLevel Optimal
 $packageHash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 $metadata = @{ SchemaVersion = 1; Version = $version; PackageFileName = 'GamePanel-win-x64.zip'; PackageBytes = (Get-Item $zip).Length; PackageSha256 = $packageHash; Commit = $env:GITHUB_SHA }
+$asphalt = (Resolve-Path -LiteralPath $AsphaltPackagePath).Path
+if ([IO.Path]::GetFileName($asphalt) -cne 'GamePanel-AsphaltHD.zip' -or (Get-Item $asphalt).Length -ne 8397130 -or (Get-FileHash -LiteralPath $asphalt -Algorithm SHA256).Hash.ToLowerInvariant() -cne '45fe214ba832782c2f46ed32265f5428bf34e82ac0c7bc3f1b5c4d9c11e3d67a') { throw 'Original asphalt pack does not match the application catalog.' }
 $metadataPath = Join-Path $output 'GamePanel-update.json'
 [IO.File]::WriteAllText($metadataPath, ($metadata | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
 $notes = Get-Content (Join-Path $PSScriptRoot '../docs/RELEASE-NOTES.md') -Raw
@@ -32,7 +34,7 @@ $body = @{ tag_name = $tag; target_commitish = $env:GITHUB_SHA; name = "GamePane
 $release = Invoke-RestMethod -Method Post -Uri "$api/releases" -Headers $headers -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))
 $upload = $release.upload_url -replace '\{.*$', ''
 if ($upload -cne "https://uploads.github.com/repos/$repository/releases/$($release.id)/assets") { throw 'Unexpected GitHub upload URL.' }
-foreach ($path in @($zip, $metadataPath)) {
+foreach ($path in @($zip, $metadataPath, $asphalt)) {
     $name = [IO.Path]::GetFileName($path)
     $contentType = if ($name.EndsWith('.zip')) { 'application/zip' } else { 'application/json' }
     $asset = Invoke-RestMethod -Method Post -Uri ($upload + '?name=' + [Uri]::EscapeDataString($name)) -Headers $headers -ContentType $contentType -InFile $path
