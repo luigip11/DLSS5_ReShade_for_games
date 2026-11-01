@@ -70,7 +70,7 @@ internal sealed partial class MainWindow
         _directXState = snapshot.State; _directXCaptures = snapshot.Scan.Captures; _directXInstalled = snapshot.Installed;
         _directXReadFailed = false; _directXMessage = snapshot.State.Message; _directXReplacementPending = snapshot.ReplacementPending;
         _directXCaptureNote = (snapshot.Scan.Warnings.Count > 0 ? $"{snapshot.Scan.Warnings.Count} file esclusi perché non verificabili. " : "")
-            + (snapshot.Scan.WasLimited ? "Lettura limitata: conserva solo le catture utili nella cartella dump e aggiorna." : "");
+            + (snapshot.Scan.WasLimited ? "Elenco manuale limitato. La preparazione automatica esegue una scansione separata e mostra gli eventuali limiti nel riepilogo." : "");
         if (!_directXCaptures.Any(c => c.Hash == _directXSelectedHash)) _directXSelectedHash = "";
     }
 
@@ -78,7 +78,7 @@ internal sealed partial class MainWindow
     {
         var body = new StackPanel();
         body.Children.Add(DesignSystem.Chip("DIRECTX 9 · SPERIMENTALE", Accent));
-        var title = Text("Il tuo EXE. Texture nuove.", 24, Ink, FontWeights.SemiBold);
+        var title = Text("Diagnosi e sostituzioni manuali", 24, Ink, FontWeights.SemiBold);
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
         body.Children.Add(Text("Texture Toolkit intercetta le texture tramite DirectX. Il gioco mantiene il suo eseguibile; il componente va ancora verificato nella tua copia di Underground 2.", 13, Muted));
         var message = Text(_directXMessage, 13, Ink);
@@ -126,7 +126,7 @@ internal sealed partial class MainWindow
         else
         {
             body.Children.Add(DesignSystem.Chip(_directXState.InjectionEnabled == true ? "SOSTITUZIONI ATTIVE" : "PRIMA PROVA · ACQUISIZIONE", Accent));
-            var steps = Text("1  Avvia normalmente il gioco e raggiungi una gara.\n2  Premi INSERT: seleziona una texture, usa Blink in game per riconoscerla e salva la singola DDS con Dump.\n3  Chiudi il gioco e premi Aggiorna catture. Associa un file DDS alla superficie riconosciuta, poi prepara l'attivazione.", 13, Muted);
+            var steps = Text("Hai già usato Dump all textures? Usa «Prepara tutte le texture» in alto.\nPer una sostituzione manuale: premi INSERT nel gioco, riconosci una superficie con Blink e salva la DDS. Chiudi il gioco, aggiorna le catture e associa il tuo DDS alla superficie scelta.", 13, Muted);
             steps.LineHeight = 22; steps.Margin = new Thickness(0, 12, 0, 12); body.Children.Add(steps);
             var actions = new WrapPanel();
             actions.Children.Add(FxButton("Aggiorna catture", "RefreshDirectXCaptures", async (_, _) => await RefreshDirectXCaptureListAsync(), CanPrepareDirectX));
@@ -167,7 +167,7 @@ internal sealed partial class MainWindow
     {
         if (_directXCaptures.Count == 0)
         {
-            Card("Prima riconosci una superficie", "Non ci sono ancora catture DDS verificate. Acquisisci una singola texture dal pannello INSERT durante il gioco e torna qui. GamePanel non associa automaticamente l'asfalto a texture sconosciute.");
+            Card("Catture per la diagnosi manuale", "Non ci sono ancora catture DDS verificate. Salvale dal pannello INSERT durante il gioco. La preparazione automatica usa tutte le catture compatibili senza richiedere una selezione individuale.");
             return;
         }
         var body = new StackPanel(); body.Children.Add(Text("Una superficie alla volta", 20, Ink, FontWeights.SemiBold));
@@ -268,7 +268,7 @@ internal sealed partial class MainWindow
         {
             ApplyDirectXUiSnapshot(snapshot);
             if (snapshot.State.Installed)
-                _directXMessage = snapshot.Scan.Captures.Count == 0 ? "Nessuna cattura verificata: salva una singola DDS dal pannello INSERT durante una gara." : $"{snapshot.Scan.Captures.Count} catture verificate. Scegli una superficie riconosciuta prima di associarle un DDS.";
+                _directXMessage = snapshot.Scan.Captures.Count == 0 ? "Nessuna cattura verificata: salva le DDS dal pannello INSERT durante una gara." : $"{snapshot.Scan.Captures.Count} catture verificate. Usa la preparazione automatica in alto oppure scegli una superficie per una sostituzione manuale.";
         }, "Lettura catture DirectX · nessuna modifica al gioco");
     }
 

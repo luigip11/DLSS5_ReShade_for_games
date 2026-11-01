@@ -1,4 +1,6 @@
-# Texture DirectX — candidato alpha.9
+# Texture DirectX — diagnosi manuale
+
+Da alpha.10 il percorso principale è [preparazione e installazione in blocco](AUTOMATIC-TEXTURES.md). Le istruzioni qui sotto restano per diagnosi e sostituzioni individuali.
 
 Questa versione aggiunge una prova sperimentale per Underground 2 x86 Direct3D 9, mantenendo l'eseguibile del gioco. La verifica statica delle API non dimostra che il componente funzioni nella singola copia: il primo avvio serve a verificarlo. Il componente sostituisce pixel delle texture, non modelli 3D o geometrie della città.
 

@@ -453,7 +453,7 @@ public sealed class DirectXTextureProfileService
     }
     private static string? ReadStatus(string path)
     {
-        using var doc = ReadDocument(path);
+        using var doc = ReadDocument(path, 4 * 1024 * 1024);
         if (doc.RootElement.ValueKind != JsonValueKind.Object || !doc.RootElement.TryGetProperty("Status", out var status)
             || status.ValueKind != JsonValueKind.String) throw Invalid("Journal condiviso privo di stato valido.");
         var value = status.GetString();
@@ -462,9 +462,9 @@ public sealed class DirectXTextureProfileService
     }
     private static T ReadMetadata<T>(string path)
     { using var doc = ReadDocument(path); try { return doc.RootElement.Deserialize<T>() ?? throw Invalid("Metadati DirectX mancanti."); } catch (JsonException e) { throw new InvalidDataException("Metadati DirectX non validi.", e); } }
-    private static JsonDocument ReadDocument(string path)
+    private static JsonDocument ReadDocument(string path, int maximumBytes = MaximumMetadataBytes)
     {
-        var bytes = ReadBounded(path, MaximumMetadataBytes); JsonDocument doc;
+        var bytes = ReadBounded(path, maximumBytes); JsonDocument doc;
         try { doc = JsonDocument.Parse(bytes, new() { MaxDepth = 12 }); }
         catch (JsonException e) { throw new InvalidDataException("JSON DirectX non valido.", e); }
         try { Duplicates(doc.RootElement); return doc; } catch { doc.Dispose(); throw; }

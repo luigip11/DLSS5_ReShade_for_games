@@ -1,5 +1,11 @@
 # Specifica concordata e avanzamento
 
+## Candidato alpha.10 — automazione e subset Smol
+
+Implementati i flussi a due pulsanti per le catture texture e per le correzioni Golf/IS300/Sentra dal RAR revisionato. L'interpolazione 2× non sintetizza nuovo dettaglio; Smol è un subset di correzioni ai modelli originali. Entrambi richiedono verifica visiva nel gioco reale.
+
+Per RTX Remix è disponibile l'analisi locale del 7z 0.4 con inventario JSON; non un installer renderer. Restano necessari l'audit dell'archivio completo e un piano verificato di sospensione/ripristino di ReShade e Texture Toolkit. Personaggi e mesh cittadine moderne non sono dichiarati implementati.
+
 ## Candidato alpha.9 — percorso DirectX e stato dei modelli
 
 Implementata una prova Texture Toolkit x86 UG2 con catture nei dati utente, hash dei pixel verificati, anteprime DDS e sostituzioni personali recuperabili. La prova reale sulla copia dell'utente resta necessaria. Nessuna sostituzione dell'eseguibile per ottenere il layout TexWizard.

@@ -61,7 +61,8 @@ internal static class UpdateChecks
         {
             Require(!SoftwareUpdates.ParseReleases("[]"u8.ToArray(), AppVersion.Current).PublishedReleasesExist, "Assenza release mascherata.");
             Require(SoftwareUpdates.ParseReleases(Releases("0.1.0-alpha.6", "0.1.0-alpha.7"), AppVersion.Current).Update is null, "Downgrade offerto.");
-            Require(SoftwareUpdates.ParseReleases(Releases("0.1.0-alpha.10", "0.1.0-alpha.9"), AppVersion.Current).Update?.Version == "0.1.0-alpha.10", "Non selezionata la più recente.");
+            Require(SoftwareUpdates.ParseReleases(Releases("0.1.0-alpha.10", "0.1.0-alpha.9"), AppVersion.Parse("0.1.0-alpha.9")).Update?.Version == "0.1.0-alpha.10", "Non selezionata la più recente.");
+            Require(SoftwareUpdates.ParseReleases(Releases(AppVersion.Current.ToString()), AppVersion.Current).Update is null, "Versione già installata offerta come aggiornamento.");
             Require(SoftwareUpdates.ParseReleases(Releases("1.0.1-alpha.1"), AppVersion.Parse("1.0.0")).Update is null, "Stabile spostata su alpha.");
         });
         check("Update: release incompleta o senza digest rifiutata", () =>

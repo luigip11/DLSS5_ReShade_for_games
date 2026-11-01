@@ -2,13 +2,13 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: candidato 0.1.0-alpha.9, prova texture DirectX
+## Stato reale: candidato 0.1.0-alpha.10, texture in blocco e tre correzioni auto
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Il candidato alpha.9 aggiunge un percorso **DirectX 9 sperimentale** che mantiene l'EXE del gioco, con Texture Toolkit fissato su versione e SHA-256, catture nei dati utente, anteprime delle DDS e associazione esplicita di un materiale originale asfalto 2K alla superficie scelta. Installazione, attivazione e rimozione richiedono una conferma e conservano i dati. Non è ancora un risultato collaudato sulla copia dell'utente. [Guida DirectX](docs/DIRECTX-TEXTURES.md).
+Il candidato alpha.10 aggiunge **Prepara tutte le texture → Installa texture preparate**: usa le catture esistenti con associazioni automatiche, interpolazione 2× e mipmap completi, senza selezionare ogni superficie. Non è un modello AI né un pack di nuovi asset. Integra inoltre un sottoinsieme revisionato di Smol per Golf, IS300 e Sentra, preparato dal RAR dell'autore con texture originali conservate. [Texture automatiche](docs/AUTOMATIC-TEXTURES.md), [correzioni auto](docs/SMOL-MODELS.md).
 
-La gestione asset alpha.8 resta disponibile: ZIP inventariati, backup e recupero; TexWizard continua a richiedere il layout verificato dell'EXE. I modelli auto e le nuove geometrie della città non sono inclusi: le [fonti verificate e i requisiti](docs/CAR-CITY-SOURCES.md) distinguono pacchetti candidati dal diverso renderer RTX Remix.
+La gestione asset alpha.8 e la diagnosi DirectX alpha.9 restano disponibili. Il gioco mantiene il suo EXE. Le nuove geometrie della città e i personaggi non sono inclusi: RTX Remix richiede un diverso profilo renderer e un archivio ancora da verificare. Il pulsante **Analizza archivio Remix 0.4** legge il 7z locale ed esporta un inventario JSON senza installarlo, così si può proseguire la verifica senza trasferire oltre 2 GB. [Fonti e requisiti](docs/CAR-CITY-SOURCES.md).
 
 Disponibile:
 

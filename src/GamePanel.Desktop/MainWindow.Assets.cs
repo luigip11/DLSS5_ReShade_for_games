@@ -28,6 +28,7 @@ internal sealed partial class MainWindow
         _assetState = null; _assetPlan = null; _assetPackage = null; _assetArchivePath = "";
         _assetMessage = "Analizza il gioco per preparare texture e modelli.";
         _assetPlanConfirmation = "Applica pacchetto";
+        ResetAutomaticAssets();
         ResetDirectXTextures();
     }
 
@@ -50,7 +51,7 @@ internal sealed partial class MainWindow
     {
         _assetApplyButton = null;
         _assetPreviewPanel = null;
-        Heading("Texture vere. Dettagli nuovi.", "Underground 2 · pacchetti di asset · integrazione sperimentale.");
+        Heading("Texture e modelli", "Underground 2 · preparazione automatica · installazione verificata.");
         var state = Text(_assetMessage, 13, Muted);
         _assetStatusText = state;
         System.Windows.Automation.AutomationProperties.SetAutomationId(state, "AssetStatus");
@@ -71,6 +72,8 @@ internal sealed partial class MainWindow
         if (_fxState?.Pending == true || _screenState?.Pending == true)
             Card("Prima completa il recupero", "C'è un'operazione interrotta in HDR / FX o Schermo. Riprendila o annullala nella sua pagina prima di modificare gli asset.");
 
+        RenderAutomaticTextures();
+        RenderSmolModels();
         RenderDirectXTextures();
         if (_directXState?.Pending == true || _directXReplacementPending) return;
 
@@ -95,26 +98,24 @@ internal sealed partial class MainWindow
         RenderAssetImport();
         RenderAssetPreview();
         RenderInstalledAssets();
-        Details("Texture, modelli e immagine SDR", "Le texture sostituiscono materiali del gioco; i modelli sostituiscono file delle auto già presenti. Il profilo HDR / FX regola invece l'immagine SDR e non aggiunge dettaglio agli asset. Il pack asfalto non trasforma tutti gli elementi in 2K. I modelli importati restano da collaudare nel gioco: questa versione non include un modello già verificato.");
-        Details("Compatibilità e formati", "Importazione solo da ZIP con GamePanelAssetPack.json, elenco preciso dei file, dimensioni e SHA-256. Sono ammessi dati texture e coppie GEOMETRY.BIN / TEXTURES.BIN per auto esistenti; i metadati texture devono essere già nel formato richiesto dal loader. RAR, TPF, END e installer richiedono conversione esterna e non sono supportati. GamePanel non esegue convertitori o programmi contenuti nei pacchetti.");
+        Details("Texture, modelli e immagine SDR", "Le texture automatiche ingrandiscono le catture esistenti; Smol corregge solo tre modelli originali. Il profilo HDR / FX regola invece l'immagine SDR. Il pack asfalto non trasforma tutti gli elementi in 2K. Verifica in gioco ogni modifica dopo l'installazione.");
+        Details("Compatibilità e formati", "Importazione manuale solo da ZIP con GamePanelAssetPack.json, elenco preciso dei file, dimensioni e SHA-256. Sono ammessi dati texture e coppie GEOMETRY.BIN / TEXTURES.BIN per auto esistenti. Il percorso Smol legge esclusivamente il RAR originale verificato; i suoi convertitori e script non vengono eseguiti. Altri RAR, TPF, END e installer non sono supportati.");
         Details("Origine, licenza e ritorno all'originale", "Autore e URL dei pacchetti importati sono dichiarazioni del manifest, non una verifica dell'identità o della licenza. Controlla i diritti d'uso e le istruzioni del pack. Ogni applicazione richiede una conferma dell'anteprima; le copie verificate permettono di disattivare o rimuovere un pack. File cambiati da altri strumenti bloccano le modifiche. Chiudi il gioco prima di applicare e riavvialo per verificare il risultato.");
     }
 
     private void RenderModelSourceCards()
     {
-        var body = new StackPanel(); body.Children.Add(DesignSystem.Chip("AUTO E GEOMETRIE CITTÀ", Accent));
-        var title = Text("Modelli nuovi, requisiti diversi.", 21, Ink, FontWeights.SemiBold);
+        var body = new StackPanel(); body.Children.Add(DesignSystem.Chip("GEOMETRIE CITTÀ · PERCORSO SEPARATO", Accent));
+        var title = Text("Città RTX Remix", 21, Ink, FontWeights.SemiBold);
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
-        body.Children.Add(Text("Modelli auto: importazione disponibile per pacchetti GamePanel di auto esistenti. Nessun pack di modelli verificato è incluso in questa versione.", 13, Muted));
-        var cars = Text("Smol Model Fix · correzioni mirate ai modelli originali; archivio e procedura d'installazione ancora da verificare.", 13, Muted);
-        cars.Margin = new Thickness(0, 12, 0, 6); body.Children.Add(cars);
-        body.Children.Add(FxButton("Fonte autore · Smol Model Fix", "OpenSmolModelSource", (_, _) => OpenAssetSource("https://nfsmods.xyz/mod/2721"), !_busy));
-        var city = Text("Underground 2 Remix · nuove geometrie per la città, con un profilo RTX Remix separato. Questi asset non si installano con il componente texture DirectX di questa pagina.", 13, Muted);
+        var city = Text("Underground 2 Remix richiede un profilo renderer RTX Remix separato e l'archivio 0.4 verificato. Non è installabile da questo riquadro. Nessun pacchetto personaggi documentato è disponibile.", 13, Muted);
         city.Margin = new Thickness(0, 12, 0, 6); body.Children.Add(city);
         var sources = new WrapPanel();
         sources.Children.Add(FxButton("Progetto autore · Underground 2 Remix", "OpenCityRemixSource", (_, _) => OpenAssetSource("https://www.moddb.com/mods/need-for-speed-underground-2-remix"), !_busy));
         sources.Children.Add(FxButton("Repository asset RTX Remix", "OpenCityRemixRepository", (_, _) => OpenAssetSource("https://github.com/Ekozmaster/NFSU2-RTX-Remix"), !_busy));
+        sources.Children.Add(FxButton("Analizza archivio Remix 0.4", "AnalyzeRemixArchive", async (_, _) => await AnalyzeRemixArchiveAsync(), !_busy));
         body.Children.Add(sources);
+        body.Children.Add(Text(_remixAuditMessage, 12, Muted));
         var hint = Text("I pulsanti aprono le fonti nel browser. Nessuna mod viene scaricata o applicata da questo riquadro.", 12, Muted);
         hint.Margin = new Thickness(0, 10, 0, 0); body.Children.Add(hint); _content.Children.Add(AssetPanel(body, 20));
     }

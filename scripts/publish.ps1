@@ -41,6 +41,10 @@ try {
     Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
     Copy-Item docs/ALPHA8.md (Join-Path $portable 'ALPHA8.md')
     Copy-Item docs/DIRECTX-TEXTURES.md (Join-Path $portable 'DIRECTX-TEXTURES.md')
+    Copy-Item docs/AUTOMATIC-TEXTURES.md (Join-Path $portable 'AUTOMATIC-TEXTURES.md')
+    Copy-Item docs/SMOL-MODELS.md (Join-Path $portable 'SMOL-MODELS.md')
+    Copy-Item docs/REMIX-PROFILE.md (Join-Path $portable 'REMIX-PROFILE.md')
+    Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')
     Copy-Item docs/CAR-CITY-SOURCES.md (Join-Path $portable 'CAR-CITY-SOURCES.md')
     Copy-Item docs/third-party/TextureToolkit-MIT.txt (Join-Path $portable 'LICENSE-TextureToolkit.txt')
     $sample = Join-Path $portable 'Assets/DirectXAsphalt/Asphalt.dds'

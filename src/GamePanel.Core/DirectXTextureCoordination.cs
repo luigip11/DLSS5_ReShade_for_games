@@ -11,12 +11,12 @@ internal static class DirectXTextureCoordination
         {
             var path = Path.Combine(folder, name); GuardPath(path);
             if (AttributesOrMissing(path) is not FileAttributes attributes) continue;
-            if ((attributes & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) != 0 || new FileInfo(path).Length > 1024 * 1024)
+            if ((attributes & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) != 0 || new FileInfo(path).Length > 4 * 1024 * 1024)
                 throw new InvalidDataException("Journal DirectX non regolare o fuori limite.");
             try
             {
                 using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                if (input.Length > 1024 * 1024) throw new InvalidDataException("Journal DirectX fuori limite.");
+                if (input.Length > 4 * 1024 * 1024) throw new InvalidDataException("Journal DirectX fuori limite.");
                 var bytes = new byte[checked((int)input.Length)]; input.ReadExactly(bytes);
                 if (input.ReadByte() != -1) throw new InvalidDataException("Journal DirectX cresciuto durante la lettura.");
                 using var doc = JsonDocument.Parse(bytes, new() { MaxDepth = 24 });

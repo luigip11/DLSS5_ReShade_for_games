@@ -61,6 +61,72 @@ public sealed class DirectXTextureReplacementService
         return next;
     }
 
+    /// <summary>Preflight the entire batch before the first write, then journal each DDS independently.</summary>
+    public BatchInstallResult InstallBatch(GameReport report, string resourceRoot, string preparedFolder,
+        IReadOnlyList<DirectXBatchFile> files, CancellationToken token = default, IProgress<BackupProgress>? progress = null)
+    {
+        if (files is null || files.Count is < 1 or > DirectXTextureBatchService.MaximumFiles)
+            throw Invalid("Elenco batch fuori limite.");
+        using var lease = _profiles.AcquireForReplacement(report, resourceRoot, token);
+        var folder = _profiles.ProfileFolder(report.ExecutablePath); CheckNoPending(folder, report, resourceRoot);
+        var before = ReadState(folder, report, resourceRoot); VerifyLive(before, token);
+        // One bounded capture scan for the whole operation (not one scan per replacement).
+        var scan = DirectXTextureBatchService.Scan(resourceRoot, token);
+        var captures = scan.Captures.ToDictionary(c => c.Hash, StringComparer.Ordinal);
+        if (before.Files.Select(f => f.Hash).Concat(files.Where(f => f is not null).Select(f => f.Hash)).Distinct(StringComparer.Ordinal).Count() > DirectXTextureBatchService.MaximumFiles)
+            throw Invalid("Il totale delle DDS gestite supera 2048: rimuovi prima le sostituzioni non necessarie.");
+        var keys = new HashSet<string>(StringComparer.Ordinal); long bytes = 0;
+        var planned = new List<(DirectXBatchFile File, string Source)>();
+        foreach (var file in files)
+        {
+            token.ThrowIfCancellationRequested();
+            if (file is null || file.Hash != Key(file.Hash) || !keys.Add(file.Hash) || !Digest(file.CaptureSha256) || !Digest(file.OutputSha256)
+                || file.OutputBytes is < 128 or > DirectXTextureData.MaximumDdsBytes)
+                throw Invalid("Voce batch non valida.");
+            bytes = checked(bytes + file.OutputBytes); if (bytes > DirectXTextureBatchService.MaximumOutputBytes) throw Invalid("Batch oltre 512 MiB.");
+            if (!captures.TryGetValue(file.Hash, out var capture) || capture.Info.Sha256 != file.CaptureSha256)
+                throw Invalid("Cattura originale cambiata o mancante: prepara nuovamente il batch.");
+            var source = Path.Combine(Path.GetFullPath(preparedFolder), file.Hash + ".dds"); GuardPath(source);
+            var info = DirectXTextureData.ReadDds(source, token);
+            if (info.Sha256 != file.OutputSha256 || info.Bytes != file.OutputBytes || !info.FullMipChain)
+                throw Invalid("DDS preparato cambiato o privo di mipmap.");
+            planned.Add((file, source));
+        }
+        // Reject every unmanaged injection, including files outside the selected set.
+        var inject = Path.Combine(Path.GetFullPath(resourceRoot), "inject"); GuardPath(inject);
+        var managed = before.Files.ToDictionary(f => f.Hash, StringComparer.Ordinal);
+        if (Directory.Exists(inject))
+            foreach (var path in Directory.EnumerateFileSystemEntries(inject))
+            {
+                token.ThrowIfCancellationRequested(); GuardPath(path);
+                if (!Path.GetExtension(path).Equals(".dds", StringComparison.OrdinalIgnoreCase)
+                    || !managed.TryGetValue(Path.GetFileNameWithoutExtension(path), out var known)
+                    || !Same(path, known.DestinationPath)) throw Invalid("La cartella inject contiene file non gestiti: nessuna DDS installata.");
+            }
+        var installed = 0; var identical = 0;
+        try
+        {
+            foreach (var item in planned)
+            {
+                token.ThrowIfCancellationRequested(); var file = item.File;
+                var old = before.Files.SingleOrDefault(f => f.Hash == file.Hash);
+                if (old?.Sha256 == file.OutputSha256) { identical++; progress?.Report(new("DDS già installata", installed + identical, files.Count)); continue; }
+                // Recheck the source binding immediately before its transaction.
+                if (HashFile(captures[file.Hash].FilePath, token) != file.CaptureSha256) throw Invalid("Cattura cambiata durante l'installazione.");
+                var destination = Destination(resourceRoot, file.Hash);
+                if (ExistingHash(destination, token) != old?.Sha256) throw Invalid("Destinazione DDS modificata durante l'installazione.");
+                var next = new DirectXTextureReplacement(file.Hash, destination, file.OutputSha256, file.OutputBytes);
+                var after = before with { Files = before.Files.Where(f => f.Hash != file.Hash).Append(next).OrderBy(f => f.Hash).ToArray() };
+                Mutate(report, folder, before, after, file.Hash, old?.Sha256, next.Sha256, item.Source, token, verifyAll: false);
+                before = after; installed++; progress?.Report(new("DDS installata • attivazione separata", installed + identical, files.Count));
+            }
+            VerifyLive(before, token);
+            return new(installed, identical, files.Count, false);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        { return new(installed, identical, files.Count, true); }
+    }
+
     public void Remove(GameReport report, string resourceRoot, string originalHash, CancellationToken token = default)
     {
         originalHash = Key(originalHash);
@@ -86,7 +152,7 @@ public sealed class DirectXTextureReplacementService
     }
 
     private void Mutate(GameReport report, string folder, State before, State after, string hash, string? previousHash,
-        string? nextHash, string? source, CancellationToken token)
+        string? nextHash, string? source, CancellationToken token, bool verifyAll = true)
     {
         token.ThrowIfCancellationRequested();
         var id = Guid.NewGuid().ToString("N"); var payload = PayloadFolder(folder, id);
@@ -96,10 +162,10 @@ public sealed class DirectXTextureReplacementService
         var op = new Journal(1, id, "Pending", hash, before, after, previousHash, nextHash);
         _profiles.CheckReplacementContext(report, before.ResourceRoot, token);
         Write(Path.Combine(folder, JournalName), op);
-        Finish(report, folder, op, false, token);
+        Finish(report, folder, op, false, token, verifyAll);
     }
 
-    private void Finish(GameReport report, string folder, Journal op, bool rollback, CancellationToken token)
+    private void Finish(GameReport report, string folder, Journal op, bool rollback, CancellationToken token, bool verifyAll = true)
     {
         var desired = rollback ? op.BeforeSha256 : op.AfterSha256;
         var target = Destination(op.Before.ResourceRoot, op.Hash);
@@ -111,7 +177,7 @@ public sealed class DirectXTextureReplacementService
         if (op.AfterSha256 is not null) VerifyDdsPayload(Path.Combine(payload, "after.bin"), op.AfterSha256, token);
         var result = rollback ? op.Before : op.After;
         // Check all other managed replacements before committing any data.
-        VerifyLive(result with { Files = result.Files.Where(f => f.Hash != op.Hash).ToArray() }, token);
+        if (verifyAll) VerifyLive(result with { Files = result.Files.Where(f => f.Hash != op.Hash).ToArray() }, token);
         token.ThrowIfCancellationRequested();
         _profiles.CheckReplacementContext(report, op.Before.ResourceRoot, token);
         if (live != desired)
@@ -134,7 +200,8 @@ public sealed class DirectXTextureReplacementService
                 GuardPath(target); File.Move(stage, target, true);
             }
         }
-        VerifyLive(result, token);
+        if (verifyAll) VerifyLive(result, token);
+        else if (ExistingHash(target, token) != desired) throw Invalid("DDS batch non verificata dopo la scrittura.");
         _profiles.CheckReplacementContext(report, op.Before.ResourceRoot, token);
         Write(Path.Combine(folder, StateName), result);
         Write(Path.Combine(folder, JournalName), op with { Status = rollback ? "RolledBack" : "Complete" });
@@ -164,7 +231,7 @@ public sealed class DirectXTextureReplacementService
     {
         if (state.SchemaVersion != 1 || !Same(state.ExecutablePath, report.ExecutablePath)
             || state.ExecutableSha256 != report.Sha256 || !Same(state.ResourceRoot, root)
-            || state.Files is null || state.Files.Count > 256) throw Invalid("Stato DDS non valido o EXE cambiato.");
+            || state.Files is null || state.Files.Count > DirectXTextureBatchService.MaximumFiles) throw Invalid("Stato DDS non valido o EXE cambiato.");
         var keys = new HashSet<string>(StringComparer.Ordinal);
         foreach (var f in state.Files)
             if (f is null || !keys.Add(Key(f.Hash)) || f.Hash != f.Hash.ToUpperInvariant()
@@ -224,12 +291,12 @@ public sealed class DirectXTextureReplacementService
     private static T? Read<T>(string path)
     {
         GuardPath(path); if (AttributesOrMissing(path) is null) return default;
-        if (AttributesOrMissing(path) is not FileAttributes a || (a & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) != 0 || new FileInfo(path).Length > 1024 * 1024)
+        if (AttributesOrMissing(path) is not FileAttributes a || (a & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) != 0 || new FileInfo(path).Length > 4 * 1024 * 1024)
             throw Invalid("Metadati DDS fuori limite.");
         try
         {
             using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            if (input.Length > 1024 * 1024) throw Invalid("Metadati DDS fuori limite.");
+            if (input.Length > 4 * 1024 * 1024) throw Invalid("Metadati DDS fuori limite.");
             var bytes = new byte[checked((int)input.Length)]; input.ReadExactly(bytes);
             if (input.ReadByte() != -1) throw Invalid("Metadati DDS cresciuti durante la lettura.");
             using var doc = JsonDocument.Parse(bytes, new() { MaxDepth = 24 });

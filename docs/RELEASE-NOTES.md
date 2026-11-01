@@ -1,3 +1,11 @@
+# Candidato alpha.10 — texture automatiche e Smol parziale
+
+Due pulsanti preparano e installano le catture texture in blocco, senza selezionare ogni hash. L'elaborazione interpola 2× le immagini piccole, conserva contenuto e alpha e genera mipmap compressi completi. Non aggiunge dettagli AI o nuovi modelli. Quantità, esclusioni, limiti e annullamenti sono espliciti; le associazioni sono verificate e recuperabili. [Guida](AUTOMATIC-TEXTURES.md).
+
+Il RAR Smol dell'autore è stato verificato e letto con SharpCompress 0.50.7 incluso nell'app. Si prepara localmente un pack per Golf, IS300 e Sentra, mantenendo texture e backup originali. Sono esclusi database, altri modelli, ruote e componenti opzionali. Non è il pacchetto Smol completo né un remaster high-poly. [Dettagli](SMOL-MODELS.md).
+
+RTX Remix rimane un progetto separato: nessuna installazione automatica di archivi non esaminati o sostituzione del renderer ReShade attuale. La build è un candidato di sviluppo senza firma Windows e non è pubblicata nel canale aggiornamenti.
+
 # Candidato alpha.9 — texture DirectX sperimentali
 
 Per le copie UG2 che non corrispondono agli indirizzi di TexWizard, il nuovo percorso usa Texture Toolkit 1.2.1 x86, fissato su sorgente, dimensione e SHA-256. Non cambia l'EXE. Prima si prepara e conferma il componente, poi si identifica una singola superficie nel gioco. Solo dopo si associa una DDS e si conferma l'attivazione delle sostituzioni.
