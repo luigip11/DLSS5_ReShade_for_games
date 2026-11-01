@@ -71,7 +71,7 @@ internal sealed partial class MainWindow
             _navigation.Add(i, nav); menu.Children.Add(nav);
         }
         menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 12, 12, 12) });
-        var note = Text("Importa una volta. Ritrova i tuoi giochi e i loro profili.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 20; menu.Children.Add(note);
+        var note = Text("Giochi e profili salvati.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 16; menu.Children.Add(note);
         sidebar.Children.Add(menu);
 
         var main = new DockPanel(); Grid.SetColumn(main, 1); shell.Children.Add(main);
