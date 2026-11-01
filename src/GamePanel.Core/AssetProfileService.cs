@@ -376,7 +376,11 @@ public sealed class AssetProfileService
                 foreach (var original in baseline.Originals)
                     if (state.ManagedFiles.Single(f => f.Path == original.Path) != original) throw Invalid("Stato disattivato diverso dalla baseline.");
         }
-        if (state.Packs.Any(p => p.Manifest.Kind == "Textures") && state.ManagedFiles.Single(f => f.Path == Loader).Sha256 != _loaderHash)
+        ValidateRuntimePin(state);
+    }
+    private void ValidateRuntimePin(AssetState? state)
+    {
+        if (state?.Packs.Any(p => p.Manifest.Kind == "Textures") == true && state.ManagedFiles.Single(f => f.Path == Loader).Sha256 != _loaderHash)
             throw Invalid("Identità TexWizard nello stato non valida.");
     }
     private AssetState? LoadState(string folder, string exe)
@@ -423,11 +427,12 @@ public sealed class AssetProfileService
         }
         return op;
     }
-    private static void ValidateOperation(Operation op, string exe)
+    private void ValidateOperation(Operation op, string exe)
     {
         if (op.SchemaVersion != 1 || !ValidId(op.Id) || !SamePath(op.ExecutablePath, exe) || !ValidHash(op.ExecutableSha256)
             || op.Status is not ("Pending" or "Complete" or "RolledBack") || op.Next is null || op.Changes is null) throw Invalid("Journal asset non valido.");
         ValidateState(op.Next, exe); if (op.Previous is not null) ValidateState(op.Previous, exe);
+        ValidateRuntimePin(op.Previous); ValidateRuntimePin(op.Next);
         if (op.Next.ExecutableSha256 != op.ExecutableSha256 || op.Previous is not null && op.Previous.ExecutableSha256 != op.ExecutableSha256) throw Invalid("Identità journal non coerente.");
         var allowed = (op.Previous?.Packs ?? []).Concat(op.Next.Packs).SelectMany(p => p.Manifest.Files).Select(f => f.Path).Append(Loader).Append(Config).ToHashSet(StringComparer.Ordinal);
         var names = new HashSet<string>(StringComparer.Ordinal);

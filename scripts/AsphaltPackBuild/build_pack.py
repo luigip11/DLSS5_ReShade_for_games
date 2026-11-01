@@ -14,7 +14,7 @@ PINNED=[
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,required=True);parser.add_argument('--dotnet',default='dotnet');parser.add_argument('--offline',action='store_true')
     args=parser.parse_args();root=args.output.resolve();script=Path(__file__).resolve().parent
-    if sys.version_info[:3]!=(3,12,14):raise RuntimeError('Reproducible release builds require CPython 3.12.14')
+    if sys.version_info[:3] not in ((3,12,10),(3,12,14)):raise RuntimeError('Verified release builders require CPython 3.12.10 or 3.12.14')
     if np.__version__!='2.3.5':raise RuntimeError('Reproducible release builds require NumPy 2.3.5')
     dotnet=shutil.which(args.dotnet) or args.dotnet
     sdk=subprocess.check_output([dotnet,'--version'],text=True).strip()

@@ -158,6 +158,33 @@ internal static class AssetProfileChecks
             File.WriteAllBytes(Path.Combine(f.ProfileFolder, op["Id"]!.GetValue<string>(), $"{index:D4}-after.bin"), bytes); File.WriteAllText(journal, op.ToJsonString());
             Refused(() => f.NewService().Recover(f.Exe, false)); Require(!File.Exists(f.File("scripts/TexWizard.json")), "Configurazione esterna scritta.");
         });
+        check("Asset deployment: pin TexWizard rifiuta payload ASI contraffatti in resume e rollback", () =>
+        {
+            foreach (var rollback in new[] { false, true })
+            {
+                using var f = new Fixture(root, fixture); f.Widescreen(); var pack = f.Textures("texture-pack");
+                if (rollback)
+                {
+                    f.Service.Execute(f.Service.PrepareInstall(f.Report(), pack, f.Loader)); f.Service.Execute(f.Service.PrepareRemove(f.Report(), pack.Manifest.Id));
+                }
+                else
+                {
+                    using var cancellation = new CancellationTokenSource();
+                    Cancelled(() => f.Service.Execute(f.Service.PrepareInstall(f.Report(), pack, f.Loader), cancellation.Token, new InlineProgress(_ => cancellation.Cancel())));
+                }
+                Require(!File.Exists(f.File("scripts/TexWizard.asi")), "Fixture deve lasciare il loader assente.");
+                var journal = Path.Combine(f.ProfileFolder, "assets-operation.json"); var op = JsonNode.Parse(File.ReadAllText(journal))!; op["Status"] = "Pending";
+                var bytes = Encoding.UTF8.GetBytes("MZ arbitrary unapproved ASI payload"); var hash = Hash(bytes); var changes = (JsonArray)op["Changes"]!;
+                var index = Enumerable.Range(0, changes.Count).Single(i => changes[i]!["Path"]!.GetValue<string>() == "scripts/TexWizard.asi");
+                changes[index]![rollback ? "BeforeSha256" : "AfterSha256"] = hash;
+                var managed = ((JsonArray)op[rollback ? "Previous" : "Next"]!["ManagedFiles"]!).Single(n => n!["Path"]!.GetValue<string>() == "scripts/TexWizard.asi")!;
+                managed["Sha256"] = hash; managed["Bytes"] = bytes.Length;
+                File.WriteAllBytes(Path.Combine(f.ProfileFolder, op["Id"]!.GetValue<string>(), $"{index:D4}-{(rollback ? "before" : "after")}.bin"), bytes); File.WriteAllText(journal, op.ToJsonString());
+                try { f.NewService().Recover(f.Exe, rollback); throw new InvalidOperationException("Pin TexWizard ignorato."); }
+                catch (InvalidDataException e) when (e.Message.Contains("Identità TexWizard", StringComparison.Ordinal)) { }
+                Require(!File.Exists(f.File("scripts/TexWizard.asi")), "ASI non approvata scritta dal recupero.");
+            }
+        });
         check("Asset deployment: toggle e rimozione interrotti mantengono i backup originali", () =>
         {
             foreach (var remove in new[] { false, true })

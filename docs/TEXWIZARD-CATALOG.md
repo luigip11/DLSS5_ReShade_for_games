@@ -23,7 +23,7 @@ Opera procedurale originale MIT: tre superfici 2048×2048 DXT1, nove mip fino a 
 - Asset: `GamePanel-AsphaltHD.zip`, release GamePanel v0.1.0-alpha.8.
 - Byte: 8397130; SHA-256 `45fe214ba832782c2f46ed32265f5428bf34e82ac0c7bc3f1b5c4d9c11e3d67a`.
 - BIN: 8389888 byte; SHA-256 `3990fe97b7dd5b72446adf71c5fd508d78b4afa75919c6f8319442c2e3522bb6`.
-- Generatore e builder in `scripts/AsphaltPackBuild`; Python 3.12.14, NumPy 2.3.5, SDK .NET 10.0.403. Algoritmi interi, timestamp ZIP fissi, ZIP STORE e piattaforma ZIP esplicita. La pipeline verifica il digest atteso prima della pubblicazione.
+- Generatore e builder in `scripts/AsphaltPackBuild`; Python 3.12.10 su Windows CI o 3.12.14 nel workspace, NumPy 2.3.5, SDK .NET 10.0.403. Algoritmi interi, timestamp ZIP fissi, ZIP STORE e piattaforma ZIP esplicita. La pipeline verifica il digest atteso prima della pubblicazione.
 - Darius commit `059016553a4d7ecf0b642e346c527cba18a5c326`, ZIP SHA-256 `29632d0b7be7f91ab0ea3b2b96e7bdccdbb6d990580b7458426b727d75607fff`.
 - CoreExtensions commit `4c9d4062b3c5b0ab7b5cddaf5f9b87d739f3c510`, ZIP SHA-256 `6986e381acfce12481fca2bda56f2fc5612101e13e6992603889a8a42baa293a`.
 - Nomi originali verificati nell'elenco [NFSRaider Underground2.txt](https://github.com/Felipe379/NFSRaider/blob/492bf005c624c537b4fd15ae61b76813b43ef949/NFSRaider/Keys/MainKeys/Tracks/Textures/Underground2.txt), commit `492bf005c624c537b4fd15ae61b76813b43ef949`.
