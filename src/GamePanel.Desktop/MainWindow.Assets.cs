@@ -1,0 +1,299 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using GamePanel.Core;
+using Microsoft.Win32;
+
+namespace GamePanel.Desktop;
+
+internal sealed partial class MainWindow
+{
+    private readonly AssetProfileService _assets = new(ReShadeProfileService.DefaultStore);
+    private readonly AssetPackageImporter _assetImporter = new(Path.Combine(GamePanelPaths.Root, "AssetPacks"));
+    private readonly TextureRuntimeSource _assetSource = new();
+    private AssetStatus? _assetState;
+    private AssetPlan? _assetPlan;
+    private PreparedAssetPack? _assetPackage;
+    private string _assetMessage = "Seleziona un gioco dalla libreria per preparare texture e modelli.";
+    private string _assetArchivePath = "";
+    private string _assetPlanConfirmation = "Applica pacchetto";
+    private Button? _assetApplyButton;
+    private Border? _assetPreviewPanel;
+    private TextBlock? _assetStatusText;
+
+    private void ResetAssets()
+    {
+        _assetState = null; _assetPlan = null; _assetPackage = null; _assetArchivePath = "";
+        _assetMessage = "Analizza il gioco per preparare texture e modelli.";
+        _assetPlanConfirmation = "Applica pacchetto";
+    }
+
+    private async Task RefreshAssetsAsync(string executablePath)
+    {
+        try
+        {
+            var state = await Task.Run(() => _assets.Status(executablePath));
+            if (!_closing) { _assetState = state; _assetMessage = state.Message; }
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+        { _assetState = null; _assetMessage = "Stato asset non leggibile: " + e.Message; }
+    }
+
+    private bool CanPrepareAssets => !_busy && _report is not null && _assetState?.Pending != true
+        && _fxState?.Pending != true && _screenState?.Pending != true;
+
+    private void RenderAssets()
+    {
+        _assetApplyButton = null;
+        _assetPreviewPanel = null;
+        Heading("Texture vere. Dettagli nuovi.", "Underground 2 · pacchetti di asset · integrazione sperimentale.");
+        var state = Text(_assetMessage, 13, Muted);
+        _assetStatusText = state;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(state, "AssetStatus");
+        _content.Children.Add(AssetPanel(state, 14));
+
+        if (_assetState?.Pending == true)
+        {
+            Card("Operazione da recuperare", "Il journal conserva le modifiche interrotte. Chiudi il gioco e scegli se completarle o recuperare lo stato precedente.");
+            var recovery = new WrapPanel();
+            recovery.Children.Add(FxButton("Riprendi operazione asset", "ResumeAssets", async (_, _) => await RecoverAssetsAsync(false), !_busy && _report is not null));
+            recovery.Children.Add(FxButton("Annulla e recupera i file", "RollbackAssets", async (_, _) => await RecoverAssetsAsync(true), !_busy && _report is not null));
+            _content.Children.Add(recovery);
+            Details("Recupero verificato", "Prima di scrivere, GamePanel ricontrolla l'eseguibile, le copie e i file presenti. Se un altro strumento ha modificato un file, l'operazione si ferma.");
+            return;
+        }
+
+        if (_report is null) Card("Scegli il gioco", "Apri Libreria e seleziona la tua copia. L'anteprima sarà legata all'hash dell'eseguibile analizzato.");
+        if (_fxState?.Pending == true || _screenState?.Pending == true)
+            Card("Prima completa il recupero", "C'è un'operazione interrotta in HDR / FX o Schermo. Riprendila o annullala nella sua pagina prima di modificare gli asset.");
+
+        var builtin = new StackPanel();
+        builtin.Children.Add(DesignSystem.Chip("PRIMO PACK GAMEPANEL · SPERIMENTALE", Accent));
+        var title = Text("Asfalto 2K", 22, Ink, FontWeights.SemiBold); title.Margin = new Thickness(0, 12, 0, 8); builtin.Children.Add(title);
+        builtin.Children.Add(Text("Tre superfici stradali originali a 2048 × 2048. Un intervento mirato sull'asfalto: gli altri materiali e la geometria conservano il dettaglio del gioco.", 13, Muted));
+        var builtinReason = _report is null ? "Seleziona e analizza Underground 2."
+            : TextureRuntimeCatalog.CheckGame(_report);
+        if (builtinReason is null && _screenState?.State?.Installed != true)
+            builtinReason = "Applica prima il Widescreen Fix gestito nella pagina Schermo: le texture condividono il suo ASI loader.";
+        var builtinInstalled = _assetState?.State?.Packs.Any(p => p.Manifest.Id == "asphalt-hd") == true;
+        var download = FxButton(builtinInstalled ? "Asfalto 2K installato · gestiscilo qui sotto" : "Scarica asfalto 2K e prepara anteprima", "DownloadAsphaltPack", async (_, _) => await PrepareBuiltinAssetAsync(), CanPrepareAssets && builtinReason is null && !builtinInstalled);
+        download.Margin = new Thickness(0, 14, 0, 0); download.Background = Accent; download.Foreground = BackgroundBrush; download.BorderBrush = Accent;
+        builtin.Children.Add(download);
+        if (builtinReason is not null) { var hint = Text(builtinReason, 12, Muted); hint.Margin = new Thickness(0, 10, 0, 0); builtin.Children.Add(hint); }
+        _content.Children.Add(AssetPanel(builtin, 20));
+
+        RenderAssetImport();
+        RenderAssetPreview();
+        RenderInstalledAssets();
+        Details("Texture, modelli e immagine SDR", "Le texture sostituiscono materiali del gioco; i modelli sostituiscono file delle auto già presenti. Il profilo HDR / FX regola invece l'immagine SDR e non aggiunge dettaglio agli asset. Il pack asfalto non trasforma tutti gli elementi in 2K. I modelli importati restano da collaudare nel gioco: questa versione non include un modello già verificato.");
+        Details("Compatibilità e formati", "Importazione solo da ZIP con GamePanelAssetPack.json, elenco preciso dei file, dimensioni e SHA-256. Sono ammessi dati texture e coppie GEOMETRY.BIN / TEXTURES.BIN per auto esistenti; i metadati texture devono essere già nel formato richiesto dal loader. RAR, TPF, END e installer richiedono conversione esterna e non sono supportati. GamePanel non esegue convertitori o programmi contenuti nei pacchetti.");
+        Details("Origine, licenza e ritorno all'originale", "Autore e URL dei pacchetti importati sono dichiarazioni del manifest, non una verifica dell'identità o della licenza. Controlla i diritti d'uso e le istruzioni del pack. Ogni applicazione richiede una conferma dell'anteprima; le copie verificate permettono di disattivare o rimuovere un pack. File cambiati da altri strumenti bloccano le modifiche. Chiudi il gioco prima di applicare e riavvialo per verificare il risultato.");
+    }
+
+    private void RenderAssetImport()
+    {
+        var body = new StackPanel();
+        body.Children.Add(Text("Il tuo pacchetto", 18, Ink, FontWeights.SemiBold));
+        var intro = Text("Importa uno ZIP di texture o modelli con manifest GamePanel. L'analisi prepara l'elenco delle modifiche; applicale solo dopo averlo controllato.", 13, Muted);
+        intro.Margin = new Thickness(0, 8, 0, 12); body.Children.Add(intro);
+        var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var archive = new TextBox
+        {
+            Text = _assetArchivePath, Foreground = Ink, Background = DesignSystem.Panel, BorderBrush = DesignSystem.Line,
+            Padding = new Thickness(11, 10, 11, 10), MinHeight = 42, IsReadOnly = _busy,
+            VerticalContentAlignment = VerticalAlignment.Center, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+            ToolTip = "Percorso dello ZIP con GamePanelAssetPack.json"
+        };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(archive, "AssetPackagePath");
+        System.Windows.Automation.AutomationProperties.SetName(archive, "Percorso pacchetto ZIP");
+        var analyze = FxButton("Analizza pacchetto", "ImportAssetPackage", async (_, _) => await ImportAssetAsync(), CanPrepareAssets && !string.IsNullOrWhiteSpace(_assetArchivePath));
+        archive.TextChanged += (_, _) =>
+        {
+            _assetArchivePath = archive.Text;
+            if (_assetPlan is not null)
+            {
+                _assetPlan = null; _assetPackage = null;
+                if (_assetPreviewPanel is not null) _assetPreviewPanel.Visibility = Visibility.Collapsed;
+                _assetMessage = "Percorso cambiato. Analizza il pacchetto per preparare una nuova anteprima.";
+                if (_assetStatusText is not null) _assetStatusText.Text = _assetMessage;
+            }
+            analyze.IsEnabled = CanPrepareAssets && !string.IsNullOrWhiteSpace(_assetArchivePath);
+        };
+        row.Children.Add(archive);
+        var select = FxButton("Scegli ZIP", "SelectAssetPackage", (_, _) => SelectAssetPackage(), !_busy);
+        select.Margin = new Thickness(8, 0, 0, 0); select.MinHeight = 42; Grid.SetColumn(select, 1); row.Children.Add(select); body.Children.Add(row);
+        analyze.Margin = new Thickness(0, 12, 0, 0); body.Children.Add(analyze);
+        var note = Text("Texture: Underground 2 compatibile e Widescreen Fix gestito richiesti. Modelli: solo sostituzioni di file auto esistenti, senza download del loader texture.", 12, Muted);
+        note.Margin = new Thickness(0, 10, 0, 0); body.Children.Add(note);
+        _content.Children.Add(AssetPanel(body, 20));
+    }
+
+    private void RenderAssetPreview()
+    {
+        if (_assetPlan is null) return;
+        var plan = _assetPlan;
+        var body = new StackPanel();
+        body.Children.Add(DesignSystem.Chip("ANTEPRIMA · NESSUN FILE DEL GIOCO MODIFICATO", Accent));
+        var name = Text(plan.Action + " · " + plan.PackName, 21, Ink, FontWeights.SemiBold); name.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(name);
+        if (_assetPackage is not null)
+        {
+            var manifest = _assetPackage.Manifest;
+            body.Children.Add(Text((manifest.Kind == "Textures" ? "Texture" : "Modelli") + " · " + manifest.Files.Count + " file dichiarati", 13, Muted));
+            var origin = Text("METADATI DICHIARATI · AUTORE NON VERIFICATO", 10, Muted, FontWeights.SemiBold); origin.Margin = new Thickness(0, 12, 0, 5); body.Children.Add(origin);
+            body.Children.Add(Text("Autore: " + manifest.Author + "\nOrigine: " + manifest.SourceUrl, 12, Muted));
+            var hash = Text("SHA-256 archivio: " + _assetPackage.ArchiveSha256, 11, Muted); hash.Margin = new Thickness(0, 6, 0, 0); body.Children.Add(hash);
+        }
+        var additions = plan.Changes.Count(c => c.BeforeSha256 is null && c.AfterSha256 is not null);
+        var replacements = plan.Changes.Count(c => c.BeforeSha256 is not null && c.AfterSha256 is not null);
+        var removals = plan.Changes.Count(c => c.AfterSha256 is null);
+        var summary = Text($"{additions} aggiunte · {replacements} sostituzioni · {removals} rimozioni", 13, Ink, FontWeights.SemiBold);
+        summary.Margin = new Thickness(0, 14, 0, 8); body.Children.Add(summary);
+        var changes = Text(plan.Changes.Count == 0 ? "I file sono già nello stato richiesto."
+            : string.Join("\n", plan.Changes.Select(c => $"{(c.AfterSha256 is null ? "Rimuovi / ripristina" : c.BeforeSha256 is null ? "Aggiungi" : "Sostituisci")} · {c.Path}")), 12, Muted);
+        changes.LineHeight = 20;
+        var scroll = new ScrollViewer { Content = changes, MaxHeight = 220, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(scroll, "AssetPlanFiles"); body.Children.Add(scroll);
+        var confirm = Text("Conferma solo le modifiche elencate. Le sostituzioni conservano copie verificate degli originali; l'eseguibile analizzato e i file verranno ricontrollati prima della scrittura.", 12, Muted);
+        confirm.Margin = new Thickness(0, 12, 0, 12); body.Children.Add(confirm);
+        var actions = new WrapPanel();
+        var apply = FxButton(_assetPlanConfirmation, "ApplyAssetPlan", async (_, _) => await ApplyAssetPlanAsync(), CanPrepareAssets);
+        apply.Content = new TextBlock { Text = _assetPlanConfirmation, TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
+        apply.Background = Accent; apply.Foreground = BackgroundBrush; apply.BorderBrush = Accent; _assetApplyButton = apply; actions.Children.Add(apply);
+        actions.Children.Add(FxButton("Scarta anteprima", "DiscardAssetPlan", (_, _) => { _assetPlan = null; _assetPackage = null; _assetMessage = "Anteprima scartata. Nessun file del gioco modificato."; Render(); }, !_busy));
+        body.Children.Add(actions); _assetPreviewPanel = AssetPanel(body, 20); _content.Children.Add(_assetPreviewPanel);
+    }
+
+    private void RenderInstalledAssets()
+    {
+        var packs = _assetState?.State?.Packs;
+        if (packs is null || packs.Count == 0) return;
+        var heading = Text("I tuoi pacchetti", 20, Ink, FontWeights.SemiBold); heading.Margin = new Thickness(0, 0, 0, 12); _content.Children.Add(heading);
+        foreach (var pack in packs)
+        {
+            var body = new StackPanel();
+            body.Children.Add(Text(pack.Manifest.Name, 17, Ink, FontWeights.SemiBold));
+            var detail = Text((pack.Manifest.Kind == "Textures" ? "Texture" : "Modelli") + " · " + (pack.Enabled ? "Attivo" : "Disattivato") + " · " + pack.Manifest.Files.Count + " file", 12, Muted);
+            detail.Margin = new Thickness(0, 7, 0, 8); body.Children.Add(detail);
+            body.Children.Add(Text("Autore dichiarato: " + pack.Manifest.Author + "\nOrigine dichiarata: " + pack.Manifest.SourceUrl, 12, Muted));
+            var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+            var id = pack.Manifest.Id; var enabled = pack.Enabled; var name = pack.Manifest.Name;
+            actions.Children.Add(FxButton(enabled ? "Prepara disattivazione" : "Prepara attivazione", "ToggleAsset-" + id,
+                async (_, _) => await PrepareAssetToggleAsync(id, name, !enabled), CanPrepareAssets));
+            actions.Children.Add(FxButton("Prepara rimozione", "RemoveAsset-" + id,
+                async (_, _) => await PrepareAssetRemoveAsync(id, name), CanPrepareAssets));
+            body.Children.Add(actions); _content.Children.Add(AssetPanel(body, 18));
+        }
+    }
+
+    private static Border AssetPanel(UIElement child, double padding) => new()
+    {
+        Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(12), Padding = new Thickness(padding), Margin = new Thickness(0, 0, 0, 16), Child = child
+    };
+
+    private void SelectAssetPackage()
+    {
+        if (_busy) return;
+        var picker = new OpenFileDialog { Title = "Seleziona un pacchetto asset GamePanel", Filter = "Pacchetti ZIP (*.zip)|*.zip", CheckFileExists = true, Multiselect = false };
+        if (picker.ShowDialog(this) != true) return;
+        _assetArchivePath = picker.FileName; _assetPlan = null; _assetPackage = null; Render();
+    }
+
+    private async Task ImportAssetAsync()
+    {
+        var report = _report; var path = _assetArchivePath.Trim().Trim('"');
+        if (!CanPrepareAssets || report is null || path.Length == 0) return;
+        _assetPlan = null; _assetPackage = null;
+        var widescreenInstalled = _screenState?.State?.Installed == true;
+        await RunFxTaskAsync(async (token, progress) =>
+        {
+            var package = _assetImporter.Import(path, token, progress);
+            var plan = await PrepareImportedAssetAsync(report, package, widescreenInstalled, token, progress);
+            return (Package: package, Plan: plan);
+        }, prepared =>
+        {
+            _assetPackage = prepared.Package; _assetPlan = prepared.Plan;
+            _assetPlanConfirmation = "Conferma applicazione di «" + prepared.Plan.PackName + "»";
+            _assetMessage = "Archivio verificato. Controlla origine e modifiche prima di applicare il pacchetto.";
+        }, "Analisi del pacchetto · nessuna modifica al gioco");
+    }
+
+    private async Task PrepareBuiltinAssetAsync()
+    {
+        var report = _report; if (!CanPrepareAssets || report is null) return;
+        _assetPlan = null; _assetPackage = null;
+        var widescreenInstalled = _screenState?.State?.Installed == true;
+        await RunFxTaskAsync(async (token, progress) =>
+        {
+            var package = await _assetSource.PrepareBuiltinPackAsync(token, progress);
+            var plan = await PrepareImportedAssetAsync(report, package, widescreenInstalled, token, progress);
+            return (Package: package, Plan: plan);
+        }, prepared =>
+        {
+            _assetPackage = prepared.Package; _assetPlan = prepared.Plan;
+            _assetPlanConfirmation = "Conferma applicazione di «" + prepared.Plan.PackName + "»";
+            _assetMessage = "Asfalto 2K pronto in cache. Controlla l'anteprima prima di applicarlo al gioco.";
+        }, "Preparazione asfalto 2K · nessuna modifica al gioco");
+    }
+
+    private async Task<AssetPlan> PrepareImportedAssetAsync(GameReport report, PreparedAssetPack package, bool widescreenInstalled,
+        CancellationToken token, IProgress<BackupProgress> progress)
+    {
+        string? runtime = null;
+        if (package.Manifest.Kind == "Textures")
+        {
+            var reason = TextureRuntimeCatalog.CheckGame(report);
+            if (reason is not null) throw new InvalidOperationException(reason);
+            if (!widescreenInstalled) throw new InvalidOperationException("Applica prima il Widescreen Fix gestito dalla pagina Schermo: le texture richiedono il suo ASI loader.");
+            runtime = await _assetSource.PrepareAsync(token, progress);
+        }
+        return _assets.PrepareInstall(report, package, runtime, token);
+    }
+
+    private async Task PrepareAssetToggleAsync(string id, string name, bool enabled)
+    {
+        var report = _report; if (!CanPrepareAssets || report is null) return;
+        _assetPlan = null; _assetPackage = null;
+        await RunFxTaskAsync((token, _) => Task.FromResult(_assets.PrepareToggle(report, id, enabled, token)), plan =>
+        {
+            _assetPlan = plan; _assetPlanConfirmation = "Conferma " + (enabled ? "attivazione" : "disattivazione") + " di «" + name + "»";
+            _assetMessage = "Anteprima " + (enabled ? "attivazione" : "disattivazione") + " pronta. Controlla i file prima di confermare.";
+        }, "Preparazione modifica pacchetto · nessuna scrittura al gioco");
+    }
+
+    private async Task PrepareAssetRemoveAsync(string id, string name)
+    {
+        var report = _report; if (!CanPrepareAssets || report is null) return;
+        _assetPlan = null; _assetPackage = null;
+        await RunFxTaskAsync((token, _) => Task.FromResult(_assets.PrepareRemove(report, id, token)), plan =>
+        {
+            _assetPlan = plan; _assetPlanConfirmation = "Conferma rimozione di «" + name + "»";
+            _assetMessage = "Anteprima rimozione pronta. I file originali gestiti saranno ripristinati dove previsto.";
+        }, "Preparazione rimozione pacchetto · nessuna scrittura al gioco");
+    }
+
+    private async Task ApplyAssetPlanAsync()
+    {
+        var plan = _assetPlan; var report = _report;
+        if (!CanPrepareAssets || plan is null || report is null) return;
+        await RunFxTaskAsync((token, progress) =>
+        {
+            if (plan.Changes.Count > 0) _backups.Create(report, token, progress);
+            return Task.FromResult(_assets.Execute(plan, token, progress));
+        }, state =>
+        {
+            _assetState = new(state, false, ""); _assetPlan = null; _assetPackage = null;
+            _assetMessage = "Modifiche applicate e verificate. Avvia o riavvia il gioco per controllare gli asset.";
+        }, "Applicazione delle modifiche asset confermate");
+    }
+
+    private async Task RecoverAssetsAsync(bool rollback)
+    {
+        var report = _report; if (_busy || report is null) return;
+        await RunFxTaskAsync((token, progress) => Task.FromResult(_assets.Recover(report.ExecutablePath, rollback, token, progress)), state =>
+        {
+            _assetState = new(state, false, ""); _assetPlan = null; _assetPackage = null;
+            _assetMessage = rollback ? "Operazione annullata: stato asset precedente recuperato." : "Operazione asset completata e verificata.";
+        }, rollback ? "Recupero degli asset precedenti" : "Ripresa operazione asset");
+    }
+}

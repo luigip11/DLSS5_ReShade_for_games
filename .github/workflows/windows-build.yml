@@ -21,6 +21,19 @@ jobs:
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4, pinned 2026-10-29
         with:
           global-json-file: global.json
+      - name: Python for reproducible original texture assets
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5 pinned
+        with:
+          python-version: '3.12.10'
+      - name: Build original 2K asphalt pack from pinned MIT source
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r scripts/AsphaltPackBuild/requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Texture builder dependency install failed.' }
+          python scripts/AsphaltPackBuild/build_pack.py --output artifacts/asphalt-pack-build --dotnet dotnet
+          if ($LASTEXITCODE -ne 0) { throw 'Texture pack build failed.' }
+          $path = './artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip'
+          if ((Get-Item $path).Length -ne 8397130 -or (Get-FileHash $path -Algorithm SHA256).Hash -ne '45fe214ba832782c2f46ed32265f5428bf34e82ac0c7bc3f1b5c4d9c11e3d67a') { throw 'Original pack reproducibility check failed.' }
       - name: Inspect official ReShade source package without executing it
         shell: pwsh
         run: ./scripts/inspect-reshade.ps1
@@ -30,12 +43,15 @@ jobs:
       - name: Check native updater and preservation of user data
         shell: pwsh
         run: ./scripts/check-updater.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
+      - name: Create non-executable static texture compatibility fixture
+        shell: pwsh
+        run: dotnet run --project tests/GamePanel.Checks -c Release --no-restore -- --write-asset-fixture ./artifacts/asset-fixture/speed2.exe
       - name: Compile synthetic DX9 x86 fixture
         shell: pwsh
         run: ./scripts/build-graphics-fixture.ps1
       - name: Check desktop startup
         shell: powershell
-        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe
+        run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe -AssetFixturePath ./artifacts/asset-fixture/speed2.exe -AssetPackagePath ./artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip
       - name: Verify that unsigned files cannot pass the production-signing gate
         shell: pwsh
         run: ./scripts/check-signature-gate.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
@@ -45,6 +61,15 @@ jobs:
         with:
           name: GamePanel-interface-preview
           path: artifacts/ui-preview/
+          if-no-files-found: error
+      - name: Original texture pack and source verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: GamePanel-original-asphalt-pack
+          path: |
+            artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip
+            artifacts/asphalt-pack-build/pack-verification.json
+            artifacts/asphalt-pack-build/source-pins.json
           if-no-files-found: error
       - name: Portable package and checksums
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, pinned 2026-10-29
@@ -69,8 +94,13 @@ jobs:
         with:
           name: GamePanel-win-x64-alpha
           path: artifacts/release-package
+      - name: Download tested original texture pack
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: GamePanel-original-asphalt-pack
+          path: artifacts/asphalt-release
       - name: Publish versioned release and update metadata
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: ./scripts/publish-release.ps1 -PackageDirectory ./artifacts/release-package
+        run: ./scripts/publish-release.ps1 -PackageDirectory ./artifacts/release-package -AsphaltPackagePath ./artifacts/asphalt-release/GamePanel-AsphaltHD.zip

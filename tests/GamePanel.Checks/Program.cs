@@ -4,6 +4,12 @@ using System.Text;
 using System.Text.Json;
 using GamePanel.Core;
 
+if (args.Length == 2 && args[0] == "--write-asset-fixture")
+{
+    TextureRuntimeChecks.CreateCompatibleExe(args[1]);
+    Console.WriteLine("Wrote static texture compatibility fixture; never execute this file or load the ASI against it.");
+    return 0;
+}
 var checks = new List<(string Name, Action Body)>();
 var temp = Path.Combine(Path.GetTempPath(), "GamePanelChecks-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(temp);
@@ -151,6 +157,11 @@ ProfileChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-re
 var localWideAt = Array.IndexOf(args, "--widescreen-package");
 WideChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-reshade", StringComparer.Ordinal), localWideAt >= 0 && localWideAt + 1 < args.Length ? args[localWideAt + 1] : null);
 UpdateChecks.Register(Check, temp, Fixture);
+AssetPackageChecks.Register(Check, temp);
+AssetProfileChecks.Register(Check, temp, Fixture);
+var textureAt = Array.IndexOf(args, "--texture-package");
+var asphaltAt = Array.IndexOf(args, "--asphalt-package");
+TextureRuntimeChecks.Register(Check, temp, args.Contains("--verify-official-reshade", StringComparer.Ordinal), textureAt >= 0 && textureAt + 1 < args.Length ? args[textureAt + 1] : null, asphaltAt >= 0 && asphaltAt + 1 < args.Length ? args[asphaltAt + 1] : null);
 var failed = 0;
 var skipped = 0;
 try

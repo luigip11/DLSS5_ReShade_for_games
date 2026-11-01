@@ -15,8 +15,8 @@ internal sealed partial class MainWindow
     private readonly TextBlock _inputHint = DesignSystem.Label("Incolla il percorso del gioco oppure scegli il suo EXE", 13, Muted);
     private ScrollViewer _pageScroll = null!;
     private StackPanel _importFields = null!;
-    private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi", "Libreria", "Schermo ultrawide"];
-    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen"];
+    private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi", "Libreria", "Schermo ultrawide", "Texture e modelli"];
+    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen", "texture"];
 
     private void BuildShell()
     {
@@ -54,7 +54,7 @@ internal sealed partial class MainWindow
         brand.Children.Add(brandRow);
         brand.Children.Add(Text("IL TUO SETUP, UN SOLO POSTO", 9, Muted)); menu.Children.Add(brand);
         var libraryLabel = Text("WORKSPACE", 10, Muted, FontWeights.SemiBold); libraryLabel.Margin = new Thickness(12, 0, 0, 12); menu.Children.Add(libraryLabel);
-        foreach (var i in new[] { 5, 0, 2, 6, 1, 3, 4 })
+        foreach (var i in new[] { 5, 0, 7, 2, 6, 1, 3, 4 })
         {
             var page = i;
             var nav = Button("", (_, _) => { _page = page; Render(); _pageScroll.ScrollToTop(); });
@@ -67,10 +67,11 @@ internal sealed partial class MainWindow
             if (i == 2) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "HdrPage");
             if (i == 5) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "LibraryPage");
             if (i == 6) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "ScreenPage");
+            if (i == 7) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "AssetsPage");
             _navigation.Add(i, nav); menu.Children.Add(nav);
         }
         menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 12, 12, 12) });
-        var note = Text("Importa una volta. Ritrova i tuoi giochi e i loro profili.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 20; menu.Children.Add(note);
+        var note = Text("Giochi e profili salvati.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 16; menu.Children.Add(note);
         sidebar.Children.Add(menu);
 
         var main = new DockPanel(); Grid.SetColumn(main, 1); shell.Children.Add(main);

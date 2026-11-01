@@ -2,15 +2,16 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: 0.1.0-alpha.7, aggiornamenti e rilevamento schermi
+## Stato reale: 0.1.0-alpha.8, texture 2K e gestione asset
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Alpha.7 aggiunge il pulsante **Controlla aggiornamenti**, download verificato e sostituzione recuperabile dei file dell'app senza cancellare i dati utente. Schermo rileva monitor, risoluzione attuale e modalità preferita disponibile, con preferenza salvata. Il post-processing SDR si estende in via sperimentale ad altri classici x86 DX9; il Widescreen Fix resta specifico per Underground 2. [Guida alpha.7](docs/ALPHA7.md). Texture e modelli nuovi restano da integrare: [stato e candidati](docs/GRAPHICS-ASSETS.md).
+Alpha.8 aggiunge **Texture e modelli**, con importazione di pacchetti inventariati, anteprima, copie degli originali e recupero. Il primo pack originale di asfalto contiene tre superfici a 2K, scaricabili su richiesta e ancora sperimentali nel gioco. Il runtime TexWizard proviene dal repository dell'autore ed è fissato su hash/versione; viene installato solo per una build Underground 2 che supera il preflight e con ASI loader Widescreen già gestito. La geometria moderna completa non è inclusa. [Guida alpha.8](docs/ALPHA8.md), [formato pacchetti](docs/ASSET-PACKS.md), [catalogo e provenienza](docs/TEXWIZARD-CATALOG.md).
 
 Disponibile:
 
 - Libreria nativa con importazione persistente, ricerca, rinomina, ricollegamento e avvio da scheda.
+- Texture e modelli: pacchetti ZIP con inventario SHA-256, anteprima, copie degli originali e ripristino. Primo pack originale di tre superfici asfalto 2K, sperimentale, per il layout UG2 compatibile.
 - Pagine Panoramica, DLSS, HDR / FX, Schermo, Backup e Diagnosi.
 - Selezione, trascinamento o inserimento del percorso di un singolo EXE, indipendente dagli store. Accetta anche il percorso tra virgolette copiato da Esplora file.
 - Analisi statica PE x86/x64; indizi del renderer dagli import diretti.
@@ -28,20 +29,20 @@ Disponibile:
 
 Non ancora disponibile:
 
-- Gestione generale dei mod, texture/modelli HD e swap DLSS.
+- Gestione generale dei mod e swap DLSS; pacchetti di geometrie collaudati e remaster completo della città.
 - Sovrascrittura di file modificati da altri strumenti; concatenamento di loader preesistenti.
 - Regolazione DLSS/HDR e conversione HDR del gioco.
 - Identificazione certa del gioco, compatibilità certificata, rilevamento HDR del display.
 - Integrazione con launcher che richiedono URL/argomenti specifici.
 - Neural Rendering collaudato su Underground 1/2 o sui giochi moderni del proprietario.
 
-I nomi dei file e le risorse versione sono indizi, non verifiche di firma o sicurezza. Non vengono caricati come codice gli EXE/DLL analizzati. L'app non contiene telemetria, servizi o controlli di aggiornamento all'avvio. Il pulsante aggiornamenti interroga GitHub soltanto su richiesta e scarica una nuova versione soltanto dopo Sì. Le preparazioni esplicite scaricano ReShade da reshade.me e Widescreen Fix dal repository ufficiale GitHub/CDN con cataloghi fissati; dimensioni e SHA-256 sono verificati. Il setup ReShade non viene eseguito. ReShade può cercare aggiornamenti quando caricato dal gioco. I binari ReShade non sono redistribuiti nello ZIP.
+I nomi dei file e le risorse versione sono indizi, non verifiche di firma o sicurezza. Non vengono caricati come codice gli EXE/DLL analizzati. L'app non contiene telemetria, servizi o controlli di aggiornamento all'avvio. Il pulsante aggiornamenti interroga GitHub soltanto su richiesta e scarica una nuova versione soltanto dopo Sì. Le preparazioni esplicite scaricano ReShade da reshade.me, Widescreen Fix e TexWizard dai repository ufficiali GitHub/CDN e il pack originale dalla release GamePanel con cataloghi fissati; dimensioni e SHA-256 sono verificati. Il setup ReShade non viene eseguito. ReShade può cercare aggiornamenti quando caricato dal gioco. I binari ReShade non sono redistribuiti nello ZIP.
 
 ## Uso sul PC Windows
 
-Per il primo test consultare [la guida alpha.7](docs/ALPHA7.md), usando una copia funzionante del gioco in una cartella scrivibile. Alla prima apertura importare gli EXE una volta: dopo la riapertura restano nella libreria.
+Per il primo test consultare [la guida alpha.8](docs/ALPHA8.md), usando una copia funzionante del gioco in una cartella scrivibile. Alla prima apertura importare gli EXE una volta: dopo la riapertura restano nella libreria.
 
-Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.com/luigip11/DLSS5_ReShade_for_games). Scaricare **GamePanel-win-x64.zip** da [Releases](https://github.com/luigip11/DLSS5_ReShade_for_games/releases). Per le build di sviluppo rimangono gli artifact delle compilazioni riuscite in [Actions](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/workflows/windows-build.yml), accessibili dopo login. La prima alpha.7 va scaricata manualmente, perché alpha.6 non ha il pulsante aggiornamenti. Usare lo stesso account Windows per ritrovare la libreria.
+Il progetto è pubblicato in [luigip11/DLSS5_ReShade_for_games](https://github.com/luigip11/DLSS5_ReShade_for_games). Scaricare **GamePanel-win-x64.zip** da [Releases](https://github.com/luigip11/DLSS5_ReShade_for_games/releases). Per le build di sviluppo rimangono gli artifact delle compilazioni riuscite in [Actions](https://github.com/luigip11/DLSS5_ReShade_for_games/actions/workflows/windows-build.yml), accessibili dopo login. Da alpha.7 si può usare Controlla aggiornamenti; le versioni precedenti richiedono il download manuale. Usare lo stesso account Windows per ritrovare la libreria.
 
 1. Estrarre **tutto** l'artifact scaricato in una cartella scrivibile, fuori dalle cartelle dei giochi. `GamePanel.exe` deve avere le sue DLL accanto; non avviarlo dalla vista di WinRAR. Per alpha.1/2 era necessario estrarre anche lo ZIP interno.
 2. Avviare `GamePanel.exe` e premere **Importa gioco** nella libreria. Non serve installare .NET separatamente. La consultazione/analisi non richiede elevazione; scrivere in Program Files può richiederla.
@@ -116,3 +117,8 @@ Libreria persistente e avvio con nuova analisi, senza reinserire il percorso. Pr
 ## Novità alpha.7
 
 Aggiornamenti da GitHub su richiesta, helper portabile, verifica di digest e inventario, recupero dopo interruzioni. Rilevamento Windows degli schermi e preferenza persistente, senza forzare le impostazioni del sistema o del gioco. Profili SDR sperimentali per i classici indicati; solo il fix schermo resta specifico per Underground 2. Analizzato l'archivio SweetFX condiviso senza eseguirlo o copiarne i binari: [risultati](docs/LEGACY-SWEETFX.md).
+
+
+## Novità alpha.8
+
+Gestione asset recuperabile con copie prima/dopo e baseline persistenti per le auto; lock condiviso con immagine/schermo. Il primo asfalto 2K è generato da artwork procedurale originale e un writer TPK MIT compilato dai sorgenti fissati. Il runtime TexWizard è un componente GPL-3.0 indipendente scaricato dall'autore, non collegato al codice GamePanel. I pacchetti locali contengono solo dati ammessi e non eseguono programmi. Il test statico di 82 CALL limita le build UG2 ammesse; il collaudo nel gioco reale rimane necessario. Non è incluso un pack di geometrie già approvato.

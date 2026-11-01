@@ -1,4 +1,4 @@
-param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDirectory = '', [string]$GraphicsFixturePath = '')
+param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDirectory = '', [string]$GraphicsFixturePath = '', [string]$AssetFixturePath = '', [string]$AssetPackagePath = '')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
@@ -336,6 +336,64 @@ try {
         $renderProcess.Dispose(); $renderProcess = $null
         Write-Host 'PASS GUI launch directly from saved library card and persisted last-played timestamp'
 
+    }
+    if ($AssetFixturePath -and $AssetPackagePath) {
+        $assetGame = Join-Path $fixtureRoot 'Static Asset Game'
+        [IO.Directory]::CreateDirectory($assetGame) | Out-Null
+        $assetExe = Join-Path $assetGame 'speed2.exe'
+        Copy-Item -LiteralPath (Resolve-Path -LiteralPath $AssetFixturePath).Path -Destination $assetExe
+        $assetExeHash = (Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash
+        $assetZip = (Resolve-Path -LiteralPath $AssetPackagePath).Path
+        $assetArchiveHash = (Get-FileHash -LiteralPath $assetZip -Algorithm SHA256).Hash
+        Invoke-Button 'OverviewPage'
+        (Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($assetExe)
+        Invoke-Button 'AnalyzePath'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'static asset game analysis'
+        Invoke-Button 'ScreenPage'
+        Invoke-Button 'PrepareScreen'
+        Wait-Until { $null -ne (Find-Element 'ApplyScreen') -and (Find-Element 'ApplyScreen').Current.IsEnabled } 'asset prerequisite preview'
+        Invoke-Button 'ApplyScreen'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'asset prerequisite install'
+        Invoke-Button 'AssetsPage'
+        (Find-Element 'AssetPackagePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($assetZip)
+        Invoke-Button 'ImportAssetPackage'
+        Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'real asphalt pack import and preview' 60
+        if (Test-Path -LiteralPath (Join-Path $assetGame 'TexturePacks/GamePanel-asphalt-hd/textures.bin')) { throw 'Asset preview wrote game data before confirmation.' }
+        if ((Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash -ne $assetExeHash) { throw 'Asset preview changed the synthetic EXE.' }
+        Invoke-Button 'ApplyAssetPlan'
+        Wait-Until { $null -ne (Find-Element 'ToggleAsset-asphalt-hd') -and (Find-Element 'ToggleAsset-asphalt-hd').Current.IsEnabled } 'real asphalt pack static install'
+        $texturePath = Join-Path $assetGame 'TexturePacks/GamePanel-asphalt-hd/textures.bin'
+        if ((Get-FileHash -LiteralPath $texturePath -Algorithm SHA256).Hash -ne '3990fe97b7dd5b72446adf71c5fd508d78b4afa75919c6f8319442c2e3522bb6') { throw 'Installed 2K BIN hash mismatch.' }
+        if ((Get-FileHash -LiteralPath (Join-Path $assetGame 'scripts/TexWizard.asi') -Algorithm SHA256).Hash -ne '63b464597f60d7e2f29dc65bd48919d9336896d1f54c9be8247157c14ebfe25b') { throw 'Installed texture runtime hash mismatch.' }
+        Invoke-Button 'ScreenPage'
+        if ((Find-Element 'PrepareScreen').Current.IsEnabled) { throw 'Widescreen removal is not blocked while textures depend on its ASI loader.' }
+        Invoke-Button 'AssetsPage'
+        $texConfig = Join-Path $assetGame 'scripts/TexWizard.json'
+        $enabledConfig = Get-Content -LiteralPath $texConfig -Raw | ConvertFrom-Json
+        if ($enabledConfig.autoScan -or @($enabledConfig.packs).Count -ne 1 -or $enabledConfig.packs[0] -ne 'TexturePacks\GamePanel-asphalt-hd') { throw 'Texture configuration is not limited to the selected pack.' }
+        if ($PreviewDirectory) {
+            (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '06-textures.png')))
+        }
+        Invoke-Button 'ToggleAsset-asphalt-hd'
+        Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'texture disable preview'
+        Invoke-Button 'ApplyAssetPlan'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'texture disable'
+        $disabledConfig = Get-Content -LiteralPath $texConfig -Raw | ConvertFrom-Json
+        if ($disabledConfig.autoScan -or @($disabledConfig.packs).Count -ne 0) { throw 'Disabled texture pack remains enabled.' }
+        Invoke-Button 'ToggleAsset-asphalt-hd'
+        Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'texture enable preview'
+        Invoke-Button 'ApplyAssetPlan'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'texture enable'
+        Invoke-Button 'RemoveAsset-asphalt-hd'
+        Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'texture remove preview'
+        Invoke-Button 'ApplyAssetPlan'
+        Wait-Until { $null -eq (Find-Element 'ToggleAsset-asphalt-hd') -and (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'texture static removal'
+        if (Test-Path -LiteralPath $texturePath) { throw 'Removed texture BIN remains.' }
+        if (Test-Path -LiteralPath (Join-Path $assetGame 'scripts/TexWizard.asi')) { throw 'Texture ASI remains after final pack removal.' }
+        if ((Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash -ne $assetExeHash -or (Get-FileHash -LiteralPath $assetZip -Algorithm SHA256).Hash -ne $assetArchiveHash) { throw 'Asset lifecycle changed EXE/archive.' }
+        Write-Host 'PASS GUI real 2K texture archive, exact runtime, no-write preview, install/toggle/remove; static synthetic EXE and both ASIs NEVER EXECUTED'
     }
     Write-Host 'This checks the CI desktop; it does not certify SAC, antivirus safety or game compatibility.'
 }
