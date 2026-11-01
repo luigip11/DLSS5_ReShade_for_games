@@ -54,7 +54,15 @@ internal static class DirectXTextureProfileChecks
             using var f = new Fixture(root, fixture); f.Install();
             f.EditConfig(s => s.Replace("HighlightSelected=0", "HighlightSelected=1").Replace("AutoDump=0", "AutoDump=1"));
             f.Service.Execute(f.Service.PrepareRemove(f.Report())); Require(!f.Service.Status(f.Exe).Installed, "INI modificato dal pannello impedisce rimozione.");
-            f.Install(); f.EditConfig(s => s.Replace(f.ResourceRoot, Path.Combine(f.Root, "outside")));
+            f.Install(); var canonicalRoot = f.ResourceRoot;
+            var aliasRoot = Path.Combine(Path.GetDirectoryName(canonicalRoot)!, "dummy", "..", Path.GetFileName(canonicalRoot));
+            Require(Path.GetFullPath(aliasRoot) == canonicalRoot, "Alias fixture non equivalente.");
+            f.EditConfig(s => s.Replace(canonicalRoot, aliasRoot)); Refused(() => f.Service.PrepareRemove(f.Report()));
+            f.EditConfig(s => s.Replace(aliasRoot, canonicalRoot));
+            var statePath = Path.Combine(f.ProfileFolder, "directx-state.json"); var originalState = File.ReadAllText(statePath);
+            var state = JsonNode.Parse(originalState)!; state["ResourceRoot"] = aliasRoot; File.WriteAllText(statePath, state.ToJsonString());
+            Refused(() => f.Service.Status(f.Exe)); File.WriteAllText(statePath, originalState);
+            f.EditConfig(s => s.Replace(canonicalRoot, Path.Combine(f.Root, "outside")));
             Refused(() => f.Service.PrepareRemove(f.Report())); Require(File.Exists(f.GameFile(DirectXTextureCatalog.LoaderRelativePath)), "INI estraneo sovrascritto.");
             using var g = new Fixture(root, fixture); File.WriteAllText(g.GameFile("scripts/TexWizard.asi"), "conflitto");
             Refused(() => g.Service.PrepareInstall(g.Report(), g.Loader));

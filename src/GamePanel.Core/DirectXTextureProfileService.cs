@@ -343,7 +343,7 @@ public sealed class DirectXTextureProfileService
             var key = line[..eq].Trim(); var value = line[(eq + 1)..].Trim();
             if (!keys.TryAdd(section + "/" + key, value)) throw Invalid("Chiave INI DirectX duplicata.");
         }
-        if (!keys.TryGetValue("TextureToolkit/ResourceRoot", out var configured) || !SamePath(configured, resourceRoot)) throw Invalid("La cartella texture nell'INI è diversa da quella gestita.");
+        if (!keys.TryGetValue("TextureToolkit/ResourceRoot", out var configured) || !CanonicalResourceRoot(configured, resourceRoot)) throw Invalid("La cartella texture nell'INI è diversa da quella gestita.");
         if (!keys.TryGetValue("TextureToolkit/EnableInjection", out var enabled) || enabled is not ("0" or "1")) throw Invalid("Stato sostituzioni DirectX non valido.");
         foreach (var key in new[] { "AutoDump", "FilterSmallTextures", "ShowCurrentFrameOnly", "AcceptSpecialKNames", "HighlightSelected", "ShowOSDBanner", "Verbose" })
             if (keys.TryGetValue("TextureToolkit/" + key, out var value) && value is not ("0" or "1")) throw Invalid("Parametro DirectX non valido: " + key);
@@ -394,7 +394,7 @@ public sealed class DirectXTextureProfileService
     private void ValidateState(DirectXTextureState state, string exe)
     {
         if (state.SchemaVersion != 1 || !ValidId(state.Revision) || !SamePath(state.ExecutablePath, exe)
-            || !ValidHash(state.ExecutableSha256) || !SamePath(state.ResourceRoot, ResourceRoot(exe)) || !state.Installed && state.EnableInjection)
+            || !ValidHash(state.ExecutableSha256) || !CanonicalResourceRoot(state.ResourceRoot, ResourceRoot(exe)) || !state.Installed && state.EnableInjection)
             throw Invalid("Stato texture DirectX non valido.");
     }
     private void ValidateOperation(Operation op, string exe)
@@ -485,6 +485,10 @@ public sealed class DirectXTextureProfileService
     private static string GameKey(string root) => Hash(Encoding.UTF8.GetBytes(OperatingSystem.IsWindows() ? root.ToUpperInvariant() : root));
     private static string Full(string path) => Path.GetFullPath(ExecutablePath.Normalize(path));
     private static bool SamePath(string? a, string b) => a is not null && string.Equals(a, b, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    // Texture Toolkit consumes the raw INI value, so normalising that value here would approve
+    // aliases whose actual traversal may pass through an unverified directory or junction.
+    private static bool CanonicalResourceRoot(string? configured, string expected) => configured is not null
+        && Path.IsPathFullyQualified(configured) && SamePath(configured, Path.GetFullPath(expected));
     private static IReadOnlyList<string> Targets => [DirectXTextureCatalog.LoaderRelativePath, ConfigRelativePath];
     private static string? Live(string root, string relative, CancellationToken token) { var path = GameFile(root, relative); return AttributesOrMissing(path) is null ? null : HashFile(path, token); }
     private static byte[] ReadBounded(string path, int maximum)
