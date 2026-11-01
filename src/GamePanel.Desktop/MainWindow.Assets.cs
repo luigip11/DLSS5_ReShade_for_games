@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,6 +28,7 @@ internal sealed partial class MainWindow
         _assetState = null; _assetPlan = null; _assetPackage = null; _assetArchivePath = "";
         _assetMessage = "Analizza il gioco per preparare texture e modelli.";
         _assetPlanConfirmation = "Applica pacchetto";
+        ResetDirectXTextures();
     }
 
     private async Task RefreshAssetsAsync(string executablePath)
@@ -37,10 +40,11 @@ internal sealed partial class MainWindow
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
         { _assetState = null; _assetMessage = "Stato asset non leggibile: " + e.Message; }
+        await RefreshDirectXTexturesAsync(executablePath);
     }
 
     private bool CanPrepareAssets => !_busy && _report is not null && _assetState?.Pending != true
-        && _fxState?.Pending != true && _screenState?.Pending != true;
+        && _fxState?.Pending != true && _screenState?.Pending != true && _directXState?.Pending != true && !_directXReplacementPending;
 
     private void RenderAssets()
     {
@@ -67,12 +71,17 @@ internal sealed partial class MainWindow
         if (_fxState?.Pending == true || _screenState?.Pending == true)
             Card("Prima completa il recupero", "C'è un'operazione interrotta in HDR / FX o Schermo. Riprendila o annullala nella sua pagina prima di modificare gli asset.");
 
+        RenderDirectXTextures();
+        if (_directXState?.Pending == true || _directXReplacementPending) return;
+
         var builtin = new StackPanel();
-        builtin.Children.Add(DesignSystem.Chip("PRIMO PACK GAMEPANEL · SPERIMENTALE", Accent));
+        builtin.Children.Add(DesignSystem.Chip("PERCORSO TEXWIZARD · BUILD SPECIFICHE", Accent));
         var title = Text("Asfalto 2K", 22, Ink, FontWeights.SemiBold); title.Margin = new Thickness(0, 12, 0, 8); builtin.Children.Add(title);
         builtin.Children.Add(Text("Tre superfici stradali originali a 2048 × 2048. Un intervento mirato sull'asfalto: gli altri materiali e la geometria conservano il dettaglio del gioco.", 13, Muted));
         var builtinReason = _report is null ? "Seleziona e analizza Underground 2."
             : TextureRuntimeCatalog.CheckGame(_report);
+        if (_directXState?.Installed == true)
+            builtinReason = "Il percorso DirectX è installato. Rimuovilo prima di usare il runtime TexWizard.";
         if (builtinReason is null && _screenState?.State?.Installed != true)
             builtinReason = "Applica prima il Widescreen Fix gestito nella pagina Schermo: le texture condividono il suo ASI loader.";
         var builtinInstalled = _assetState?.State?.Packs.Any(p => p.Manifest.Id == "asphalt-hd") == true;
@@ -82,12 +91,40 @@ internal sealed partial class MainWindow
         if (builtinReason is not null) { var hint = Text(builtinReason, 12, Muted); hint.Margin = new Thickness(0, 10, 0, 0); builtin.Children.Add(hint); }
         _content.Children.Add(AssetPanel(builtin, 20));
 
+        RenderModelSourceCards();
         RenderAssetImport();
         RenderAssetPreview();
         RenderInstalledAssets();
         Details("Texture, modelli e immagine SDR", "Le texture sostituiscono materiali del gioco; i modelli sostituiscono file delle auto già presenti. Il profilo HDR / FX regola invece l'immagine SDR e non aggiunge dettaglio agli asset. Il pack asfalto non trasforma tutti gli elementi in 2K. I modelli importati restano da collaudare nel gioco: questa versione non include un modello già verificato.");
         Details("Compatibilità e formati", "Importazione solo da ZIP con GamePanelAssetPack.json, elenco preciso dei file, dimensioni e SHA-256. Sono ammessi dati texture e coppie GEOMETRY.BIN / TEXTURES.BIN per auto esistenti; i metadati texture devono essere già nel formato richiesto dal loader. RAR, TPF, END e installer richiedono conversione esterna e non sono supportati. GamePanel non esegue convertitori o programmi contenuti nei pacchetti.");
         Details("Origine, licenza e ritorno all'originale", "Autore e URL dei pacchetti importati sono dichiarazioni del manifest, non una verifica dell'identità o della licenza. Controlla i diritti d'uso e le istruzioni del pack. Ogni applicazione richiede una conferma dell'anteprima; le copie verificate permettono di disattivare o rimuovere un pack. File cambiati da altri strumenti bloccano le modifiche. Chiudi il gioco prima di applicare e riavvialo per verificare il risultato.");
+    }
+
+    private void RenderModelSourceCards()
+    {
+        var body = new StackPanel(); body.Children.Add(DesignSystem.Chip("AUTO E GEOMETRIE CITTÀ", Accent));
+        var title = Text("Modelli nuovi, requisiti diversi.", 21, Ink, FontWeights.SemiBold);
+        title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
+        body.Children.Add(Text("Modelli auto: importazione disponibile per pacchetti GamePanel di auto esistenti. Nessun pack di modelli verificato è incluso in questa versione.", 13, Muted));
+        var cars = Text("Smol Model Fix · correzioni mirate ai modelli originali; archivio e procedura d'installazione ancora da verificare.", 13, Muted);
+        cars.Margin = new Thickness(0, 12, 0, 6); body.Children.Add(cars);
+        body.Children.Add(FxButton("Fonte autore · Smol Model Fix", "OpenSmolModelSource", (_, _) => OpenAssetSource("https://nfsmods.xyz/mod/2721"), !_busy));
+        var city = Text("Underground 2 Remix · nuove geometrie per la città, con un profilo RTX Remix separato. Questi asset non si installano con il componente texture DirectX di questa pagina.", 13, Muted);
+        city.Margin = new Thickness(0, 12, 0, 6); body.Children.Add(city);
+        var sources = new WrapPanel();
+        sources.Children.Add(FxButton("Progetto autore · Underground 2 Remix", "OpenCityRemixSource", (_, _) => OpenAssetSource("https://www.moddb.com/mods/need-for-speed-underground-2-remix"), !_busy));
+        sources.Children.Add(FxButton("Repository asset RTX Remix", "OpenCityRemixRepository", (_, _) => OpenAssetSource("https://github.com/Ekozmaster/NFSU2-RTX-Remix"), !_busy));
+        body.Children.Add(sources);
+        var hint = Text("I pulsanti aprono le fonti nel browser. Nessuna mod viene scaricata o applicata da questo riquadro.", 12, Muted);
+        hint.Margin = new Thickness(0, 10, 0, 0); body.Children.Add(hint); _content.Children.Add(AssetPanel(body, 20));
+    }
+
+    private void OpenAssetSource(string url)
+    {
+        if (_busy) return;
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception)
+        { _assetMessage = "Impossibile aprire la fonte: " + e.Message; Render(); }
     }
 
     private void RenderAssetImport()
@@ -201,6 +238,7 @@ internal sealed partial class MainWindow
 
     private async Task ImportAssetAsync()
     {
+        _directXPlan = null;
         var report = _report; var path = _assetArchivePath.Trim().Trim('"');
         if (!CanPrepareAssets || report is null || path.Length == 0) return;
         _assetPlan = null; _assetPackage = null;
@@ -220,6 +258,7 @@ internal sealed partial class MainWindow
 
     private async Task PrepareBuiltinAssetAsync()
     {
+        _directXPlan = null;
         var report = _report; if (!CanPrepareAssets || report is null) return;
         _assetPlan = null; _assetPackage = null;
         var widescreenInstalled = _screenState?.State?.Installed == true;
@@ -242,6 +281,7 @@ internal sealed partial class MainWindow
         string? runtime = null;
         if (package.Manifest.Kind == "Textures")
         {
+            if (_directXState?.Installed == true) throw new InvalidOperationException("Il percorso DirectX è installato. Rimuovilo prima di usare i pacchetti TexWizard.");
             var reason = TextureRuntimeCatalog.CheckGame(report);
             if (reason is not null) throw new InvalidOperationException(reason);
             if (!widescreenInstalled) throw new InvalidOperationException("Applica prima il Widescreen Fix gestito dalla pagina Schermo: le texture richiedono il suo ASI loader.");
@@ -252,6 +292,7 @@ internal sealed partial class MainWindow
 
     private async Task PrepareAssetToggleAsync(string id, string name, bool enabled)
     {
+        _directXPlan = null;
         var report = _report; if (!CanPrepareAssets || report is null) return;
         _assetPlan = null; _assetPackage = null;
         await RunFxTaskAsync((token, _) => Task.FromResult(_assets.PrepareToggle(report, id, enabled, token)), plan =>
@@ -263,6 +304,7 @@ internal sealed partial class MainWindow
 
     private async Task PrepareAssetRemoveAsync(string id, string name)
     {
+        _directXPlan = null;
         var report = _report; if (!CanPrepareAssets || report is null) return;
         _assetPlan = null; _assetPackage = null;
         await RunFxTaskAsync((token, _) => Task.FromResult(_assets.PrepareRemove(report, id, token)), plan =>

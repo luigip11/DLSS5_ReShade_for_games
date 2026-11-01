@@ -2,15 +2,18 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: 0.1.0-alpha.8, texture 2K e gestione asset
+## Stato reale: candidato 0.1.0-alpha.9, prova texture DirectX
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Alpha.8 aggiunge **Texture e modelli**, con importazione di pacchetti inventariati, anteprima, copie degli originali e recupero. Il primo pack originale di asfalto contiene tre superfici a 2K, scaricabili su richiesta e ancora sperimentali nel gioco. Il runtime TexWizard proviene dal repository dell'autore ed è fissato su hash/versione; viene installato solo per una build Underground 2 che supera il preflight e con ASI loader Widescreen già gestito. La geometria moderna completa non è inclusa. [Guida alpha.8](docs/ALPHA8.md), [formato pacchetti](docs/ASSET-PACKS.md), [catalogo e provenienza](docs/TEXWIZARD-CATALOG.md).
+Il candidato alpha.9 aggiunge un percorso **DirectX 9 sperimentale** che mantiene l'EXE del gioco, con Texture Toolkit fissato su versione e SHA-256, catture nei dati utente, anteprime delle DDS e associazione esplicita di un materiale originale asfalto 2K alla superficie scelta. Installazione, attivazione e rimozione richiedono una conferma e conservano i dati. Non è ancora un risultato collaudato sulla copia dell'utente. [Guida DirectX](docs/DIRECTX-TEXTURES.md).
+
+La gestione asset alpha.8 resta disponibile: ZIP inventariati, backup e recupero; TexWizard continua a richiedere il layout verificato dell'EXE. I modelli auto e le nuove geometrie della città non sono inclusi: le [fonti verificate e i requisiti](docs/CAR-CITY-SOURCES.md) distinguono pacchetti candidati dal diverso renderer RTX Remix.
 
 Disponibile:
 
 - Libreria nativa con importazione persistente, ricerca, rinomina, ricollegamento e avvio da scheda.
+- Prova texture DirectX x86 UG2: componente su richiesta, prima prova senza sostituzioni, catture DDS verificate e anteprime, materiale asfalto originale completo di mipmap, sostituzioni personali reversibili. Richiede collaudo nel gioco reale.
 - Texture e modelli: pacchetti ZIP con inventario SHA-256, anteprima, copie degli originali e ripristino. Primo pack originale di tre superfici asfalto 2K, sperimentale, per il layout UG2 compatibile.
 - Pagine Panoramica, DLSS, HDR / FX, Schermo, Backup e Diagnosi.
 - Selezione, trascinamento o inserimento del percorso di un singolo EXE, indipendente dagli store. Accetta anche il percorso tra virgolette copiato da Esplora file.

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows7.0": {
+      "GamePanel": {
+        "type": "Project",
+        "dependencies": {
+          "GamePanel.Core": "[0.1.0-alpha.9, )"
+        }
+      },
+      "gamepanel.core": {
+        "type": "Project"
+      }
+    },
+    "net10.0-windows7.0/win-x64": {}
+  }
+}

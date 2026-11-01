@@ -37,9 +37,23 @@ jobs:
       - name: Inspect official ReShade source package without executing it
         shell: pwsh
         run: ./scripts/inspect-reshade.ps1
+      - name: Build original DDS material for DirectX pilot
+        shell: pwsh
+        run: |
+          python scripts/AsphaltPackBuild/build_directx_sample.py --output src/GamePanel.Desktop/Assets/DirectXAsphalt
+          if ($LASTEXITCODE -ne 0) { throw 'DirectX material build failed.' }
+          $sample = 'src/GamePanel.Desktop/Assets/DirectXAsphalt/Asphalt.dds'
+          if ((Get-Item $sample).Length -ne 2796344 -or (Get-FileHash $sample -Algorithm SHA256).Hash -ne '7adaf63cc2234e6dc29ab87faa01fbc273523580ab14ef30e52babfe1a04e98f') { throw 'DirectX material reproducibility check failed.' }
       - name: Checks and self-contained Windows build
         shell: pwsh
         run: ./scripts/publish.ps1 -VerifyOfficialComponent
+      - name: Check DDS preview pixels and bounds on Windows
+        shell: pwsh
+        run: |
+          dotnet restore tests/GamePanel.DesktopChecks --locked-mode
+          if ($LASTEXITCODE -ne 0) { throw 'Desktop check restore failed.' }
+          dotnet run --project tests/GamePanel.DesktopChecks -c Release --no-restore
+          if ($LASTEXITCODE -ne 0) { throw 'DDS preview checks failed.' }
       - name: Check native updater and preservation of user data
         shell: pwsh
         run: ./scripts/check-updater.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
@@ -55,6 +69,16 @@ jobs:
       - name: Verify that unsigned files cannot pass the production-signing gate
         shell: pwsh
         run: ./scripts/check-signature-gate.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
+      - name: Probe actual DirectX capture and replacement when an adapter exists
+        shell: pwsh
+        run: ./scripts/check-directx-textures.ps1 -OutputDirectory ./artifacts/directx-texture-probe
+      - name: DirectX runtime evidence and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: GamePanel-DirectX-runtime-evidence
+          path: artifacts/directx-texture-probe/
+          if-no-files-found: warn
       - name: Interface screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

@@ -1,5 +1,11 @@
 # Specifica concordata e avanzamento
 
+## Candidato alpha.9 — percorso DirectX e stato dei modelli
+
+Implementata una prova Texture Toolkit x86 UG2 con catture nei dati utente, hash dei pixel verificati, anteprime DDS e sostituzioni personali recuperabili. La prova reale sulla copia dell'utente resta necessaria. Nessuna sostituzione dell'eseguibile per ottenere il layout TexWizard.
+
+La ricerca ha individuato Smol Model Fix per correzioni mirate alle auto e Underground 2 Remix per vere nuove geometrie cittadine. Il primo archivio non è stato ispezionato; il secondo richiede un renderer diverso. Nessuno dei due è dichiarato installabile da questa versione. Dettagli e fonti: [CAR-CITY-SOURCES](CAR-CITY-SOURCES.md).
+
 ## Prodotto richiesto
 
 Portabile Windows 11 x64 per MSI Vector 16 AI HX con RTX 5080 Laptop. Selezione EXE anche fuori dagli store, gestione unificata DLSS/HDR/ReShade, parametri comprensibili, backup e ripristino. Supporto iniziale da collaudare su NFS Underground 1/2 e su due titoli moderni ancora da indicare. Il display HDR e la sua luminosità non sono ancora noti.

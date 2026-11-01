@@ -1,6 +1,8 @@
 **/bin/
 **/obj/
 artifacts/
+src/GamePanel.Desktop/Assets/DirectXAsphalt/
+__pycache__/
 .vs/
 *.user
 *.suo

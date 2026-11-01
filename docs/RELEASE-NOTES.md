@@ -1,3 +1,15 @@
+# Candidato alpha.9 — texture DirectX sperimentali
+
+Per le copie UG2 che non corrispondono agli indirizzi di TexWizard, il nuovo percorso usa Texture Toolkit 1.2.1 x86, fissato su sorgente, dimensione e SHA-256. Non cambia l'EXE. Prima si prepara e conferma il componente, poi si identifica una singola superficie nel gioco. Solo dopo si associa una DDS e si conferma l'attivazione delle sostituzioni.
+
+Catture e texture personali restano in `%LOCALAPPDATA%\GamePanel`, anche quando il gioco è in Program Files o il componente viene rimosso. Le anteprime mostrano la cattura originale e il materiale scelto; un materiale procedurale asfalto 2048×2048 con mipmap completi è incluso. Journal e copie prima/dopo permettono il recupero; file sconosciuti o modificati dall'esterno bloccano le scritture.
+
+Il componente resta **sperimentale e da collaudare sulla singola copia**. Non converte le mesh: questa versione non installa nuove geometrie della città o auto high-poly. La pagina elenca fonti degli autori e requisiti verificati, senza offrire download di pack non esaminati. [Guida DirectX](DIRECTX-TEXTURES.md), [auto e città](CAR-CITY-SOURCES.md).
+
+Questo è un candidato di sviluppo, non una nuova release pubblicata tramite il canale aggiornamenti. I dati della libreria e i componenti scaricati restano nei dati utente. La build rimane senza firma Authenticode; non offre una nuova garanzia contro il blocco di Smart App Control.
+
+# Alpha.8
+
 Aggiunta la pagina **Texture e modelli**, con importazione ZIP inventariata, anteprima esplicita, installazione, disattivazione/rimozione e recupero dopo interruzioni. Le sostituzioni dei modelli conservano copie verificate degli originali; i pacchetti locali non possono introdurre installer o plugin arbitrari.
 
 Primo pack originale **GamePanel Asphalt HD 2K**, scaricabile dalla nuova pagina: tre superfici stradali procedurali, 2048×2048 con mipmap, licenza MIT. È sperimentale e non ricopre tutta la città; geometrie e altri materiali restano originali. Il contenitore è verificato, la resa nel gioco reale resta da collaudare.
