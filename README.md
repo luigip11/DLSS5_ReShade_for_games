@@ -91,39 +91,3 @@ L'implementazione iniziale è nuova: nessun sorgente RHI/Swapper né DLL grafica
 I link ai progetti in `docs/COMPONENTS.md` sono riferimenti di analisi; non costituiscono approvazione dei binari né una promessa di integrazione. Ogni componente va verificato per versione, provenienza, licenza e compatibilità.
 
 Vedere [ROADMAP](docs/ROADMAP.md), [BACKUP](docs/BACKUP.md), [SECURITY](docs/SECURITY.md) e [WINDOWS-CHECK](docs/WINDOWS-CHECK.md).
-
-## Correzione alpha.2
-
-La prima alpha mostrava il percorso in un'etichetta non modificabile. Ora il campo accetta l'incolla diretto, anche per percorsi con spazi e parentesi come quelli sotto `Program Files (x86)`. I messaggi distinguono file non trovato, accesso negato e formato PE non leggibile. Modificare il percorso invalida l'analisi precedente: non si può esportare o avviare per errore il gioco analizzato prima.
-
-Questa modifica risolve l'inserimento del percorso. Non dimostra ancora la lettura dell'EXE reale di NFS Underground 2 presente sul PC dell'utente.
-
-## Novità alpha.3
-
-Prima base di recupero: backup persistenti, copie verificate, anteprima dei conflitti, recupero dei file mancanti e journal per la ripresa. Il report condiviso dall'utente ha confermato l'analisi di `speed2.exe` x86 con import Direct3D 9/DirectDraw. Il recupero sul suo gioco reale resta da collaudare; non sono ancora installati componenti ReShade o DLSS.
-
-## Novità alpha.4
-
-Interfaccia ridisegnata in stile gaming: carbone/lime/blu, grafica vettoriale, scheda del gioco, dati dell'analisi in primo piano e Backup più compatto. Il motore di analisi e recupero non cambia. Dettagli: [UI-DESIGN](docs/UI-DESIGN.md).
-
-Per Smart App Control è predisposto un workflow di firma separato, manuale e bloccato se manca la configurazione. Non è attivo e non rende firmate le alpha ordinarie. Dati e passaggi per la candidatura gratuita, soggetta ad approvazione: [SIGNPATH-APPLICATION](docs/SIGNPATH-APPLICATION.md). Non sono stati attivati servizi a pagamento.
-
-## Novità alpha.5
-
-Prima installazione ReShade SDR recuperabile, limitata a Underground 2 x86 DX9. Il download è diretto dal sito ufficiale e bloccato su hash/dimensioni incorporati; nessun setup viene eseguito. Sono aggiunti preset Originale/Bilanciato e tre parametri reali. Il journal conserva entrambe le versioni per ripresa/annullamento. Le DLL esistenti non vengono sovrascritte; INI/preset modificati vengono preservati alla rimozione. HDR e DLSS restano in sviluppo.
-
-Le prove automatiche usano una fixture sintetica; non dimostrano compatibilità del gioco reale. L'alpha resta senza firma GamePanel attendibile; anche il certificato ReShade osservato non stabilisce fiducia di Windows. [Catalogo](docs/RESHade-CATALOG.md), [procedura](docs/RESHade-SDR.md).
-
-## Novità alpha.6
-
-Libreria persistente e avvio con nuova analisi, senza reinserire il percorso. Profilo Cinema con contrasto/bagliore/vignettatura e migrazione recuperabile dello shader alpha.5. Widescreen Fix separato e verificato, con obiettivo 3440×1440 e verifica dal log. Nessun texture pack, DLSS o HDR aggiunto. Le prove sintetiche non certificano il fix sul gioco reale. [ALPHA6](docs/ALPHA6.md), [catalogo widescreen](docs/WIDESCREEN-CATALOG.md).
-
-
-## Novità alpha.7
-
-Aggiornamenti da GitHub su richiesta, helper portabile, verifica di digest e inventario, recupero dopo interruzioni. Rilevamento Windows degli schermi e preferenza persistente, senza forzare le impostazioni del sistema o del gioco. Profili SDR sperimentali per i classici indicati; solo il fix schermo resta specifico per Underground 2. Analizzato l'archivio SweetFX condiviso senza eseguirlo o copiarne i binari: [risultati](docs/LEGACY-SWEETFX.md).
-
-
-## Novità alpha.8
-
-Gestione asset recuperabile con copie prima/dopo e baseline persistenti per le auto; lock condiviso con immagine/schermo. Il primo asfalto 2K è generato da artwork procedurale originale e un writer TPK MIT compilato dai sorgenti fissati. Il runtime TexWizard è un componente GPL-3.0 indipendente scaricato dall'autore, non collegato al codice GamePanel. I pacchetti locali contengono solo dati ammessi e non eseguono programmi. Il test statico di 82 CALL limita le build UG2 ammesse; il collaudo nel gioco reale rimane necessario. Non è incluso un pack di geometrie già approvato.
