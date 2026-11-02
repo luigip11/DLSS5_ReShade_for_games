@@ -1,5 +1,13 @@
 # Specifica concordata e avanzamento
 
+## Priorità Underground 2 e candidato alpha.11
+
+1. HUD e menu più nitidi alla risoluzione del monitor Dell 3440×1440, senza forzare Windows o il gioco a 1920×1080. L'inventario Remix non dimostra da solo la presenza di un pack completo dell'interfaccia.
+2. Materiali stradali, geometrie della città e auto: distinguere i pixel interpolati, le correzioni Smol e i veri asset sostitutivi Remix.
+3. Percorso DLSS nel profilo renderer Remix, dopo verifica di componenti, compatibilità e recupero. La presenza di DLL DLSS e di mesh più dettagliate non prova un'integrazione funzionante.
+
+Alpha.11 semplifica la navigazione e le conferme. L'inventario del pacchetto 0.4 è identificato; l'audit dei 44 componenti selezionati è il prossimo passaggio concreto prima del cambio di renderer. Non viene sovrascritto ReShade o modificato l'EXE sulla base della sola lista di file.
+
 ## Candidato alpha.10 — automazione e subset Smol
 
 Implementati i flussi a due pulsanti per le catture texture e per le correzioni Golf/IS300/Sentra dal RAR revisionato. L'interpolazione 2× non sintetizza nuovo dettaglio; Smol è un subset di correzioni ai modelli originali. Entrambi richiedono verifica visiva nel gioco reale.

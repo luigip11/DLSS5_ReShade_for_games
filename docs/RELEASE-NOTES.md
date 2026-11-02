@@ -1,3 +1,11 @@
+# Candidato alpha.11 — libreria, tab e conferme
+
+L'azione della libreria diventa **Analizza** e continua a rianalizzare il gioco selezionato aprendone la Panoramica. La pagina Texture e modelli ha due tab: **Da installare** per le operazioni disponibili e **I tuoi pacchetti** per la gestione, le anteprime di rimozione/disattivazione e le tre FAQ. Gli strumenti manuali sono raccolti in un gruppo avanzato, con il recupero delle operazioni interrotte sempre visibile.
+
+Texture installate e attive e correzioni auto installate hanno conferme verdi con titolo evidente anche all'inizio della pagina. Risultati parziali, interruzioni ed errori non vengono mostrati come riusciti; una nuova operazione azzera il precedente stato di conferma.
+
+Il report Remix 0.4 identifica il client `d3d9.dll` dentro la cartella dell'autore, insieme a runtime e DLL DLSS. Il flag storico della sola radice archivio resta compatibile, e l'analisi aggiunge la radice di installazione riconosciuta. Il nuovo esportatore crea uno ZIP di soli 44 componenti/configurazioni per l'audit statico, senza installazione o esecuzione. L'esportazione dal pacchetto reale da 2 GB resta da provare sul PC dell'utente.
+
 # Candidato alpha.10 — texture automatiche e Smol parziale
 
 Due pulsanti preparano e installano le catture texture in blocco, senza selezionare ogni hash. L'elaborazione interpola 2× le immagini piccole, conserva contenuto e alpha e genera mipmap compressi completi. Non aggiunge dettagli AI o nuovi modelli. Quantità, esclusioni, limiti e annullamenti sono espliciti; le associazioni sono verificate e recuperabili. [Guida](AUTOMATIC-TEXTURES.md).

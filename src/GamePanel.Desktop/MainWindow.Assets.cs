@@ -22,12 +22,15 @@ internal sealed partial class MainWindow
     private Button? _assetApplyButton;
     private Border? _assetPreviewPanel;
     private TextBlock? _assetStatusText;
+    private int _assetsTab;
 
     private void ResetAssets()
     {
+        _assetsTab = 0; _assetsAdvancedExpanded = false;
         _assetState = null; _assetPlan = null; _assetPackage = null; _assetArchivePath = "";
         _assetMessage = "Analizza il gioco per preparare texture e modelli.";
         _assetPlanConfirmation = "Applica pacchetto";
+        _assetsTab = 0;
         ResetAutomaticAssets();
         ResetDirectXTextures();
     }
@@ -55,7 +58,11 @@ internal sealed partial class MainWindow
         var state = Text(_assetMessage, 13, Muted);
         _assetStatusText = state;
         System.Windows.Automation.AutomationProperties.SetAutomationId(state, "AssetStatus");
-        _content.Children.Add(AssetPanel(state, 14));
+        if (_automaticTextureFeedback == AssetFeedback.Success && _assetMessage == _automaticTextureMessage)
+            _content.Children.Add(AssetFeedbackCard(AssetFeedback.Success, _automaticTextureFeedbackTitle, state));
+        else if (_smolFeedback == AssetFeedback.Success && _assetMessage == _smolMessage)
+            _content.Children.Add(AssetFeedbackCard(AssetFeedback.Success, _smolFeedbackTitle, state));
+        else _content.Children.Add(AssetPanel(state, 14));
 
         if (_assetState?.Pending == true)
         {
@@ -72,10 +79,48 @@ internal sealed partial class MainWindow
         if (_fxState?.Pending == true || _screenState?.Pending == true)
             Card("Prima completa il recupero", "C'è un'operazione interrotta in HDR / FX o Schermo. Riprendila o annullala nella sua pagina prima di modificare gli asset.");
 
+        if (_directXState?.Pending == true || _directXReplacementPending)
+        {
+            RenderDirectXTextures();
+            return;
+        }
+
+        var available = CaptureAssetContent(RenderAvailableAssets);
+        var installed = CaptureAssetContent(() =>
+        {
+            if (_assetsTab == 1) RenderAssetPreview();
+            RenderInstalledAssets();
+            RenderAssetHelp();
+        });
+        _content.Children.Add(CreateAssetTabs(available, installed));
+    }
+
+    private void RenderAvailableAssets()
+    {
         RenderAutomaticTextures();
         RenderSmolModels();
+        RenderModelSourceCards();
+        var advancedContent = CaptureAssetContent(RenderAdvancedAssets);
+        var legacyTextures = _assetState?.State?.Packs.Any(p => p.Manifest.Kind == "Textures") == true;
+        var needsSetup = _directXState?.Installed != true && !legacyTextures;
+        var advanced = new Expander
+        {
+            Header = "Strumenti avanzati · componenti e importazione manuale",
+            Content = advancedContent, Foreground = Ink, BorderBrush = DesignSystem.Line,
+            Margin = new Thickness(0, 4, 0, 16), Padding = new Thickness(12),
+            IsExpanded = _assetsAdvancedExpanded || needsSetup || _directXPlan is not null || _assetPlan is not null
+        };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(advanced, "AssetsAdvancedTools");
+        advanced.Expanded += (_, _) => _assetsAdvancedExpanded = true;
+        advanced.Collapsed += (_, _) => _assetsAdvancedExpanded = false;
+        _content.Children.Add(advanced);
+    }
+
+    private bool _assetsAdvancedExpanded;
+
+    private void RenderAdvancedAssets()
+    {
         RenderDirectXTextures();
-        if (_directXState?.Pending == true || _directXReplacementPending) return;
 
         var builtin = new StackPanel();
         builtin.Children.Add(DesignSystem.Chip("PERCORSO TEXWIZARD · BUILD SPECIFICHE", Accent));
@@ -88,16 +133,18 @@ internal sealed partial class MainWindow
         if (builtinReason is null && _screenState?.State?.Installed != true)
             builtinReason = "Applica prima il Widescreen Fix gestito nella pagina Schermo: le texture condividono il suo ASI loader.";
         var builtinInstalled = _assetState?.State?.Packs.Any(p => p.Manifest.Id == "asphalt-hd") == true;
-        var download = FxButton(builtinInstalled ? "Asfalto 2K installato · gestiscilo qui sotto" : "Scarica asfalto 2K e prepara anteprima", "DownloadAsphaltPack", async (_, _) => await PrepareBuiltinAssetAsync(), CanPrepareAssets && builtinReason is null && !builtinInstalled);
+        var download = FxButton(builtinInstalled ? "Asfalto 2K installato · gestiscilo in I tuoi pacchetti" : "Scarica asfalto 2K e prepara anteprima", "DownloadAsphaltPack", async (_, _) => await PrepareBuiltinAssetAsync(), CanPrepareAssets && builtinReason is null && !builtinInstalled);
         download.Margin = new Thickness(0, 14, 0, 0); download.Background = Accent; download.Foreground = BackgroundBrush; download.BorderBrush = Accent;
         builtin.Children.Add(download);
         if (builtinReason is not null) { var hint = Text(builtinReason, 12, Muted); hint.Margin = new Thickness(0, 10, 0, 0); builtin.Children.Add(hint); }
         _content.Children.Add(AssetPanel(builtin, 20));
 
-        RenderModelSourceCards();
         RenderAssetImport();
-        RenderAssetPreview();
-        RenderInstalledAssets();
+        if (_assetsTab == 0) RenderAssetPreview();
+    }
+
+    private void RenderAssetHelp()
+    {
         Details("Texture, modelli e immagine SDR", "Le texture automatiche ingrandiscono le catture esistenti; Smol corregge solo tre modelli originali. Il profilo HDR / FX regola invece l'immagine SDR. Il pack asfalto non trasforma tutti gli elementi in 2K. Verifica in gioco ogni modifica dopo l'installazione.");
         Details("Compatibilità e formati", "Importazione manuale solo da ZIP con GamePanelAssetPack.json, elenco preciso dei file, dimensioni e SHA-256. Sono ammessi dati texture e coppie GEOMETRY.BIN / TEXTURES.BIN per auto esistenti. Il percorso Smol legge esclusivamente il RAR originale verificato; i suoi convertitori e script non vengono eseguiti. Altri RAR, TPF, END e installer non sono supportati.");
         Details("Origine, licenza e ritorno all'originale", "Autore e URL dei pacchetti importati sono dichiarazioni del manifest, non una verifica dell'identità o della licenza. Controlla i diritti d'uso e le istruzioni del pack. Ogni applicazione richiede una conferma dell'anteprima; le copie verificate permettono di disattivare o rimuovere un pack. File cambiati da altri strumenti bloccano le modifiche. Chiudi il gioco prima di applicare e riavvialo per verificare il risultato.");
@@ -114,9 +161,10 @@ internal sealed partial class MainWindow
         sources.Children.Add(FxButton("Progetto autore · Underground 2 Remix", "OpenCityRemixSource", (_, _) => OpenAssetSource("https://www.moddb.com/mods/need-for-speed-underground-2-remix"), !_busy));
         sources.Children.Add(FxButton("Repository asset RTX Remix", "OpenCityRemixRepository", (_, _) => OpenAssetSource("https://github.com/Ekozmaster/NFSU2-RTX-Remix"), !_busy));
         sources.Children.Add(FxButton("Analizza archivio Remix 0.4", "AnalyzeRemixArchive", async (_, _) => await AnalyzeRemixArchiveAsync(), !_busy));
+        sources.Children.Add(FxButton("Esporta componenti per verifica", "ExportRemixComponents", async (_, _) => await ExportRemixComponentsAsync(), !_busy));
         body.Children.Add(sources);
         body.Children.Add(Text(_remixAuditMessage, 12, Muted));
-        var hint = Text("I pulsanti aprono le fonti nel browser. Nessuna mod viene scaricata o applicata da questo riquadro.", 12, Muted);
+        var hint = Text("Le fonti si aprono nel browser; gli strumenti leggono il tuo archivio locale. Nessuna mod viene installata da questo riquadro.", 12, Muted);
         hint.Margin = new Thickness(0, 10, 0, 0); body.Children.Add(hint); _content.Children.Add(AssetPanel(body, 20));
     }
 
@@ -204,7 +252,11 @@ internal sealed partial class MainWindow
     private void RenderInstalledAssets()
     {
         var packs = _assetState?.State?.Packs;
-        if (packs is null || packs.Count == 0) return;
+        if (packs is null || packs.Count == 0)
+        {
+            Card("Nessun pacchetto installato", "Prepara texture o correzioni dalla scheda Da installare. Qui potrai gestire i pacchetti applicati e ripristinare gli originali.");
+            return;
+        }
         var heading = Text("I tuoi pacchetti", 20, Ink, FontWeights.SemiBold); heading.Margin = new Thickness(0, 0, 0, 12); _content.Children.Add(heading);
         foreach (var pack in packs)
         {

@@ -81,7 +81,7 @@ internal sealed partial class MainWindow
             var actions = new WrapPanel();
             var play = Button("Avvia  →", async (_, _) => await OpenLibraryGameAsync(game, true)); play.IsEnabled = !_busy && available;
             play.Background = Accent; play.Foreground = BackgroundBrush; System.Windows.Automation.AutomationProperties.SetAutomationId(play, "LibraryPlay-" + game.Id); actions.Children.Add(play);
-            var open = Button("Apri scheda", async (_, _) => await OpenLibraryGameAsync(game, false)); open.IsEnabled = !_busy;
+            var open = Button("Analizza", async (_, _) => await OpenLibraryGameAsync(game, false)); open.IsEnabled = !_busy;
             System.Windows.Automation.AutomationProperties.SetAutomationId(open, "LibraryOpen-" + game.Id); actions.Children.Add(open); details.Children.Add(actions);
             var edit = new WrapPanel();
             var rename = Button("Rinomina", (_, _) => RenameLibraryGame(game)); rename.IsEnabled = !_busy;

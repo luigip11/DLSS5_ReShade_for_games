@@ -44,6 +44,7 @@ try {
     Copy-Item docs/AUTOMATIC-TEXTURES.md (Join-Path $portable 'AUTOMATIC-TEXTURES.md')
     Copy-Item docs/SMOL-MODELS.md (Join-Path $portable 'SMOL-MODELS.md')
     Copy-Item docs/REMIX-PROFILE.md (Join-Path $portable 'REMIX-PROFILE.md')
+    Copy-Item docs/REMIX-0.4-INVENTORY.md (Join-Path $portable 'REMIX-0.4-INVENTORY.md')
     Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')
     Copy-Item docs/CAR-CITY-SOURCES.md (Join-Path $portable 'CAR-CITY-SOURCES.md')
     Copy-Item docs/third-party/TextureToolkit-MIT.txt (Join-Path $portable 'LICENSE-TextureToolkit.txt')

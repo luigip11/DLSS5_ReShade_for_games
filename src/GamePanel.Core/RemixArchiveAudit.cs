@@ -9,7 +9,7 @@ namespace GamePanel.Core;
 public sealed record RemixArchiveFile(string RelativePath, long Bytes, bool IsDirectory);
 public sealed record RemixArchiveReport(int SchemaVersion, string SourceVersion, long ArchiveBytes,
     string Sha256, string Md5, bool MatchesPublishedSource, IReadOnlyList<RemixArchiveFile> Files,
-    bool HasRootD3d9, IReadOnlyList<string> Warnings);
+    bool HasRootD3d9, IReadOnlyList<string> Warnings, string? InstallationRoot = null, bool HasInstallationD3d9 = false);
 
 /// <summary>Reads one identified author archive. Never extracts, installs or executes its contents.</summary>
 public sealed class RemixArchiveAudit
@@ -114,15 +114,28 @@ public sealed class RemixArchiveAudit
         files.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.RelativePath, b.RelativePath));
         // An author wrapper folder is retained in the report, never silently stripped from paths.
         var rootD3d9 = files.Any(f => !f.IsDirectory && f.RelativePath.Equals("d3d9.dll", StringComparison.OrdinalIgnoreCase));
-        if (rootD3d9) warnings.Add("d3d9.dll nella radice dell'archivio: richiede un profilo renderer separato da ReShade.");
+        var installationRoot = FindInstallationRoot(files);
+        if (installationRoot is not null) warnings.Add("d3d9.dll nella radice di installazione, anche dentro la cartella dell'autore: richiede un profilo renderer separato da ReShade.");
         warnings.Add("Nessuna installazione autorizzata da questo report: occorrono audit del contenuto e un test reversibile sul gioco esistente.");
-        return new(1, SourceVersion, length, sha256, md5sum, true, files.AsReadOnly(), rootD3d9, warnings.AsReadOnly());
+        return new(1, SourceVersion, length, sha256, md5sum, true, files.AsReadOnly(), rootD3d9, warnings.AsReadOnly(), installationRoot, installationRoot is not null);
 
         void Unchanged()
         {
             if (read != length || input.Length != length || new FileInfo(archivePath).Length != length || File.GetLastWriteTimeUtc(archivePath) != modified)
                 throw Invalid("Archivio cambiato durante l'analisi: riprovare con una copia locale stabile.");
         }
+    }
+
+    // Describe a single author wrapper without stripping any reported path or installing files.
+    internal static string? FindInstallationRoot(IReadOnlyList<RemixArchiveFile> files)
+    {
+        var regular = files.Where(f => !f.IsDirectory).Select(f => f.RelativePath).ToArray();
+        if (regular.Any(p => p.Equals("d3d9.dll", StringComparison.OrdinalIgnoreCase))) return "";
+        if (regular.Length == 0) return null;
+        var slash = regular[0].IndexOf('/'); if (slash < 1) return null;
+        var prefix = regular[0][..slash];
+        return regular.All(p => p.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
+            && regular.Any(p => p.Equals(prefix + "/d3d9.dll", StringComparison.OrdinalIgnoreCase)) ? prefix : null;
     }
 
     private static InvalidDataException Invalid(string message) => new(message);

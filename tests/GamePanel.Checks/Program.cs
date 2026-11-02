@@ -163,6 +163,7 @@ DirectXTextureChecks.Register(Check, temp);
 DirectXTextureProfileChecks.Register(Check, temp, Fixture);
 AutomaticTextureChecks.Register(Check, temp, Fixture);
 RemixArchiveChecks.Register(Check, temp);
+RemixBundleChecks.Register(Check, temp);
 var localSmolAt = Array.IndexOf(args, "--verify-smol-archive");
 SmolModelChecks.Register(Check, temp, localSmolAt >= 0 && localSmolAt + 1 < args.Length ? args[localSmolAt + 1] : null);
 var textureAt = Array.IndexOf(args, "--texture-package");

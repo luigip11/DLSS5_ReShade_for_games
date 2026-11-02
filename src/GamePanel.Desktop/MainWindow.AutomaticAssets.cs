@@ -13,13 +13,24 @@ internal sealed partial class MainWindow
     private PreparedSmolModels? _preparedSmol;
     private AssetPlan? _smolPlan;
     private string _smolMessage = "Smol parziale: correzioni ai modelli originali di Golf, IS300 e Sentra.";
+    private AssetFeedback _smolFeedback;
+    private string _smolFeedbackTitle = "";
+    private AssetFeedback _automaticTextureFeedback;
+    private string _automaticTextureFeedbackTitle = "";
     private PreparedDirectXBatch? _preparedTextures;
     private bool _acceptLimitedTextures;
     private string _automaticTextureMessage = "Le catture già salvate possono essere preparate tutte insieme, senza scegliere ogni hash.";
 
+    private void ClearAutomaticAssetFeedback()
+    {
+        _automaticTextureFeedback = AssetFeedback.None;
+        _smolFeedback = AssetFeedback.None;
+    }
+
     private void ResetAutomaticAssets()
     {
         _preparedTextures = null; _acceptLimitedTextures = false;
+        _automaticTextureFeedback = AssetFeedback.None;
         _automaticTextureMessage = "Le catture già salvate possono essere preparate tutte insieme, senza scegliere ogni hash.";
         ResetSmolModels();
     }
@@ -32,7 +43,9 @@ internal sealed partial class MainWindow
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
         body.Children.Add(Text("Ingrandimento 2× delle DDS catturate fino a 512 × 512, con uscita fino a 1024 × 1024. Conserva contenuto e trasparenza; è interpolazione, non AI, nuovi materiali o geometrie. Ogni hash viene associato alla propria cattura.", 13, Muted));
         var status = Text(_automaticTextureMessage, 13, Ink); status.Margin = new Thickness(0, 12, 0, 12);
-        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "AutomaticTextureStatus"); body.Children.Add(status);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "AutomaticTextureStatus");
+        body.Children.Add(_automaticTextureFeedback == AssetFeedback.None ? status
+            : AssetFeedbackCard(_automaticTextureFeedback, _automaticTextureFeedbackTitle, status));
         var installed = _directXState?.Installed == true;
         if (!installed) body.Children.Add(Text("Installa prima il componente con «Prepara texture DirectX» nel riquadro seguente. Le catture già presenti restano disponibili.", 12, Muted));
         if (_preparedTextures is { } prepared)
@@ -68,6 +81,8 @@ internal sealed partial class MainWindow
         var report = _report; var state = _directXState;
         if (!CanPrepareDirectX || report is null || state?.Installed != true) return;
         ClearAssetAndDirectXPlans(); _preparedTextures = null; _acceptLimitedTextures = false;
+        _automaticTextureFeedback = AssetFeedback.None;
+        _automaticTextureMessage = "Preparazione delle catture in corso.";
         await RunFxTaskAsync((token, progress) => Task.FromResult(_automaticTextures.Prepare(report, state.ResourceRoot, token, progress)), prepared =>
         {
             _preparedTextures = prepared;
@@ -81,6 +96,9 @@ internal sealed partial class MainWindow
         var report = _report; var state = _directXState; var prepared = _preparedTextures;
         if (!CanPrepareDirectX || report is null || state?.Installed != true || prepared is null || prepared.FilesCount == 0 || (prepared.WasLimited && !_acceptLimitedTextures)) return;
         ClearAssetAndDirectXPlans();
+        _automaticTextureFeedback = AssetFeedback.None;
+        _automaticTextureMessage = "Installazione delle texture in corso.";
+        var succeeded = false;
         await RunFxTaskAsync((token, progress) =>
         {
             var result = _automaticTextures.Install(report, state.ResourceRoot, prepared, token, progress);
@@ -94,16 +112,29 @@ internal sealed partial class MainWindow
             return Task.FromResult((Result: result, Activated: activated, Snapshot: ReadDirectXUiSnapshot(report.ExecutablePath, report)));
         }, completed =>
         {
+            succeeded = true;
             ApplyDirectXUiSnapshot(completed.Snapshot);
+            _automaticTextureFeedback = completed.Activated ? AssetFeedback.Success : AssetFeedback.Attention;
+            _automaticTextureFeedbackTitle = completed.Activated ? "Texture installate e attive"
+                : completed.Result.Cancelled ? "Installazione interrotta" : "Installazione parziale o da completare";
             _automaticTextureMessage = completed.Result.Cancelled
                 ? $"Operazione interrotta: {completed.Result.InstalledCount} installate, {completed.Result.AlreadyInstalledCount} già presenti. Premi Installa per riprendere; nessuna attivazione automatica."
                 : $"{completed.Result.InstalledCount} texture installate · {completed.Result.AlreadyInstalledCount} già presenti. " + (completed.Activated ? "Sostituzioni attive: avvia il gioco per verificarle." : prepared.WasLimited ? "Lotto parziale salvato; attivazione automatica non eseguita." : "Attivazione non completata; controlla lo stato DirectX prima di riprendere.");
+            _assetMessage = _automaticTextureMessage;
         }, "Installazione di tutte le texture preparate · chiudi il gioco");
+        if (!succeeded && !_closing)
+        {
+            _automaticTextureFeedback = AssetFeedback.Attention;
+            _automaticTextureFeedbackTitle = "Installazione non completata";
+            _automaticTextureMessage = _assetMessage;
+            Render();
+        }
     }
 
     private void ResetSmolModels()
     {
         _preparedSmol = null; _smolPlan = null;
+        _smolFeedback = AssetFeedback.None;
         _smolMessage = "Smol parziale: correzioni ai modelli originali di Golf, IS300 e Sentra.";
     }
 
@@ -114,7 +145,9 @@ internal sealed partial class MainWindow
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
         body.Children.Add(Text("Golf · Lexus IS300 · Nissan Sentra. Correzioni mirate alle geometrie originali, con le texture locali conservate. Nessun pacchetto high poly, città o personaggi. Gli altri contenuti dell'archivio Smol non vengono installati.", 13, Muted));
         var status = Text(_smolMessage, 13, Ink); status.Margin = new Thickness(0, 12, 0, 12);
-        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "SmolModelStatus"); body.Children.Add(status);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "SmolModelStatus");
+        body.Children.Add(_smolFeedback == AssetFeedback.None ? status
+            : AssetFeedbackCard(_smolFeedback, _smolFeedbackTitle, status));
         if (_smolPlan is { } plan)
         {
             var summary = Text($"Anteprima · {plan.Changes.Count(c => c.BeforeSha256 != c.AfterSha256)} modifiche · tre auto", 14, Ink, FontWeights.SemiBold);
@@ -143,6 +176,8 @@ internal sealed partial class MainWindow
     {
         var report = _report; if (!CanPrepareAssets || report is null) return;
         ClearAssetAndDirectXPlans(); _preparedSmol = null; _smolPlan = null;
+        _smolFeedback = AssetFeedback.None;
+        _smolMessage = "Preparazione delle correzioni auto in corso.";
         await RunFxTaskAsync(async (token, progress) =>
         {
             var archive = archivePath ?? await _smolSource.PrepareAsync(token, progress);
@@ -162,6 +197,9 @@ internal sealed partial class MainWindow
         var report = _report; var prepared = _preparedSmol; var plan = _smolPlan;
         if (!CanPrepareAssets || report is null || prepared is null || plan is null) return;
         ClearAssetAndDirectXPlans();
+        _smolFeedback = AssetFeedback.None;
+        _smolMessage = "Installazione delle correzioni auto in corso.";
+        var succeeded = false;
         await RunFxTaskAsync((token, progress) =>
         {
             SmolModelPackBuilder.VerifyForInstall(report, prepared, token);
@@ -170,9 +208,19 @@ internal sealed partial class MainWindow
             return Task.FromResult(_assets.Execute(plan, token, progress));
         }, state =>
         {
+            succeeded = true;
+            _smolFeedback = AssetFeedback.Success;
+            _smolFeedbackTitle = "Correzioni auto installate";
             _assetState = new(state, false, ""); _preparedSmol = null; _smolPlan = null;
-            _smolMessage = "Correzioni Smol installate e verificate per Golf, IS300 e Sentra. Avvia il gioco per controllarle; il pacchetto è gestibile qui sotto.";
+            _smolMessage = "Correzioni Smol installate e verificate per Golf, IS300 e Sentra. Avvia il gioco per controllarle; il pacchetto è gestibile in I tuoi pacchetti.";
             _assetMessage = _smolMessage;
         }, "Installazione correzioni delle tre auto · copie degli originali verificate");
+        if (!succeeded && !_closing)
+        {
+            _smolFeedback = AssetFeedback.Attention;
+            _smolFeedbackTitle = "Installazione non completata";
+            _smolMessage = _assetMessage;
+            Render();
+        }
     }
 }

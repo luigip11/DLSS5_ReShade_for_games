@@ -73,6 +73,17 @@ function Invoke-Button([string]$Id) {
     if ($null -eq $button -or -not $button.Current.IsEnabled) { throw "Button unavailable: $Id" }
     $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
 }
+function Select-AssetsTab([string]$Id) {
+    $tab = Find-Element $Id
+    if ($null -eq $tab) { throw "Asset tab unavailable: $Id" }
+    $tab.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+}
+function Set-AssetAdvancedTools([bool]$Expanded) {
+    $expander = Find-Element 'AssetsAdvancedTools'
+    if ($null -eq $expander) { throw 'Asset advanced tools unavailable.' }
+    $pattern = $expander.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($Expanded) { $pattern.Expand() } else { $pattern.Collapse() }
+}
 function Has-Heading([string]$Name) {
     $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Name)
     return $null -ne $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
@@ -310,6 +321,7 @@ try {
         Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero } 'library restart'
         $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
         Wait-Until { $null -ne (Find-Element ('LibraryOpen-' + $libraryGame[0].Id)) } 'persisted library card'
+        if ((Find-Element ('LibraryOpen-' + $libraryGame[0].Id)).Current.Name -ne 'Analizza') { throw 'Library analysis action label is misleading.' }
         if ($PreviewDirectory) {
             Start-Sleep -Milliseconds 300
             [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '05-library-populated.png')))
@@ -355,12 +367,16 @@ try {
         Invoke-Button 'ApplyScreen'
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'asset prerequisite install'
         Invoke-Button 'AssetsPage'
+        Select-AssetsTab 'AssetsAvailableTab'
+        Set-AssetAdvancedTools $true
         (Find-Element 'AssetPackagePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($assetZip)
         Invoke-Button 'ImportAssetPackage'
         Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'real asphalt pack import and preview' 60
         if (Test-Path -LiteralPath (Join-Path $assetGame 'TexturePacks/GamePanel-asphalt-hd/textures.bin')) { throw 'Asset preview wrote game data before confirmation.' }
         if ((Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash -ne $assetExeHash) { throw 'Asset preview changed the synthetic EXE.' }
         Invoke-Button 'ApplyAssetPlan'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Operazione profilo completata' } 'asset install completion before tab switch'
+        Select-AssetsTab 'AssetsInstalledTab'
         Wait-Until { $null -ne (Find-Element 'ToggleAsset-asphalt-hd') -and (Find-Element 'ToggleAsset-asphalt-hd').Current.IsEnabled } 'real asphalt pack static install'
         $texturePath = Join-Path $assetGame 'TexturePacks/GamePanel-asphalt-hd/textures.bin'
         if ((Get-FileHash -LiteralPath $texturePath -Algorithm SHA256).Hash -ne '3990fe97b7dd5b72446adf71c5fd508d78b4afa75919c6f8319442c2e3522bb6') { throw 'Installed 2K BIN hash mismatch.' }
@@ -368,6 +384,7 @@ try {
         Invoke-Button 'ScreenPage'
         if ((Find-Element 'PrepareScreen').Current.IsEnabled) { throw 'Widescreen removal is not blocked while textures depend on its ASI loader.' }
         Invoke-Button 'AssetsPage'
+        Select-AssetsTab 'AssetsInstalledTab'
         $texConfig = Join-Path $assetGame 'scripts/TexWizard.json'
         $enabledConfig = Get-Content -LiteralPath $texConfig -Raw | ConvertFrom-Json
         if ($enabledConfig.autoScan -or @($enabledConfig.packs).Count -ne 1 -or $enabledConfig.packs[0] -ne 'TexturePacks\GamePanel-asphalt-hd') { throw 'Texture configuration is not limited to the selected pack.' }
@@ -375,6 +392,11 @@ try {
             (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
             Start-Sleep -Milliseconds 300
             [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '06-textures.png')))
+            Select-AssetsTab 'AssetsAvailableTab'
+            Set-AssetAdvancedTools $false
+            Start-Sleep -Milliseconds 300
+            [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '07-assets-available.png')))
+            Select-AssetsTab 'AssetsInstalledTab'
         }
         Invoke-Button 'ToggleAsset-asphalt-hd'
         Wait-Until { $null -ne (Find-Element 'ApplyAssetPlan') -and (Find-Element 'ApplyAssetPlan').Current.IsEnabled } 'texture disable preview'

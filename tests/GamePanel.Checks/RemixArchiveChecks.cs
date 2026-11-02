@@ -8,6 +8,15 @@ internal static class RemixArchiveChecks
 {
     public static void Register(Action<string, Action> check, string root)
     {
+        check("Remix: cartella autore riconosciuta senza confondere runtime x64 e client di installazione", () =>
+        {
+            const string wrapper = "Underground 2 Remix 0.4";
+            var (path, audit) = Fixture(root, wrapper + "/d3d9.dll", wrapper + "/.trex/d3d9.dll");
+            var report = audit.Analyze(path);
+            Require(!report.HasRootD3d9 && report.HasInstallationD3d9 && report.InstallationRoot == wrapper, "Client dentro la cartella autore non riconosciuto.");
+            Require(RemixArchiveAudit.FindInstallationRoot([new(".trex/d3d9.dll", 1, false), new("README.txt", 1, false)]) is null, "Runtime interno scambiato per client nella radice.");
+            Require(RemixArchiveAudit.FindInstallationRoot([new("one/d3d9.dll", 1, false), new("two/data.dds", 1, false)]) is null, "Radice ambigua normalizzata automaticamente.");
+        });
         check("Remix: vera tabella 7z, hash e report relativo senza estrazione", () =>
         {
             var (path, audit) = Fixture(root, "d3d9.dll", "rtx-remix/mods/test/mod.usda");
