@@ -8,6 +8,13 @@ internal static class LibraryChecks
         GameReport Report(string folder, string name = "game.exe")
         { Directory.CreateDirectory(folder); return new GameInspector().Inspect(makeExe(Path.Combine(folder, name), false, false, "d3d9.dll")); }
         string Folder() { var p = Path.Combine(root, "library-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(p); return p; }
+        check("Libreria: deselezione persistente conserva giochi e file", () =>
+        {
+            var p = Folder(); var report = Report(Path.Combine(p, "Game")); var service = new GameLibrary(Path.Combine(p, "metadata"));
+            var before = service.Remember(report); var bytes = File.ReadAllBytes(report.ExecutablePath);
+            service.ClearSelection(); var after = new GameLibrary(Path.Combine(p, "metadata")).Load();
+            Require(after.SelectedId is null && JsonSerializer.Serialize(after.Games) == JsonSerializer.Serialize(before.Games) && File.ReadAllBytes(report.ExecutablePath).SequenceEqual(bytes), "Deselezione ha perso dati o selezione non persistente.");
+        });
         check("Libreria: importazione persistente, deduplicata e senza eseguire il gioco", () =>
         {
             var p = Folder(); var report = Report(Path.Combine(p, "Game")); var service = new GameLibrary(Path.Combine(p, "metadata"));

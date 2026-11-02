@@ -51,7 +51,12 @@ internal sealed partial class MainWindow
         var subtitle = Text($"{_libraryVariantGroups.Count} giochi · pronti da ritrovare, senza reinserire il percorso.", 13, Muted); subtitle.Margin = new Thickness(0, 6, 12, 0); intro.Children.Add(subtitle); hero.Children.Add(intro);
         var add = Button("+  Importa gioco", async (_, _) => await SelectAsync()); add.IsEnabled = !_busy;
         add.Background = Accent; add.Foreground = BackgroundBrush; add.Margin = new Thickness(0); add.VerticalAlignment = VerticalAlignment.Center;
-        System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); Grid.SetColumn(add, 1); hero.Children.Add(add); _content.Children.Add(hero);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); deselect.Content = "Deseleziona gioco";
+        deselect.IsEnabled = !_busy && (_report is not null || _library.SelectedId is not null);
+        deselect.Margin = new Thickness(0, 0, 10, 0); deselect.VerticalAlignment = VerticalAlignment.Center;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(deselect, "DeselectLibraryGame");
+        tools.Children.Add(deselect); tools.Children.Add(add); Grid.SetColumn(tools, 1); hero.Children.Add(tools); _content.Children.Add(hero);
         var message = Text(_libraryMessage, 12, Muted); message.Margin = new Thickness(0, 0, 0, 18); _content.Children.Add(message);
         System.Windows.Automation.AutomationProperties.SetAutomationId(message, "LibraryStatus");
         var label = Text("CERCA NELLA LIBRERIA", 10, Muted, FontWeights.SemiBold); label.Margin = new Thickness(0, 0, 0, 8); _content.Children.Add(label);
@@ -67,6 +72,20 @@ internal sealed partial class MainWindow
             Card("Il prossimo gioco parte da qui", "Importa un EXE con il pulsante in alto. L'analisi riuscita lo salva automaticamente; l'importazione non avvia il gioco e non installa mod.");
             Details("Percorso manuale e giochi spostati", "Per incollare un percorso apri Panoramica. Se un gioco viene spostato, usa Ricollega EXE dalla sua scheda nella libreria. Backup e profili restano legati ai percorsi originari e non sono spostati automaticamente.");
         }
+    }
+    private void DeselectLibraryGame()
+    {
+        if (_busy) return;
+        try
+        {
+            _library = _libraryStore.ClearSelection(); _report = null; _path.Text = "";
+            ResetBackups(); _export.IsEnabled = false; _analyze.IsEnabled = false;
+            _libraryMessage = "Gioco deselezionato. Libreria, profili e file restano conservati.";
+            _status.Text = "Nessun gioco selezionato"; _page = 5;
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+        { _libraryMessage = e.Message; }
+        Render();
     }
     private void RenderLibraryCards()
     {

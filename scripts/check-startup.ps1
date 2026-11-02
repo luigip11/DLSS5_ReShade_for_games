@@ -456,6 +456,15 @@ try {
         if ((Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash -ne $assetExeHash -or (Get-FileHash -LiteralPath $assetZip -Algorithm SHA256).Hash -ne $assetArchiveHash) { throw 'Asset lifecycle changed EXE/archive.' }
         Write-Host 'PASS GUI real 2K texture archive, exact runtime, no-write preview, install/toggle/remove; static synthetic EXE and both ASIs NEVER EXECUTED'
     }
+    Invoke-Button 'LibraryPage'
+    $savedBefore = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    Invoke-Button 'DeselectLibraryGame'
+    Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Nessun gioco selezionato' } 'deselect analyzed game'
+    $savedAfter = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    if ($null -ne $savedAfter.SelectedId -or @($savedAfter.Games).Count -ne @($savedBefore.Games).Count) { throw 'Deselect lost library entries or did not clear selection.' }
+    Invoke-Button 'OverviewPage'
+    if ((Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne '') { throw 'Deselect retained active executable path.' }
+    Write-Host 'PASS GUI deselection clears active context and preserves library entries'
     Write-Host 'This checks the CI desktop; it does not certify SAC, antivirus safety or game compatibility.'
 }
 finally {

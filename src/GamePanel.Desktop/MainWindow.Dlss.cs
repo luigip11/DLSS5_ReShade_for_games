@@ -135,13 +135,17 @@ internal sealed partial class MainWindow
     private FrameworkElement DlssChoice(string label, string id, int? value, (int? Value, string Label)[] choices, Action<int?> change)
     {
         var body = new StackPanel { Margin = new Thickness(0, 10, 0, 6) }; body.Children.Add(Text(label, 12, Muted));
-        var combo = new ComboBox { IsEnabled = !_busy, Margin = new Thickness(0, 5, 0, 0), MinWidth = 220, HorizontalAlignment = HorizontalAlignment.Left };
+        var combo = new ComboBox { IsEnabled = !_busy, Margin = new Thickness(0, 5, 0, 0), MinWidth = 130, HorizontalAlignment = HorizontalAlignment.Stretch };
         System.Windows.Automation.AutomationProperties.SetAutomationId(combo, id);
         foreach (var choice in choices) combo.Items.Add(choice.Label);
         combo.SelectedIndex = Array.FindIndex(choices, item => item.Value == value);
         if (combo.SelectedIndex < 0) { combo.SelectedIndex = 0; body.Children.Add(Text("Valore nel file: " + value + " · lasciato invariato", 11, Muted)); }
-        combo.SelectionChanged += (_, _) => { if (combo.SelectedIndex < 0) return; var selected = choices[combo.SelectedIndex].Value; change(selected); TrackDlssEdit(id, selected); _remixManagedPlan = null; };
-        body.Children.Add(combo); return new Border { Child = body, Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(6) };
+        var illustration = new Canvas { Width = 76, Height = 52, Margin = new Thickness(12, 0, 0, 0), IsHitTestVisible = false };
+        DrawDlssSketch(illustration, id, value);
+        combo.SelectionChanged += (_, _) => { if (combo.SelectedIndex < 0) return; var selected = choices[combo.SelectedIndex].Value; change(selected); TrackDlssEdit(id, selected); DrawDlssSketch(illustration, id, selected); _remixManagedPlan = null; };
+        var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.Children.Add(combo); Grid.SetColumn(illustration, 1); row.Children.Add(illustration);
+        body.Children.Add(row); return new Border { Child = body, Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(6) };
     }
     private void TrackDlssEdit(string id, int? value)
     {
