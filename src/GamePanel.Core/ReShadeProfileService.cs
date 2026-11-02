@@ -356,11 +356,15 @@ public sealed class ReShadeProfileService
     {
         if (LoadOperation(folder, executable)?.Status == "Pending"
             || new ReShadeProfileService(_store, _running, !_widescreen).LoadOperation(folder, executable)?.Status == "Pending"
-            || new AssetProfileService(_store, _running).Status(executable).Pending)
+            || new AssetProfileService(_store, _running).Status(executable).Pending
+            || DirectXTextureCoordination.HasPending(folder))
             throw new InvalidOperationException("Riprendi o annulla l'operazione interrotta del profilo immagine/schermo prima di procedere.");
     }
     private void CheckAssetDependency(string executable)
     {
+        if (_widescreen && (new DirectXTextureProfileService(_store, _running).Status(executable).Installed
+            || AttributesOrMissing(GameFile(Path.GetDirectoryName(executable)!, DirectXTextureCatalog.LoaderRelativePath)) is not null))
+            throw new InvalidOperationException("Rimuovi prima il componente texture DirectX: usa l'ASI loader del Widescreen Fix.");
         if (_widescreen && new AssetProfileService(_store, _running).Status(executable).State?.Packs.Any(p => p.Manifest.Kind == "Textures") == true)
             throw new InvalidOperationException("Rimuovi prima i pacchetti texture: usano l'ASI loader del Widescreen Fix.");
     }

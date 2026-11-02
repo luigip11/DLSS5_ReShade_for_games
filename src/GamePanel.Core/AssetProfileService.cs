@@ -269,6 +269,8 @@ public sealed class AssetProfileService
     {
         if (_textureCheck(report) is { } reason) throw Invalid(reason);
         var root = Path.GetDirectoryName(Full(report.ExecutablePath))!;
+        if (AttributesOrMissing(GameFile(root, DirectXTextureCatalog.LoaderRelativePath)) is not null)
+            throw Invalid("Rimuovi prima il componente texture DirectX: TexWizard usa un percorso alternativo.");
         var wide = ReShadeProfileService.ForWidescreen(_store, _running).Status(report.ExecutablePath);
         if (wide.Pending || wide.State?.Installed != true || wide.State.ExecutableSha256 != report.Sha256 || Live(root, "dinput8.dll", token) != _asiLoaderHash)
             throw Invalid("Installa prima il Widescreen Fix GamePanel con ASI loader verificato.");
@@ -481,7 +483,7 @@ public sealed class AssetProfileService
     }
     private static void CheckPeers(string folder)
     {
-        foreach (var file in new[] { "operation.json", "widescreen-operation.json" })
+        foreach (var file in new[] { "operation.json", "widescreen-operation.json", "directx-operation.json", "directx-replacements-operation.json" })
         { var path = Path.Combine(folder, file); GuardPath(path); if (File.Exists(path)) { using var doc = ReadDocument(path); if (doc.RootElement.GetProperty("Status").GetString() == "Pending") throw new InvalidOperationException("Operazione immagine/schermo interrotta: recuperala prima degli asset."); } }
     }
     private static T ReadAssetJson<T>(string path)

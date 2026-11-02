@@ -169,6 +169,7 @@ internal sealed partial class MainWindow
     private async Task RunFxTaskAsync<T>(Func<CancellationToken, IProgress<BackupProgress>, Task<T>> work, Action<T> completed, string message)
     {
         if (_busy) return;
+        ClearAutomaticAssetFeedback();
         _busy = true; _path.IsReadOnly = true; _select.IsEnabled = false; _analyze.IsEnabled = false; _export.IsEnabled = false;
         _cancel.Content = "Interrompi operazione"; _cancel.Visibility = Visibility.Visible; _status.Text = message;
         _cancellation = new CancellationTokenSource(); var operation = _cancellation; Render();
@@ -184,10 +185,11 @@ internal sealed partial class MainWindow
             {
                 _fxPlan = null;
                 if (_report is not null) { await RefreshEffectsAsync(_report.ExecutablePath); await RefreshScreenAsync(_report.ExecutablePath); await RefreshAssetsAsync(_report.ExecutablePath); }
-                _screenPlan = null; _assetPlan = null; _assetPackage = null;
+                _screenPlan = null; _assetPlan = null; _assetPackage = null; _directXPlan = null;
+                ClearAutomaticAssetFeedback();
                 _fxMessage = e is OperationCanceledException ? "Operazione interrotta. Se il journal è aperto, riprendi o annulla il recupero." : e.Message;
                 if (_page == 6) _screenMessage = _fxMessage;
-                if (_page == 7) _assetMessage = _fxMessage;
+                if (_page == 7) { _assetMessage = _fxMessage; _directXMessage = _fxMessage; }
                 _status.Text = "Operazione profilo non completata";
             }
         }

@@ -1,5 +1,25 @@
 # Specifica concordata e avanzamento
 
+## Priorità Underground 2 e candidato alpha.11
+
+1. HUD e menu più nitidi alla risoluzione del monitor Dell 3440×1440, senza forzare Windows o il gioco a 1920×1080. L'inventario Remix non dimostra da solo la presenza di un pack completo dell'interfaccia.
+2. Materiali stradali, geometrie della città e auto: distinguere i pixel interpolati, le correzioni Smol e i veri asset sostitutivi Remix.
+3. Percorso DLSS nel profilo renderer Remix, dopo verifica di componenti, compatibilità e recupero. La presenza di DLL DLSS e di mesh più dettagliate non prova un'integrazione funzionante.
+
+Alpha.11 semplifica la navigazione e le conferme. L'inventario del pacchetto 0.4 è identificato; l'audit dei 44 componenti selezionati è il prossimo passaggio concreto prima del cambio di renderer. Non viene sovrascritto ReShade o modificato l'EXE sulla base della sola lista di file.
+
+## Candidato alpha.10 — automazione e subset Smol
+
+Implementati i flussi a due pulsanti per le catture texture e per le correzioni Golf/IS300/Sentra dal RAR revisionato. L'interpolazione 2× non sintetizza nuovo dettaglio; Smol è un subset di correzioni ai modelli originali. Entrambi richiedono verifica visiva nel gioco reale.
+
+Per RTX Remix è disponibile l'analisi locale del 7z 0.4 con inventario JSON; non un installer renderer. Restano necessari l'audit dell'archivio completo e un piano verificato di sospensione/ripristino di ReShade e Texture Toolkit. Personaggi e mesh cittadine moderne non sono dichiarati implementati.
+
+## Candidato alpha.9 — percorso DirectX e stato dei modelli
+
+Implementata una prova Texture Toolkit x86 UG2 con catture nei dati utente, hash dei pixel verificati, anteprime DDS e sostituzioni personali recuperabili. La prova reale sulla copia dell'utente resta necessaria. Nessuna sostituzione dell'eseguibile per ottenere il layout TexWizard.
+
+La ricerca ha individuato Smol Model Fix per correzioni mirate alle auto e Underground 2 Remix per vere nuove geometrie cittadine. Il primo archivio non è stato ispezionato; il secondo richiede un renderer diverso. Nessuno dei due è dichiarato installabile da questa versione. Dettagli e fonti: [CAR-CITY-SOURCES](CAR-CITY-SOURCES.md).
+
 ## Prodotto richiesto
 
 Portabile Windows 11 x64 per MSI Vector 16 AI HX con RTX 5080 Laptop. Selezione EXE anche fuori dagli store, gestione unificata DLSS/HDR/ReShade, parametri comprensibili, backup e ripristino. Supporto iniziale da collaudare su NFS Underground 1/2 e su due titoli moderni ancora da indicare. Il display HDR e la sua luminosità non sono ancora noti.

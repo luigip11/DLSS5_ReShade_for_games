@@ -159,6 +159,13 @@ WideChecks.Register(Check, temp, Fixture, args.Contains("--verify-official-resha
 UpdateChecks.Register(Check, temp, Fixture);
 AssetPackageChecks.Register(Check, temp);
 AssetProfileChecks.Register(Check, temp, Fixture);
+DirectXTextureChecks.Register(Check, temp);
+DirectXTextureProfileChecks.Register(Check, temp, Fixture);
+AutomaticTextureChecks.Register(Check, temp, Fixture);
+RemixArchiveChecks.Register(Check, temp);
+RemixBundleChecks.Register(Check, temp);
+var localSmolAt = Array.IndexOf(args, "--verify-smol-archive");
+SmolModelChecks.Register(Check, temp, localSmolAt >= 0 && localSmolAt + 1 < args.Length ? args[localSmolAt + 1] : null);
 var textureAt = Array.IndexOf(args, "--texture-package");
 var asphaltAt = Array.IndexOf(args, "--asphalt-package");
 TextureRuntimeChecks.Register(Check, temp, args.Contains("--verify-official-reshade", StringComparer.Ordinal), textureAt >= 0 && textureAt + 1 < args.Length ? args[textureAt + 1] : null, asphaltAt >= 0 && asphaltAt + 1 < args.Length ? args[asphaltAt + 1] : null);

@@ -40,6 +40,18 @@ try {
     Copy-Item docs/RESHade-SDR.md (Join-Path $portable 'RESHade-SDR.md')
     Copy-Item docs/RESHade-CATALOG.md (Join-Path $portable 'RESHade-CATALOG.md')
     Copy-Item docs/ALPHA8.md (Join-Path $portable 'ALPHA8.md')
+    Copy-Item docs/DIRECTX-TEXTURES.md (Join-Path $portable 'DIRECTX-TEXTURES.md')
+    Copy-Item docs/AUTOMATIC-TEXTURES.md (Join-Path $portable 'AUTOMATIC-TEXTURES.md')
+    Copy-Item docs/SMOL-MODELS.md (Join-Path $portable 'SMOL-MODELS.md')
+    Copy-Item docs/REMIX-PROFILE.md (Join-Path $portable 'REMIX-PROFILE.md')
+    Copy-Item docs/REMIX-0.4-INVENTORY.md (Join-Path $portable 'REMIX-0.4-INVENTORY.md')
+    Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')
+    Copy-Item docs/CAR-CITY-SOURCES.md (Join-Path $portable 'CAR-CITY-SOURCES.md')
+    Copy-Item docs/third-party/TextureToolkit-MIT.txt (Join-Path $portable 'LICENSE-TextureToolkit.txt')
+    $sample = Join-Path $portable 'Assets/DirectXAsphalt/Asphalt.dds'
+    if (-not (Test-Path -LiteralPath $sample) -or (Get-Item $sample).Length -ne 2796344 -or (Get-FileHash $sample -Algorithm SHA256).Hash -ne '7adaf63cc2234e6dc29ab87faa01fbc273523580ab14ef30e52babfe1a04e98f') {
+        throw 'Materiale DirectX mancante o diverso. Eseguire prima scripts/AsphaltPackBuild/build_directx_sample.py con NumPy fissato.'
+    }
     Copy-Item docs/ASSET-PACKS.md (Join-Path $portable 'ASSET-PACKS.md')
     Copy-Item docs/TEXWIZARD-CATALOG.md (Join-Path $portable 'TEXWIZARD-CATALOG.md')
     Copy-Item docs/WIDESCREEN-CATALOG.md (Join-Path $portable 'WIDESCREEN-CATALOG.md')
