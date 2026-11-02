@@ -54,6 +54,11 @@ internal static class RemixManagedChecks
             }
             using var original = new Fixture(root, makeExe); File.AppendAllText(original.OriginalExe, "changed"); Refused(() => original.Service.PrepareAdopt(original.Report));
             using var noMarker = new Fixture(root, makeExe); File.Delete(noMarker.Path("GamePanel-RemixTrial.json")); Require(!noMarker.Service.Status(noMarker.Exe).Supported, "Gioco generico trattato come Remix.");
+            using var remote = new Fixture(root, makeExe);
+            var marker = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(remote.Path("GamePanel-RemixTrial.json")))!;
+            marker["SourceFolder"] = "\\\\not-a-real-host.invalid\\untrusted";
+            File.WriteAllText(remote.Path("GamePanel-RemixTrial.json"), marker.ToJsonString());
+            Refused(() => remote.Service.PrepareAdopt(remote.Report));
         });
         check("Remix gestito: journal recupera annullamento dopo il primo file e blocca modifiche esterne", () =>
         {
