@@ -51,10 +51,10 @@ internal sealed partial class MainWindow
         var subtitle = Text($"{_libraryVariantGroups.Count} giochi · pronti da ritrovare, senza reinserire il percorso.", 13, Muted); subtitle.Margin = new Thickness(0, 6, 12, 0); intro.Children.Add(subtitle); hero.Children.Add(intro);
         var add = Button("+  Importa gioco", async (_, _) => await SelectAsync()); add.IsEnabled = !_busy;
         add.Background = Accent; add.Foreground = BackgroundBrush; add.Margin = new Thickness(0); add.VerticalAlignment = VerticalAlignment.Center;
-        System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); var tools = new StackPanel { Orientation = Orientation.Horizontal };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); deselect.Content = "Deseleziona gioco";
         deselect.IsEnabled = !_busy && (_report is not null || _library.SelectedId is not null);
-        deselect.Margin = new Thickness(0, 0, 10, 0);
+        deselect.Margin = new Thickness(0, 0, 10, 0); deselect.VerticalAlignment = VerticalAlignment.Center;
         System.Windows.Automation.AutomationProperties.SetAutomationId(deselect, "DeselectLibraryGame");
         tools.Children.Add(deselect); tools.Children.Add(add); Grid.SetColumn(tools, 1); hero.Children.Add(tools); _content.Children.Add(hero);
         var message = Text(_libraryMessage, 12, Muted); message.Margin = new Thickness(0, 0, 0, 18); _content.Children.Add(message);
