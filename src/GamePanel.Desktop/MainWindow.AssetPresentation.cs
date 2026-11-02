@@ -71,8 +71,8 @@ internal sealed partial class MainWindow
         style.Triggers.Add(focused);
         tabs.ItemContainerStyle = style;
 
-        var availableTab = new TabItem { Header = "Da installare", Content = available };
-        var installedTab = new TabItem { Header = "I tuoi pacchetti", Content = installed };
+        var availableTab = new TabItem { Header = "Configura", Content = available };
+        var installedTab = new TabItem { Header = "I tuoi componenti", Content = installed };
         System.Windows.Automation.AutomationProperties.SetAutomationId(availableTab, "AssetsAvailableTab");
         System.Windows.Automation.AutomationProperties.SetAutomationId(installedTab, "AssetsInstalledTab");
         tabs.Items.Add(availableTab);

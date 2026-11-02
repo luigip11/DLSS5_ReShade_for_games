@@ -1,12 +1,16 @@
 # Specifica concordata e avanzamento
 
-## Priorità Underground 2 e candidato alpha.11
+## Candidato alpha.13 — consolidamento per gioco
+
+Implementati percorso Grafica contestuale, adozione della copia Remix già presente, profilo derivato dal collaudo utente, gestione configurazioni DLSS con ripristino e varianti Originale/Remix in libreria. Il supporto in scrittura resta limitato alle copie identificate; gli altri titoli hanno analisi e funzioni già disponibili per il loro contesto. Non è uno swapper DLSS universale. [Uso](GAME-PROFILES.md).
+
+## Priorità Underground 2 e candidato alpha.12
 
 1. HUD e menu più nitidi alla risoluzione del monitor Dell 3440×1440, senza forzare Windows o il gioco a 1920×1080. L'inventario Remix non dimostra da solo la presenza di un pack completo dell'interfaccia.
 2. Materiali stradali, geometrie della città e auto: distinguere i pixel interpolati, le correzioni Smol e i veri asset sostitutivi Remix.
 3. Percorso DLSS nel profilo renderer Remix, dopo verifica di componenti, compatibilità e recupero. La presenza di DLL DLSS e di mesh più dettagliate non prova un'integrazione funzionante.
 
-Alpha.11 semplifica la navigazione e le conferme. L'inventario del pacchetto 0.4 è identificato; l'audit dei 44 componenti selezionati è il prossimo passaggio concreto prima del cambio di renderer. Non viene sovrascritto ReShade o modificato l'EXE sulla base della sola lista di file.
+Alpha.12 usa l'audit statico dei 44 componenti per preparare una prova Remix su una copia separata. L'EXE funzionante viene conservato; AntiCull incompatibile viene escluso. Il prossimo passaggio è il collaudo reale del renderer e della visibilità sul PC dell'utente, poi la verifica delle associazioni degli asset e di DLSS. L'originale con ReShade resta intatto. Vedere [prova Remix](REMIX-TRIAL.md).
 
 ## Candidato alpha.10 — automazione e subset Smol
 

@@ -1,3 +1,19 @@
+# Candidato alpha.13 — grafica contestuale e profili DLSS
+
+La navigazione principale diventa Libreria, Gioco, Grafica e DLSS, con strumenti tecnici in Avanzate. Grafica propone soltanto i percorsi pertinenti al gioco e al renderer selezionati: nessun Asfalto 2K o modello auto viene proposto a un gioco generico.
+
+Le copie Remix alpha.12 riconosciute possono essere registrate senza riestrazione. Sono disponibili cattura della configurazione attuale, controlli DLSS con modifiche esplicite, profilo consigliato RTX 5080 Laptop/3440×1440, anteprima delle differenze e ripristino. rtx.conf e user.conf sono gestiti con journal e conservazione dei parametri estranei. Le varianti registrate Originale/Remix si selezionano dalla stessa scheda della libreria.
+
+Il profilo consigliato combina esportazione e impostazioni confermate dall'utente; non è una garanzia universale di prestazioni. Gli FPS con Frame Generation sono distinti concettualmente dai frame renderizzati, senza misure inventate. Per altri giochi la pagina DLSS è disponibile in lettura. [Guida](GAME-PROFILES.md).
+
+# Candidato alpha.12 — prova Remix su copia separata
+
+In Texture e modelli → Da installare, **Prepara copia di prova** analizza il gioco e il 7z locale; **Crea copia e applica Remix** crea una nuova cartella, senza scrivere nel gioco originale né avviarlo. Il flusso verifica spazio libero, file sorgenti e archivio, estrae i contenuti nella propria cartella temporanea e pubblica la copia solo dopo i controlli finali. Interruzioni e conflitti non pubblicano una copia incompleta.
+
+La prova accetta solo l'EXE CD funzionante identificato e il Widescreen Fix già gestito. Mantiene l'EXE, il loader e il fix presenti; omette ReShade, Texture Toolkit, TexWizard e gli script del pacchetto autore. AntiCull è escluso perché il suo controllo di entry point rifiuta questo EXE. La camera libera viene disattivata; il preset RTX dell'autore viene conservato.
+
+**Non è una compatibilità Remix confermata.** Senza AntiCull possono mancare oggetti o parti della città; modelli Smol già presenti possono non corrispondere agli hash dell'autore. Non promette un nuovo HUD, personaggi moderni, DLSS attivo o un remaster completo. Salvataggi e profilo in Documenti/registro possono essere condivisi. Restano i requisiti del disco originale. [Istruzioni](REMIX-TRIAL.md), [risultati dell'audit statico](REMIX-COMPONENT-REVIEW.md).
+
 # Candidato alpha.11 — libreria, tab e conferme
 
 L'azione della libreria diventa **Analizza** e continua a rianalizzare il gioco selezionato aprendone la Panoramica. La pagina Texture e modelli ha due tab: **Da installare** per le operazioni disponibili e **I tuoi pacchetti** per la gestione, le anteprime di rimozione/disattivazione e le tre FAQ. Gli strumenti manuali sono raccolti in un gruppo avanzato, con il recupero delle operazioni interrotte sempre visibile.

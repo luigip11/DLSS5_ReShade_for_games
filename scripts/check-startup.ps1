@@ -65,6 +65,22 @@ function Wait-Until([scriptblock]$Condition, [string]$Description, [int]$Timeout
     throw "Timeout: $Description"
 }
 function Find-Element([string]$Id) {
+    # Expand only known shell containers requested by a test. Probing for an
+    # absent operation (for example after removal) must not change page state.
+    $containerId = $null
+    if ($Id -in @('HdrPage', 'ScreenPage', 'BackupsPage', 'DiagnosticsPage')) { $containerId = 'AdvancedNavigation' }
+    elseif ($Id -in @('ExecutablePath', 'AnalyzePath')) { $containerId = 'GamePathExpander' }
+    if ($containerId) {
+        $containerCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $containerId)
+        $container = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $containerCondition)
+        if ($null -ne $container) {
+            $pattern = $container.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+            if ($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) {
+                $pattern.Expand()
+                Start-Sleep -Milliseconds 100
+            }
+        }
+    }
     $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $Id)
     return $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
 }
@@ -130,6 +146,26 @@ try {
     Invoke-Button 'AnalyzePath'
     Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'static executable analysis'
     Write-Host 'PASS GUI quoted path analysis'
+    Invoke-Button 'AssetsPage'
+    Wait-Until { Has-Heading 'Grafica del gioco' } 'generic graphics page'
+    foreach ($specific in @('DownloadAsphaltPack', 'PrepareSmolModels', 'SelectSmolArchive', 'PrepareRemixTrial', 'PrepareAllDirectXTextures')) {
+        if ($null -ne (Find-Element $specific)) { throw "UG2-specific action shown for an unrelated game: $specific" }
+    }
+    if ((Has-Heading 'Asfalto 2K') -or (Has-Heading 'Correzioni ai modelli auto')) { throw 'UG2-specific content shown for an unrelated game.' }
+    Invoke-Button 'DlssPage'
+    Wait-Until { $null -ne (Find-Element 'DlssStatus') } 'contextual DLSS page'
+    $dlssNavigation = Find-Element 'DlssPage'
+    $dlssParts = $dlssNavigation.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+    $dlssNavigationText = $dlssNavigation.Current.Name + ' ' + (@($dlssParts | ForEach-Object { $_.Current.Name }) -join ' ')
+    if ($dlssNavigationText -notlike '*DLSS*' -or $dlssNavigationText -like '*PRESTO*') { throw 'DLSS navigation is not available as a contextual page.' }
+    if ($PreviewDirectory) {
+        $dlssScroll = (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+        if ($dlssScroll.Current.VerticallyScrollable) { $dlssScroll.SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0) }
+        Start-Sleep -Milliseconds 300
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '08-dlss.png')))
+    }
+    if ((Find-Element 'DlssStatus').Current.Name -like '*Underground*') { throw 'Generic DLSS status exposes a game-specific prerequisite.' }
+    Write-Host 'PASS GUI contextual graphics: unrelated game has no UG2 tools, DLSS page available without PRESTO badge'
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
     Invoke-Button 'CreateBackup'
@@ -167,6 +203,7 @@ try {
         $fixtureBinary = (Resolve-Path -LiteralPath $GraphicsFixturePath).Path
         $profileExe = Join-Path $fixtureGame 'speed2.exe'
         Copy-Item -LiteralPath $fixtureBinary -Destination $profileExe
+        foreach ($clue in @('GLOBAL', 'TRACKS', 'CARS')) { [IO.Directory]::CreateDirectory((Join-Path $fixtureGame $clue)) | Out-Null }
         $profileHash = (Get-FileHash -LiteralPath $profileExe -Algorithm SHA256).Hash
         $sha = [Security.Cryptography.SHA256]::Create()
         try {
@@ -176,7 +213,7 @@ try {
         $profileBackupStore = Join-Path $fixtureData "Backups/$profileKey"
         $profileStore = Join-Path $fixtureData "Profiles/$folderKey"
         if ((Test-Path -LiteralPath $profileBackupStore) -or (Test-Path -LiteralPath $profileStore)) { throw 'Unexpected existing profile fixture state.' }
-        $pathInput.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($profileExe)
+        (Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($profileExe)
         Invoke-Button 'AnalyzePath'
         Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'x86 DX9 fixture analysis'
         Invoke-Button 'HdrPage'
@@ -354,6 +391,7 @@ try {
         [IO.Directory]::CreateDirectory($assetGame) | Out-Null
         $assetExe = Join-Path $assetGame 'speed2.exe'
         Copy-Item -LiteralPath (Resolve-Path -LiteralPath $AssetFixturePath).Path -Destination $assetExe
+        foreach ($clue in @('GLOBAL', 'TRACKS', 'CARS')) { [IO.Directory]::CreateDirectory((Join-Path $assetGame $clue)) | Out-Null }
         $assetExeHash = (Get-FileHash -LiteralPath $assetExe -Algorithm SHA256).Hash
         $assetZip = (Resolve-Path -LiteralPath $AssetPackagePath).Path
         $assetArchiveHash = (Get-FileHash -LiteralPath $assetZip -Algorithm SHA256).Hash
@@ -394,6 +432,7 @@ try {
             [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '06-textures.png')))
             Select-AssetsTab 'AssetsAvailableTab'
             Set-AssetAdvancedTools $false
+            (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern).SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 0)
             Start-Sleep -Milliseconds 300
             [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '07-assets-available.png')))
             Select-AssetsTab 'AssetsInstalledTab'

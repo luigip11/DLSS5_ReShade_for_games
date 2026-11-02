@@ -212,7 +212,7 @@ internal sealed partial class MainWindow
             _smolFeedback = AssetFeedback.Success;
             _smolFeedbackTitle = "Correzioni auto installate";
             _assetState = new(state, false, ""); _preparedSmol = null; _smolPlan = null;
-            _smolMessage = "Correzioni Smol installate e verificate per Golf, IS300 e Sentra. Avvia il gioco per controllarle; il pacchetto è gestibile in I tuoi pacchetti.";
+            _smolMessage = "Correzioni Smol installate e verificate per Golf, IS300 e Sentra. Avvia il gioco per controllarle; il pacchetto è gestibile in I tuoi componenti.";
             _assetMessage = _smolMessage;
         }, "Installazione correzioni delle tre auto · copie degli originali verificate");
         if (!succeeded && !_closing)

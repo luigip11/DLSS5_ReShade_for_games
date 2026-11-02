@@ -444,7 +444,7 @@ public sealed class DirectXTextureProfileService
     }
     private static void CheckPeers(string folder, bool allowReplacementRecovery = false)
     {
-        foreach (var file in new[] { "operation.json", "widescreen-operation.json", "assets-operation.json", "directx-replacements-operation.json" })
+        foreach (var file in new[] { "operation.json", "widescreen-operation.json", "assets-operation.json", "directx-replacements-operation.json", "remix-managed-operation.json" })
         {
             if (allowReplacementRecovery && file == "directx-replacements-operation.json") continue;
             var path = Path.Combine(folder, file); GuardPath(path);

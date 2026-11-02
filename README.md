@@ -2,17 +2,15 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: candidato 0.1.0-alpha.11, gestione più chiara e verifica componenti Remix
+## Stato reale: candidato 0.1.0-alpha.13, profili per gioco e gestione DLSS Remix
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Alpha.11 rinomina in **Analizza** l'azione della libreria, mantiene l'apertura della Panoramica del gioco selezionato e divide Texture e modelli in **Da installare** e **I tuoi pacchetti**. Il secondo tab raccoglie pacchetti e tre FAQ; gli strumenti manuali sono in un gruppo avanzato. Le installazioni riuscite di texture e auto espongono una conferma verde anche in alto nella pagina.
+Alpha.13 organizza GamePanel intorno al gioco selezionato: **Libreria, Gioco, Grafica e DLSS**. Gli strumenti specifici UG2 compaiono solo nel loro contesto; quelli tecnici sono in Avanzate. La pagina DLSS gestisce le copie Remix riconosciute con registrazione, cattura della configurazione, anteprima dei parametri, applicazione e ripristino. Sugli altri giochi espone componenti e disponibilità senza offrire modifiche non integrate.
 
-Restano i flussi **Prepara tutte le texture → Installa texture preparate**, con interpolazione 2× delle catture, e il sottoinsieme Smol Golf/IS300/Sentra. Non sono nuovi asset AI o un remaster completo. [Texture automatiche](docs/AUTOMATIC-TEXTURES.md), [correzioni auto](docs/SMOL-MODELS.md).
+La copia Remix alpha.12 già collaudata può essere registrata senza riestrarre l'archivio. Le varianti registrate Originale/Remix condividono una scheda della libreria. Il profilo consigliato per RTX 5080 Laptop e 3440×1440 deriva dal file finale dell'utente e dalle scelte confermate nel pannello; la sua fluidità con Frame Generation non equivale agli FPS di rendering. [Guida ai profili](docs/GAME-PROFILES.md).
 
-La gestione asset alpha.8 e la diagnosi DirectX alpha.9 restano disponibili. Il gioco mantiene il suo EXE. Le nuove geometrie della città e i personaggi non sono inclusi: RTX Remix richiede un diverso profilo renderer e un archivio ancora da verificare. Il pulsante **Analizza archivio Remix 0.4** legge il 7z locale ed esporta un inventario JSON senza installarlo, così si può proseguire la verifica senza trasferire oltre 2 GB. [Fonti e requisiti](docs/CAR-CITY-SOURCES.md).
-
-L'inventario 0.4 ricevuto identifica 2924 voci e include client, bridge x64 e librerie DLSS. **Esporta componenti per verifica** crea dal 7z identificato uno ZIP limitato a 44 file selezionati, circa 6 MiB, per l'audit statico successivo. Non installa o esegue quei file e non certifica la compatibilità del gioco. [Inventario e priorità](docs/REMIX-0.4-INVENTORY.md).
+Restano il builder di una copia Remix separata, i percorsi ReShade e texture per i giochi compatibili e le procedure di recupero. Nessun gioco, asset o runtime Remix è incluso nello ZIP. La build è un candidato di sviluppo fuori dal canale aggiornamenti.
 
 Disponibile:
 

@@ -7,7 +7,7 @@ internal static class DirectXTextureCoordination
 {
     internal static bool HasPending(string folder)
     {
-        foreach (var name in new[] { "directx-operation.json", "directx-replacements-operation.json" })
+        foreach (var name in new[] { "directx-operation.json", "directx-replacements-operation.json", "remix-managed-operation.json" })
         {
             var path = Path.Combine(folder, name); GuardPath(path);
             if (AttributesOrMissing(path) is not FileAttributes attributes) continue;
