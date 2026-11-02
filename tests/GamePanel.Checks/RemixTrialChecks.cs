@@ -39,7 +39,7 @@ internal static class RemixTrialChecks
             var plan = f.Prepare(); f.Service.Create(plan); Require(File.Exists(f.Clone("speed2.exe")), "Cartella vuota non ammessa.");
             using var g = new Fixture(root, makeExe); Directory.CreateDirectory(g.Destination); File.WriteAllText(g.Clone("keep.txt"), "preserve");
             Refused(() => g.Prepare()); Require(File.ReadAllText(g.Clone("keep.txt")) == "preserve", "Cartella esistente alterata.");
-            foreach (var destination in new[] { g.Game, g.Path("Trial"), g.Root, g.Store, g.Archive, Path.Combine(GamePanelPaths.Root, "trial") })
+            foreach (var destination in new[] { g.Game, g.Path("Trial"), g.Root, g.Store, g.Archive, Path.Combine(GamePanelPaths.Root, "trial"), AppContext.BaseDirectory })
                 Refused(() => g.Service.Prepare(g.Report(), g.Archive, destination));
         });
         check("Remix trial: plugin ignoti, proxy estranei e Wide non più verificato bloccano senza scritture", () =>
@@ -75,8 +75,8 @@ internal static class RemixTrialChecks
         check("Remix trial: gioco aperto, hash archivio errato e destinazione diventata occupata non sovrascrivono", () =>
         {
             using var f = new Fixture(root, makeExe); var pin = f.Pin with { Sha256 = new string('0', 64) };
-            Refused(() => new RemixTrialService(pin, f.Store, _ => false, f.WidePins).Prepare(f.Report(), f.Archive, f.Destination));
-            Refused(() => new RemixTrialService(f.Pin, f.Store, _ => true, f.WidePins).Prepare(f.Report(), f.Archive, f.Destination));
+            Refused(() => new RemixTrialService(pin, f.Store, _ => false, f.WidePins, f.ProtectedRoots).Prepare(f.Report(), f.Archive, f.Destination));
+            Refused(() => new RemixTrialService(f.Pin, f.Store, _ => true, f.WidePins, f.ProtectedRoots).Prepare(f.Report(), f.Archive, f.Destination));
             var plan = f.Prepare(); var occupied = false;
             Refused(() => f.Service.Create(plan, progress: new InlineProgress(p =>
             {
@@ -105,6 +105,7 @@ internal static class RemixTrialChecks
         public string Destination => System.IO.Path.Combine(Root, "Remix trial");
         public RemixTrialService.Pin Pin { get; }
         public IReadOnlyDictionary<string, (long Bytes, string Hash)> WidePins { get; }
+        public IReadOnlyList<string> ProtectedRoots { get; } = Array.AsReadOnly(new[] { GamePanelPaths.Root, AppContext.BaseDirectory });
         public RemixTrialService Service { get; }
         public Fixture(string root, Func<string, bool, bool, string, string> makeExe, bool installWide = true)
         {
@@ -124,7 +125,7 @@ internal static class RemixTrialChecks
             File.WriteAllText(Path("ReShade.log"), "old renderer resolution log");
             var bytes = Convert.FromBase64String(ArchiveFixture); File.WriteAllBytes(Archive, bytes);
             Pin = new(bytes.LongLength, Hex(SHA256.HashData(bytes)), Hex(MD5.HashData(bytes)), Hash(Exe), Hex(SHA256.HashData(Encoding.UTF8.GetBytes("FAKE REMIX CLIENT; harmless text, never loaded"))));
-            Service = new(Pin, Store, _ => false, WidePins);
+            Service = new(Pin, Store, _ => false, WidePins, ProtectedRoots);
         }
         public string Path(string relative) => System.IO.Path.Combine(Game, relative.Replace('/', System.IO.Path.DirectorySeparatorChar));
         public string Clone(string relative) => System.IO.Path.Combine(Destination, relative.Replace('/', System.IO.Path.DirectorySeparatorChar));

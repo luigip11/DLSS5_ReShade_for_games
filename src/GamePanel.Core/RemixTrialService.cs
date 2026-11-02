@@ -54,13 +54,17 @@ public sealed class RemixTrialService
     private readonly string _store, _owner = Guid.NewGuid().ToString("N");
     private readonly Func<string, bool> _running;
     private readonly IReadOnlyDictionary<string, (long Bytes, string Hash)> _wide;
+    private readonly IReadOnlyList<string> _protectedRoots;
     public RemixTrialService(string? profileStore = null, Func<string, bool>? running = null)
         : this(new(RemixArchiveAudit.PublishedArchiveBytes, RemixComponentBundle.SourceSha256,
             RemixArchiveAudit.PublishedMd5, WorkingExecutableSha256, ClientSha256),
-            profileStore ?? ReShadeProfileService.DefaultStore, running ?? IsGameRunning, WidescreenCatalog.Entries) { }
+            profileStore ?? ReShadeProfileService.DefaultStore, running ?? IsGameRunning, WidescreenCatalog.Entries, DefaultProtectedRoots()) { }
     internal RemixTrialService(Pin pin, string profileStore, Func<string, bool> running,
-        IReadOnlyDictionary<string, (long Bytes, string Hash)> knownWide)
-    { _pin = pin; _store = Path.GetFullPath(profileStore); _running = running; _wide = knownWide; }
+        IReadOnlyDictionary<string, (long Bytes, string Hash)> knownWide, IReadOnlyList<string>? protectedRoots = null)
+    {
+        _pin = pin; _store = Path.GetFullPath(profileStore); _running = running; _wide = knownWide;
+        _protectedRoots = Array.AsReadOnly((protectedRoots ?? DefaultProtectedRoots()).Where(p => !string.IsNullOrWhiteSpace(p)).Select(Path.GetFullPath).ToArray());
+    }
 
     public RemixTrialPlan Prepare(GameReport report, string archivePath, string destination, CancellationToken token = default,
         IProgress<BackupProgress>? progress = null)
@@ -319,11 +323,7 @@ public sealed class RemixTrialService
     {
         GuardPath(source); GuardPath(archive); GuardPath(destination); GuardPath(_store);
         if (Overlap(source, destination) || Overlap(archive, destination) || Overlap(_store, destination)) throw Invalid("La copia deve essere esterna al gioco, all'archivio e ai profili GamePanel.");
-        var forbidden = new[] { GamePanelPaths.Root, AppContext.BaseDirectory,
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            Environment.GetFolderPath(Environment.SpecialFolder.Windows), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) };
-        var blocked = forbidden.Where(p => !string.IsNullOrWhiteSpace(p)).FirstOrDefault(p => Overlap(Path.GetFullPath(p), destination));
+        var blocked = _protectedRoots.FirstOrDefault(p => Overlap(p, destination));
         if (blocked is not null)
             throw Invalid("Destinazione in conflitto con la cartella protetta: " + blocked + ". Scegli una cartella esterna. Avvia GamePanel da una sua cartella dedicata, non dalla radice del disco.");
         var parent = Path.GetDirectoryName(destination);
@@ -331,6 +331,10 @@ public sealed class RemixTrialService
         if (AttributesOrMissing(destination) is FileAttributes a && ((a & FileAttributes.Directory) == 0 || Directory.EnumerateFileSystemEntries(destination).Any()))
             throw Invalid("Scegli una cartella nuova o completamente vuota: nessun contenuto esistente viene sostituito.");
     }
+    private static IReadOnlyList<string> DefaultProtectedRoots() => new[] { GamePanelPaths.Root, AppContext.BaseDirectory,
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.Windows), Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) };
     private static long CheckSpace(string destination, long required)
     {
         var volume = new DriveInfo(Path.GetPathRoot(destination)!);
