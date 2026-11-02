@@ -45,6 +45,7 @@ try {
     Copy-Item docs/SMOL-MODELS.md (Join-Path $portable 'SMOL-MODELS.md')
     Copy-Item docs/REMIX-PROFILE.md (Join-Path $portable 'REMIX-PROFILE.md')
     Copy-Item docs/REMIX-0.4-INVENTORY.md (Join-Path $portable 'REMIX-0.4-INVENTORY.md')
+    Copy-Item docs/GAME-PROFILES.md (Join-Path $portable 'GAME-PROFILES.md')
     Copy-Item docs/REMIX-TRIAL.md (Join-Path $portable 'REMIX-TRIAL.md')
     Copy-Item docs/REMIX-COMPONENT-REVIEW.md (Join-Path $portable 'REMIX-COMPONENT-REVIEW.md')
     Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')

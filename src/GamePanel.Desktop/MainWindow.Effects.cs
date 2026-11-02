@@ -34,6 +34,8 @@ internal sealed partial class MainWindow
     private void RenderEffects()
     {
         _fxApplyButton = null;
+        if (SelectedIsRemix) { Heading("Immagine", "Le regolazioni del renderer selezionato."); Card("Immagine gestita da Remix", "Usa il profilo nella pagina DLSS. ReShade resta disponibile sul percorso originale del gioco."); return; }
+        if (_report is not null && !SelectedCapabilities.SupportsReShade) { Heading("Immagine", "Disponibilità per il gioco selezionato."); Card("Profilo immagine non disponibile", "Questo gioco non ha ancora un profilo ReShade gestito e verificato da GamePanel."); return; }
         Heading("La tua immagine. Il tuo stile.", "ReShade SDR DX9 · classici NFS / San Andreas · sperimentale per ogni build.");
         var state = _fxState;
         var stateLabel = Text(_fxMessage, 13, Muted);
@@ -188,7 +190,10 @@ internal sealed partial class MainWindow
                 _screenPlan = null; _assetPlan = null; _assetPackage = null; _directXPlan = null;
                 ClearAutomaticAssetFeedback();
                 ResetRemixTrial();
+                _remixManagedPlan = null;
+                if (_report is not null) await RefreshRemixManagedAsync(_report.ExecutablePath);
                 _fxMessage = e is OperationCanceledException ? "Operazione interrotta. Se il journal è aperto, riprendi o annulla il recupero." : e.Message;
+                if (_page == 1) _remixManagedMessage = _fxMessage;
                 if (_page == 6) _screenMessage = _fxMessage;
                 if (_page == 7) { _assetMessage = _fxMessage; _directXMessage = _fxMessage; }
                 _status.Text = "Operazione profilo non completata";

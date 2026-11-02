@@ -2,17 +2,15 @@
 
 Gestore personale Windows per DLSS e HDR/ReShade. Target iniziale: MSI Vector 16 AI HX, RTX 5080 Laptop, Windows 11, selezione manuale dell'EXE, giochi moderni e profili legacy per NFS Underground 1 e 2.
 
-## Stato reale: candidato 0.1.0-alpha.12, prova Remix su copia separata
+## Stato reale: candidato 0.1.0-alpha.13, profili per gioco e gestione DLSS Remix
 
 **Blocco noto su Windows 11 con Smart App Control attivo:** le build alpha attuali non hanno una firma Authenticode attendibile e possono essere bloccate per editore non verificabile. Non sono ancora una distribuzione pronta per questa configurazione. La firma di produzione non è configurata. Vedere [stato e percorso di firma](docs/SIGNING.md).
 
-Alpha.12 aggiunge **Prova RTX Remix su una copia**: due passaggi leggono il gioco funzionante e l'archivio locale Underground 2 Remix 0.4, mostrano destinazione e spazio, poi creano una cartella separata con i contenuti Remix. La cartella originale resta intatta e non viene avviato alcun programma. [Guida della prova](docs/REMIX-TRIAL.md).
+Alpha.13 organizza GamePanel intorno al gioco selezionato: **Libreria, Gioco, Grafica e DLSS**. Gli strumenti specifici UG2 compaiono solo nel loro contesto; quelli tecnici sono in Avanzate. La pagina DLSS gestisce le copie Remix riconosciute con registrazione, cattura della configurazione, anteprima dei parametri, applicazione e ripristino. Sugli altri giochi espone componenti e disponibilità senza offrire modifiche non integrate.
 
-L'audit dei 44 componenti ricevuti ha identificato un'incompatibilità: AntiCull richiede un entry point diverso da quello dell'EXE CD funzionante. Per questo la prova **esclude AntiCull** e non modifica l'EXE. Conserva loader e Widescreen Fix già verificati, esclude ReShade e gli strumenti texture dalla copia e disattiva la camera libera del preset. **Compatibilità, visibilità degli oggetti, resa grafica e DLSS restano da collaudare nel gioco reale.** I salvataggi globali possono essere condivisi con l'originale. [Audit statico](docs/REMIX-COMPONENT-REVIEW.md).
+La copia Remix alpha.12 già collaudata può essere registrata senza riestrarre l'archivio. Le varianti registrate Originale/Remix condividono una scheda della libreria. Il profilo consigliato per RTX 5080 Laptop e 3440×1440 deriva dal file finale dell'utente e dalle scelte confermate nel pannello; la sua fluidità con Frame Generation non equivale agli FPS di rendering. [Guida ai profili](docs/GAME-PROFILES.md).
 
-Restano i tab **Da installare** e **I tuoi pacchetti**, l'azione **Analizza** della libreria, le conferme verdi per installazioni completate, l'interpolazione 2× delle catture e il sottoinsieme Smol Golf/IS300/Sentra. Non sono nuovi asset AI o un remaster completo. [Texture automatiche](docs/AUTOMATIC-TEXTURES.md), [correzioni auto](docs/SMOL-MODELS.md).
-
-Il 7z originale da 1,97 GiB resta sul PC dell'utente: nessun gioco, asset o runtime del pacchetto Remix viene pubblicato nel repository. La nuova build è un candidato di sviluppo, fuori dal canale aggiornamenti.
+Restano il builder di una copia Remix separata, i percorsi ReShade e texture per i giochi compatibili e le procedure di recupero. Nessun gioco, asset o runtime Remix è incluso nello ZIP. La build è un candidato di sviluppo fuori dal canale aggiornamenti.
 
 Disponibile:
 

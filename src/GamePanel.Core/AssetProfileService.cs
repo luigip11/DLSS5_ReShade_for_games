@@ -483,7 +483,7 @@ public sealed class AssetProfileService
     }
     private static void CheckPeers(string folder)
     {
-        foreach (var file in new[] { "operation.json", "widescreen-operation.json", "directx-operation.json", "directx-replacements-operation.json" })
+        foreach (var file in new[] { "operation.json", "widescreen-operation.json", "directx-operation.json", "directx-replacements-operation.json", "remix-managed-operation.json" })
         { var path = Path.Combine(folder, file); GuardPath(path); if (File.Exists(path)) { using var doc = ReadDocument(path); if (doc.RootElement.GetProperty("Status").GetString() == "Pending") throw new InvalidOperationException("Operazione immagine/schermo interrotta: recuperala prima degli asset."); } }
     }
     private static T ReadAssetJson<T>(string path)

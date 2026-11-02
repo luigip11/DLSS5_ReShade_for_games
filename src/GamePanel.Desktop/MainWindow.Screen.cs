@@ -25,7 +25,7 @@ internal sealed partial class MainWindow
     private void RenderScreen()
     {
         _screenApplyButton = null;
-        Heading("Più spazio. Più definizione.", "Underground 2 · Widescreen Fix di ThirteenAG · integrazione sperimentale.");
+        Heading("Schermo", "Monitor e risoluzione consigliata per il gioco selezionato.");
         RenderDisplaySelector();
         var detected = SelectedDisplay(); var target = new StackPanel();
         target.Children.Add(DesignSystem.Chip(detected?.NativeWidth is not null ? "MODALITÀ PREFERITA DELLO SCHERMO" : "RISOLUZIONE WINDOWS ATTUALE", Accent));
@@ -33,6 +33,13 @@ internal sealed partial class MainWindow
         target.Children.Add(Text(detected is null ? "Windows non ha restituito uno schermo attivo. Premi Rileva schermi."
             : detected.Name + $" · attuale {detected.Width} × {detected.Height}" + (detected.NativeWidth is null ? " · modalità nativa non disponibile" : $" · preferita {detected.NativeWidth} × {detected.NativeHeight}"), 13, Muted));
         _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 18), Child = target });
+        if (!SelectedIsUnderground2 || SelectedIsRemix)
+        {
+            Card(SelectedIsRemix ? "Risoluzione della variante Remix" : "Risoluzione del gioco", SelectedIsRemix
+                ? "La copia conserva il Widescreen Fix del gioco originale. Scegli la risoluzione nelle opzioni video del gioco; il monitor selezionato resta salvato in GamePanel."
+                : "Scegli nelle opzioni video del gioco la risoluzione del monitor. I fix specifici compaiono solo per i titoli supportati.");
+            return;
+        }
         var status = Text(_screenMessage, 13, Muted); status.Margin = new Thickness(0, 0, 0, 18);
         System.Windows.Automation.AutomationProperties.SetAutomationId(status, "ScreenStatus"); _content.Children.Add(status);
         if (_screenState?.Pending == true)

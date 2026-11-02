@@ -1,5 +1,9 @@
 # Specifica concordata e avanzamento
 
+## Candidato alpha.13 — consolidamento per gioco
+
+Implementati percorso Grafica contestuale, adozione della copia Remix già presente, profilo derivato dal collaudo utente, gestione configurazioni DLSS con ripristino e varianti Originale/Remix in libreria. Il supporto in scrittura resta limitato alle copie identificate; gli altri titoli hanno analisi e funzioni già disponibili per il loro contesto. Non è uno swapper DLSS universale. [Uso](GAME-PROFILES.md).
+
 ## Priorità Underground 2 e candidato alpha.12
 
 1. HUD e menu più nitidi alla risoluzione del monitor Dell 3440×1440, senza forzare Windows o il gioco a 1920×1080. L'inventario Remix non dimostra da solo la presenza di un pack completo dell'interfaccia.

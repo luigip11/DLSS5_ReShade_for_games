@@ -126,6 +126,7 @@ internal sealed partial class MainWindow : Window
             await RefreshEffectsAsync(report.ExecutablePath);
             await RefreshScreenAsync(report.ExecutablePath);
             await RefreshAssetsAsync(report.ExecutablePath);
+            await RefreshRemixManagedAsync(report.ExecutablePath);
             _status.Text = "Analisi completata · File letti senza modifiche";
         }
         catch (OperationCanceledException) { if (!_closing) _status.Text = "Analisi annullata"; }
@@ -169,7 +170,8 @@ internal sealed partial class MainWindow : Window
         _gameContext.Text = GameName();
         _inputHint.Visibility = _path.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         _content.Children.Clear();
-        _importFields.Visibility = _page == 5 ? Visibility.Collapsed : Visibility.Visible;
+        _gamePathExpander.Visibility = _page == 5 ? Visibility.Collapsed : Visibility.Visible;
+        if (_hadAnalyzedGame != (_report is not null)) { _hadAnalyzedGame = _report is not null; _gamePathExpander.IsExpanded = !_hadAnalyzedGame; }
         foreach (var (i, navigation) in _navigation)
         {
             navigation.Background = i == _page ? DesignSystem.Color("#203127") : Brushes.Transparent;
@@ -191,18 +193,6 @@ internal sealed partial class MainWindow : Window
 
     private void RenderGame() => RenderDashboard();
 
-    private void RenderDlss()
-    {
-        Heading("Più controllo sul rendering.", "Le funzioni DLSS verranno proposte in base al gioco e all'hardware compatibile.");
-        FeatureCards(("Super Resolution", "Qualità di ricostruzione e versione della libreria per gioco.", "chip"),
-            ("Frame Generation", "Gestione separata della generazione dei fotogrammi.", "game"),
-            ("Neural Rendering", "Percorso dedicato, da collaudare anche sui titoli legacy.", "scan"));
-        var found = _report?.Components.Where(c => c.Kind.StartsWith("DLSS", StringComparison.Ordinal)).ToArray() ?? [];
-        Card("Componenti presenti", found.Length == 0 ? "Nessuna DLL DLSS riconosciuta nell'analisi attuale. Questo non esclude caricamenti dal driver o da percorsi non scansionati."
-            : string.Join("\n", found.Select(c => $"{c.Kind} · {c.Version}\n{c.RelativePath}")));
-        Details("Disponibilità e giochi legacy", "Questa alpha riconosce i componenti ma non installa o regola DLSS. I profili per Underground 1 e 2 richiedono collaudo specifico; l'eventuale helper x64 resterà sperimentale finché non verificato.");
-    }
-
     private void RenderHdr() => RenderEffects();
 
     private void RenderDiagnostics()
@@ -218,6 +208,7 @@ internal sealed partial class MainWindow : Window
     private void ResetBackups()
     {
         ResetEffects();
+        ResetRemixManaged();
         ResetScreen();
         ResetAssets();
         _snapshots = []; _selectedBackup = null; _backupForPath = null; _restorePlan = null;
@@ -406,7 +397,8 @@ internal sealed partial class MainWindow : Window
         if (_busy || _report is null) return;
         try
         {
-            if (_profiles.Status(_report.ExecutablePath).Pending || _widescreen.Status(_report.ExecutablePath).Pending)
+            if (_profiles.Status(_report.ExecutablePath).Pending || _widescreen.Status(_report.ExecutablePath).Pending
+                || _remixManaged.HasPendingOperation(_report.ExecutablePath) || _assets.Status(_report.ExecutablePath).Pending)
                 throw new InvalidOperationException("Completa o annulla l'operazione del profilo in HDR / FX prima di avviare il gioco.");
             var started = Process.Start(new ProcessStartInfo(_report.ExecutablePath)
             { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = true });

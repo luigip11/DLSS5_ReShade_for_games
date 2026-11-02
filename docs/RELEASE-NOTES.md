@@ -1,3 +1,11 @@
+# Candidato alpha.13 — grafica contestuale e profili DLSS
+
+La navigazione principale diventa Libreria, Gioco, Grafica e DLSS, con strumenti tecnici in Avanzate. Grafica propone soltanto i percorsi pertinenti al gioco e al renderer selezionati: nessun Asfalto 2K o modello auto viene proposto a un gioco generico.
+
+Le copie Remix alpha.12 riconosciute possono essere registrate senza riestrazione. Sono disponibili cattura della configurazione attuale, controlli DLSS con modifiche esplicite, profilo consigliato RTX 5080 Laptop/3440×1440, anteprima delle differenze e ripristino. rtx.conf e user.conf sono gestiti con journal e conservazione dei parametri estranei. Le varianti registrate Originale/Remix si selezionano dalla stessa scheda della libreria.
+
+Il profilo consigliato combina esportazione e impostazioni confermate dall'utente; non è una garanzia universale di prestazioni. Gli FPS con Frame Generation sono distinti concettualmente dai frame renderizzati, senza misure inventate. Per altri giochi la pagina DLSS è disponibile in lettura. [Guida](GAME-PROFILES.md).
+
 # Candidato alpha.12 — prova Remix su copia separata
 
 In Texture e modelli → Da installare, **Prepara copia di prova** analizza il gioco e il 7z locale; **Crea copia e applica Remix** crea una nuova cartella, senza scrivere nel gioco originale né avviarlo. Il flusso verifica spazio libero, file sorgenti e archivio, estrae i contenuti nella propria cartella temporanea e pubblica la copia solo dopo i controlli finali. Interruzioni e conflitti non pubblicano una copia incompleta.

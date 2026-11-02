@@ -25,17 +25,29 @@ internal sealed partial class MainWindow
     private void RenderRemixTrial()
     {
         var body = new StackPanel();
-        body.Children.Add(DesignSystem.Chip("SPERIMENTALE · ANTI CULL ESCLUSO", DesignSystem.Amber));
-        var title = Text("Prova RTX Remix su una copia", 22, Ink, FontWeights.SemiBold);
+        body.Children.Add(DesignSystem.Chip("PERCORSO DISPONIBILE · UNDERGROUND 2", Accent));
+        var title = Text("Prepara la copia RTX Remix", 22, Ink, FontWeights.SemiBold);
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
-        body.Children.Add(Text("AntiCull escluso • gioco da collaudare. Copia il gioco e applica l'archivio Remix 0.4 nella destinazione scelta, conservando l'EXE originale. La cartella di partenza resta intatta.", 13, Muted));
-        body.Children.Add(Text("Prima di preparare: il Widescreen Fix deve risultare installato e gestito nella pagina Schermo, sul gioco originale funzionante.", 12, Muted));
-        var risk = Text("Senza AntiCull possono mancare oggetti o parti della città. Mondo, personaggi e DLSS attivo non sono verificati. ReShade, Texture Toolkit e TexWizard non vengono copiati. Il Widescreen Fix presente viene conservato nella copia, da collaudare con Remix.", 12, Muted);
-        risk.Margin = new Thickness(0, 10, 0, 8); body.Children.Add(risk);
-        body.Children.Add(Text("I salvataggi e il profilo in Documenti possono essere condivisi con l'originale: questa copia non garantisce progressi separati. Servono diversi GB liberi per il gioco e l'archivio estratto; nessun avvio automatico.", 12, Muted));
+        body.Children.Add(Text("1 · Gioco importato   →   2 · Archivio e copia   →   3 · Profilo e avvio", 13, Ink, FontWeights.SemiBold));
+        var intro = Text("Scegli il tuo archivio Remix 0.4 e una cartella vuota. GamePanel prepara l'anteprima e crea una copia separata del gioco funzionante. Poi la registri in Profilo e DLSS.", 13, Muted);
+        intro.Margin = new Thickness(0, 10, 0, 8); body.Children.Add(intro);
+        var ready = _screenState?.State?.Installed == true && _screenState.Pending != true;
+        var supportedExe = string.Equals(_report?.Sha256, RemixTrialService.WorkingExecutableSha256, StringComparison.OrdinalIgnoreCase);
+        if (!supportedExe) body.Children.Add(Text("La preparazione Remix è disponibile per l’EXE CD verificato. Questa build dell’eseguibile richiede una verifica dedicata.", 12, Muted));
+        if (!ready)
+        {
+            body.Children.Add(Text("Prima prepara il Widescreen Fix gestito sul gioco originale, dalla pagina Schermo.", 12, Muted));
+            body.Children.Add(FxButton("Apri Schermo", "RemixOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy));
+        }
         var status = Text(_remixTrialMessage, 12, Muted); status.Margin = new Thickness(0, 12, 0, 8);
         System.Windows.Automation.AutomationProperties.SetAutomationId(status, "RemixTrialStatus"); body.Children.Add(status);
-        body.Children.Add(FxButton("Prepara copia di prova", "PrepareRemixTrial", async (_, _) => await PrepareRemixTrialAsync(), CanPrepareAssets));
+        body.Children.Add(FxButton("Prepara componenti e copia", "PrepareRemixTrial", async (_, _) => await PrepareRemixTrialAsync(), CanPrepareAssets && ready && supportedExe));
+        var notes = new TextBlock
+        {
+            Text = "AntiCull ASI escluso: non supporta l'EXE verificato. La visibilità va collaudata; salvataggi in Documenti e impostazioni globali possono essere condivisi. ReShade e i loader texture non vengono copiati. Restano necessari disco e requisiti del gioco originale.",
+            Foreground = Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap
+        };
+        body.Children.Add(new Expander { Header = "Compatibilità e dati del gioco", Content = notes, Foreground = Muted, Margin = new Thickness(0, 12, 0, 0) });
 
         if (_remixTrialPlan is { } plan)
         {
@@ -45,7 +57,7 @@ internal sealed partial class MainWindow
             preview.Children.Add(Text("EXE originale: " + _remixTrialOriginalExe + "\nSHA-256: " + _remixTrialOriginalHash
                 + "\nArchivio: " + plan.ArchivePath + "\nDestinazione: " + plan.Destination, 12, Muted));
             preview.Children.Add(Text($"{plan.FileCount:N0} file previsti · gioco {RemixSize(plan.OriginalBytes)} · Remix estratto {RemixSize(plan.ArchiveBytes)}\nSpazio richiesto con margine: {RemixSize(plan.RequiredBytes)} · disponibile: {RemixSize(plan.AvailableBytes)}", 12, Muted));
-            if (plan.Warnings.Count > 0) preview.Children.Add(Text(string.Join("\n", plan.Warnings), 12, Muted));
+            if (plan.Warnings.Count > 0) preview.Children.Add(new Expander { Header = "Dettagli della preparazione", Content = Text(string.Join("\n", plan.Warnings), 12, Muted), Foreground = Muted, Margin = new Thickness(0, 8, 0, 0) });
             var create = FxButton("Crea copia e applica Remix", "CreateRemixTrial", async (_, _) => await CreateRemixTrialAsync(), CanPrepareAssets);
             create.Margin = new Thickness(0, 12, 0, 0); create.Background = Accent; create.Foreground = BackgroundBrush;
             preview.Children.Add(create); body.Children.Add(preview);
@@ -53,14 +65,15 @@ internal sealed partial class MainWindow
         if (_remixTrialResult is { } result)
         {
             var complete = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
-            complete.Children.Add(Text("Copia creata, da provare", 17, Ink, FontWeights.SemiBold));
+            complete.Children.Add(Text("Copia creata · configura il profilo", 17, Ink, FontWeights.SemiBold));
             complete.Children.Add(Text($"{result.Folder}\n{result.FileCount:N0} file · {RemixSize(result.Bytes)}\nEXE copia: {result.ExecutablePath}", 12, Muted));
-            if (result.Warnings.Count > 0) complete.Children.Add(Text(string.Join("\n", result.Warnings), 12, Muted));
-            complete.Children.Add(Text("La creazione verifica i file, non il risultato grafico. Seleziona la copia per analizzarla e aggiungerla alla libreria; avviala solo quando vuoi collaudarla.", 12, Muted));
-            complete.Children.Add(FxButton("Seleziona EXE copia", "SelectRemixTrialExe", async (_, _) =>
+            if (result.Warnings.Count > 0) complete.Children.Add(new Expander { Header = "Dettagli della copia", Content = Text(string.Join("\n", result.Warnings), 12, Muted), Foreground = Muted, Margin = new Thickness(0, 8, 0, 0) });
+            complete.Children.Add(Text("Seleziona la copia per analizzarla e aggiungerla alla libreria. In Profilo e DLSS potrai registrarla e conservare le impostazioni del gioco.", 12, Muted));
+            complete.Children.Add(FxButton("Continua con la copia", "SelectRemixTrialExe", async (_, _) =>
             {
                 _path.Text = result.ExecutablePath;
                 await InspectAsync(result.ExecutablePath);
+                if (_report is not null && string.Equals(_report.ExecutablePath, result.ExecutablePath, StringComparison.OrdinalIgnoreCase)) OpenGraphicsPage(1);
             }, !_busy));
             body.Children.Add(complete);
         }

@@ -15,7 +15,9 @@ internal sealed partial class MainWindow
     private readonly TextBlock _inputHint = DesignSystem.Label("Incolla il percorso del gioco oppure scegli il suo EXE", 13, Muted);
     private ScrollViewer _pageScroll = null!;
     private StackPanel _importFields = null!;
-    private static readonly string[] PageTitles = ["Panoramica", "DLSS", "HDR e immagine", "Backup", "Diagnosi", "Libreria", "Schermo ultrawide", "Texture e modelli"];
+    private Expander _gamePathExpander = null!;
+    private bool _hadAnalyzedGame;
+    private static readonly string[] PageTitles = ["Gioco", "DLSS", "HDR / FX", "Ripristino", "Diagnosi", "Libreria", "Schermo", "Grafica"];
     private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen", "texture"];
 
     private void BuildShell()
@@ -54,7 +56,10 @@ internal sealed partial class MainWindow
         brand.Children.Add(brandRow);
         brand.Children.Add(Text("IL TUO SETUP, UN SOLO POSTO", 9, Muted)); menu.Children.Add(brand);
         var libraryLabel = Text("WORKSPACE", 10, Muted, FontWeights.SemiBold); libraryLabel.Margin = new Thickness(12, 0, 0, 12); menu.Children.Add(libraryLabel);
-        foreach (var i in new[] { 5, 0, 7, 2, 6, 1, 3, 4 })
+        var advancedMenu = new StackPanel();
+        var advancedNav = new Expander { Header = "Avanzate", Foreground = Muted, Content = advancedMenu, Margin = new Thickness(0, 10, 0, 0) };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(advancedNav, "AdvancedNavigation");
+        foreach (var i in new[] { 5, 0, 7, 1, 2, 6, 3, 4 })
         {
             var page = i;
             var nav = Button("", (_, _) => { _page = page; Render(); _pageScroll.ScrollToTop(); });
@@ -68,11 +73,14 @@ internal sealed partial class MainWindow
             if (i == 5) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "LibraryPage");
             if (i == 6) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "ScreenPage");
             if (i == 7) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "AssetsPage");
-            _navigation.Add(i, nav); menu.Children.Add(nav);
+            if (i == 4) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "DiagnosticsPage");
+            _navigation.Add(i, nav);
+            if (i is 5 or 0 or 7 or 1) menu.Children.Add(nav); else advancedMenu.Children.Add(nav);
         }
+        menu.Children.Add(advancedNav);
         menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 12, 12, 12) });
         var note = Text("Giochi e profili salvati.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 16; menu.Children.Add(note);
-        sidebar.Children.Add(menu);
+        sidebar.Children.Add(new ScrollViewer { Content = menu, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
 
         var main = new DockPanel(); Grid.SetColumn(main, 1); shell.Children.Add(main);
         var footerGrid = new Grid(); footerGrid.ColumnDefinitions.Add(new ColumnDefinition()); footerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -95,7 +103,10 @@ internal sealed partial class MainWindow
         _gameContext.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _gameContext });
         gameLabel.Children.Add(DesignSystem.Icon("game", DesignSystem.Blue, 17)); _gameContext.Margin = new Thickness(9, 0, 0, 0); gameLabel.Children.Add(_gameContext);
         Grid.SetColumn(gameLabel, 1); context.Children.Add(gameLabel); header.Children.Add(context);
-        _importFields = new StackPanel(); header.Children.Add(_importFields);
+        _importFields = new StackPanel();
+        _gamePathExpander = new Expander { Header = "Importa o cambia eseguibile", Content = _importFields, Foreground = Muted, IsExpanded = true, Margin = new Thickness(0, 12, 0, 0) };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_gamePathExpander, "GamePathExpander");
+        header.Children.Add(_gamePathExpander);
         var pathLabel = new Label { Content = "ESEGUIBILE DEL GIOCO", Target = _path, Foreground = Muted, FontSize = 10, FontWeight = FontWeights.SemiBold, Padding = new Thickness(0), Margin = new Thickness(0, 22, 0, 8) };
         _importFields.Children.Add(pathLabel);
         var pathRow = new Grid();
@@ -135,7 +146,7 @@ internal sealed partial class MainWindow
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.Children.Add(DesignSystem.Icon(PageIcons[page], active ? Accent : Muted, 19));
         var label = Text(page == 2 ? "HDR / FX" : page == 6 ? "Schermo" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
-        if (page == 1) { var badge = DesignSystem.Chip("PRESTO", Muted, Brushes.Transparent); Grid.SetColumn(badge, 2); row.Children.Add(badge); }
+
         return row;
     }
 
@@ -190,16 +201,16 @@ internal sealed partial class MainWindow
         var steps = new Grid(); steps.ColumnDefinitions.Add(new ColumnDefinition()); steps.ColumnDefinitions.Add(new ColumnDefinition());
         var backup = ActionTile("shield", "Prima metti al sicuro i file", "Una copia di riferimento verificata prima di qualsiasi futura modifica.", "Apri backup", (_, _) => { _page = 3; Render(); }, Accent);
         backup.Margin = new Thickness(0, 0, 7, 14); steps.Children.Add(backup);
-        var diagnosis = ActionTile("sun", "Dai forma alla tua immagine", "Profilo ReShade SDR per Underground 2: anteprima, parametri e rimozione gestita.", "Apri immagine", (_, _) => { _page = 2; Render(); }, DesignSystem.Blue);
+        var diagnosis = ActionTile("texture", "La grafica del tuo gioco", "Profili e componenti disponibili per il gioco selezionato, con anteprima e ripristino.", "Apri grafica", (_, _) => { _page = 7; Render(); _pageScroll.ScrollToTop(); }, DesignSystem.Blue);
         diagnosis.Margin = new Thickness(7, 0, 0, 14); Grid.SetColumn(diagnosis, 1); steps.Children.Add(diagnosis); _content.Children.Add(steps);
         if (_report?.HasAntiCheatIndicators == true) Card("Da verificare", "Sono presenti possibili indicatori anti-cheat. Controlla la compatibilità prima delle future modifiche.");
         if (_report is not null)
         {
             var play = Button("Avvia il gioco  →", (_, _) => Launch()); play.IsEnabled = !_busy;
-            play.ToolTip = "Avvia usando i file e il profilo attualmente applicati. Per togliere l'effetto scegli Originale in HDR / FX.";
+            play.ToolTip = "Avvia la variante selezionata con la configurazione attualmente presente.";
             _content.Children.Add(play);
         }
-        if (string.Equals(Path.GetFileName(_report?.ExecutablePath), "speed2.exe", StringComparison.OrdinalIgnoreCase))
+        if (_report is not null)
         {
             var screen = Button("Schermo e risoluzione rilevata  →", (_, _) => { _page = 6; Render(); _pageScroll.ScrollToTop(); });
             screen.IsEnabled = !_busy; _content.Children.Add(screen);
