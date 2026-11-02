@@ -1,3 +1,7 @@
+# Candidato alpha.14 — controlli illustrati e deselezione
+
+Chevron vettoriale unico, ruotato fra apertura e chiusura dei menu Avanzate. I parametri DLSS hanno schemi illustrativi verde fluo accanto alle scelte; non rappresentano immagini reali del gioco o misurazioni. In Libreria, Deseleziona gioco libera il contesto analizzato senza rimuovere giochi, file o profili.
+
 # Candidato alpha.13 — grafica contestuale e profili DLSS
 
 La navigazione principale diventa Libreria, Gioco, Grafica e DLSS, con strumenti tecnici in Avanzate. Grafica propone soltanto i percorsi pertinenti al gioco e al renderer selezionati: nessun Asfalto 2K o modello auto viene proposto a un gioco generico.

@@ -56,6 +56,7 @@ public sealed class GameLibrary
     }
     public LibrarySnapshot Remove(string id) => Change(snapshot => snapshot with
     { SelectedId = snapshot.SelectedId == id ? null : snapshot.SelectedId, Games = snapshot.Games.Where(g => g.Id != id).ToArray() });
+    public LibrarySnapshot ClearSelection() => Change(snapshot => snapshot with { SelectedId = null });
     public LibrarySnapshot Select(string id) => Change(snapshot =>
     {
         if (!snapshot.Games.Any(g => g.Id == id)) throw new InvalidDataException("Gioco non trovato nella libreria.");
