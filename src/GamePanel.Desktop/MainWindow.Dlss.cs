@@ -38,7 +38,9 @@ internal sealed partial class MainWindow
     {
         Heading("DLSS e profilo del gioco", "Le funzioni disponibili seguono il renderer e la configurazione del gioco selezionato.");
         var status = _remixManagedStatus;
-        var message = Text(_remixManagedMessage, 13, Muted);
+        var displayMessage = _report is not null && status?.Supported != true && !SelectedIsRemix
+            ? "Analisi DLSS disponibile. Le regolazioni seguono le integrazioni supportate per questo gioco." : _remixManagedMessage;
+        var message = Text(displayMessage, 13, Muted);
         System.Windows.Automation.AutomationProperties.SetAutomationId(message, "DlssStatus");
         _content.Children.Add(AssetPanel(message, 14));
         if (_report is null) { Card("Scegli un gioco", "Apri la libreria e analizza il gioco che vuoi configurare."); return; }

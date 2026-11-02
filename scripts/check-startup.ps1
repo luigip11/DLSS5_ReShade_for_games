@@ -164,6 +164,7 @@ try {
         Start-Sleep -Milliseconds 300
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '08-dlss.png')))
     }
+    if ((Find-Element 'DlssStatus').Current.Name -like '*Underground*') { throw 'Generic DLSS status exposes a game-specific prerequisite.' }
     Write-Host 'PASS GUI contextual graphics: unrelated game has no UG2 tools, DLSS page available without PRESTO badge'
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
