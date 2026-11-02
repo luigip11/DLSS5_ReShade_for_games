@@ -249,7 +249,8 @@ public sealed class RemixTrialService
         token.ThrowIfCancellationRequested();
     }
     private static bool SkipOriginal(string p) => p.Equals("d3d9.dll", StringComparison.OrdinalIgnoreCase)
-        || p.Equals("ReShade.ini", StringComparison.OrdinalIgnoreCase) || p.Equals("ReShadePreset.ini", StringComparison.OrdinalIgnoreCase)
+        || p.Equals("ReShade.ini", StringComparison.OrdinalIgnoreCase) || p.Equals("ReShade.log", StringComparison.OrdinalIgnoreCase)
+        || p.Equals("ReShadePreset.ini", StringComparison.OrdinalIgnoreCase)
         || p.Equals(SdrProfile.PresetPath, StringComparison.OrdinalIgnoreCase) || p.StartsWith("GamePanelFX/", StringComparison.OrdinalIgnoreCase)
         || p.StartsWith("TexturePacks/", StringComparison.OrdinalIgnoreCase)
         || p.Equals(DirectXTextureCatalog.LoaderRelativePath, StringComparison.OrdinalIgnoreCase)

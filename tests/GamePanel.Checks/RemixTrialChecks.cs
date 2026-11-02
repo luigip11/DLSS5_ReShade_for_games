@@ -22,7 +22,7 @@ internal static class RemixTrialChecks
             Require(!File.Exists(f.Clone("scripts/NFSU2AntiCull.asi")) && !File.Exists(f.Clone("scripts/NFSU_XtendedInput.asii"))
                 && File.ReadAllText(f.Clone("LICENSE.txt")) == "Author license fixture\n", "Plugin esclusi presenti o licenze perse.");
             Require(File.ReadAllText(f.Clone("CARS/SMOL/GEOMETRY.BIN")) == "existing model modification" && !Directory.Exists(f.Clone("TexturePacks"))
-                && !File.Exists(f.Clone("ReShade.ini")), "Dati modello persi o stack alternativo copiato.");
+                && !File.Exists(f.Clone("ReShade.ini")) && !File.Exists(f.Clone("ReShade.log")), "Dati modello persi o stack/log alternativo copiato.");
             using var manifest = JsonDocument.Parse(File.ReadAllText(f.Clone("GamePanel-RemixTrial.json")));
             Require(!manifest.RootElement.GetProperty("AntiCullIncluded").GetBoolean()
                 && manifest.RootElement.GetProperty("SourceExecutableSha256").GetString() == Hash(f.Exe)
@@ -121,6 +121,7 @@ internal static class RemixTrialChecks
             Directory.CreateDirectory(Path("CARS/SMOL")); File.WriteAllText(Path("CARS/SMOL/GEOMETRY.BIN"), "existing model modification");
             Directory.CreateDirectory(Path("TexturePacks")); File.WriteAllText(Path("TexturePacks/disabled.dds"), "excluded texture stack");
             File.WriteAllText(Path("ReShade.ini"), "excluded config");
+            File.WriteAllText(Path("ReShade.log"), "old renderer resolution log");
             var bytes = Convert.FromBase64String(ArchiveFixture); File.WriteAllBytes(Archive, bytes);
             Pin = new(bytes.LongLength, Hex(SHA256.HashData(bytes)), Hex(MD5.HashData(bytes)), Hash(Exe), Hex(SHA256.HashData(Encoding.UTF8.GetBytes("FAKE REMIX CLIENT; harmless text, never loaded"))));
             Service = new(Pin, Store, _ => false, WidePins);
