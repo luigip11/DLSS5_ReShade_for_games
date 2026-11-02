@@ -96,7 +96,7 @@ internal sealed partial class MainWindow
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
 
         var header = new StackPanel { Margin = new Thickness(30, 24, 30, 0) };
-        var context = new Grid(); context.ColumnDefinitions.Add(new ColumnDefinition()); context.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var context = new Grid(); context.ColumnDefinitions.Add(new ColumnDefinition()); context.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); context.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         context.Children.Add(_sectionName);
         var gameLabel = new StackPanel { Orientation = Orientation.Horizontal };
         _gameContext.MaxWidth = 280; _gameContext.TextWrapping = TextWrapping.NoWrap; _gameContext.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -133,7 +133,8 @@ internal sealed partial class MainWindow
         var toolActions = new StackPanel { Orientation = Orientation.Horizontal };
         _export = Button("Esporta analisi", (_, _) => Export()); _export.IsEnabled = false; _export.FontSize = 11; _export.Padding = new Thickness(10, 6, 10, 6); _export.Margin = new Thickness(0); _export.Background = Brushes.Transparent;
         _cancel = Button("Annulla analisi", (_, _) => _cancellation?.Cancel()); _cancel.FontSize = 11; _cancel.Padding = new Thickness(10, 6, 10, 6); _cancel.Margin = new Thickness(8, 0, 0, 0); _cancel.Visibility = Visibility.Collapsed;
-        toolActions.Children.Add(_export); toolActions.Children.Add(_cancel); Grid.SetColumn(toolActions, 1); tools.Children.Add(toolActions); _importFields.Children.Add(tools);
+        toolActions.Children.Add(_export); Grid.SetColumn(_cancel, 2); context.Children.Add(_cancel);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_cancel, "CancelOperation"); Grid.SetColumn(toolActions, 1); tools.Children.Add(toolActions); _importFields.Children.Add(tools);
         DockPanel.SetDock(header, Dock.Top); main.Children.Add(header);
         _content.Margin = new Thickness(30, 22, 30, 20);
         _pageScroll = new ScrollViewer { Content = _content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
