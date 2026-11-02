@@ -77,6 +77,7 @@ internal sealed partial class MainWindow
             _navigation.Add(i, nav);
             if (i is 5 or 0 or 7 or 1) menu.Children.Add(nav); else advancedMenu.Children.Add(nav);
         }
+        StyleAdvanced(advancedNav);
         menu.Children.Add(advancedNav);
         menu.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(12, 12, 12, 12) });
         var note = Text("Giochi e profili salvati.", 11, Muted); note.Margin = new Thickness(12, 0, 12, 0); note.LineHeight = 16; menu.Children.Add(note);

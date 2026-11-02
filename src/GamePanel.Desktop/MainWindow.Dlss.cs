@@ -75,32 +75,38 @@ internal sealed partial class MainWindow
             profile.Children.Add(Text("Salva le regolazioni effettuate nel gioco per conservarle come punto di ripristino. Il salvataggio acquisisce i file presenti, senza riscriverli.", 13, Muted));
             profile.Children.Add(FxButton("Salva configurazione attuale", "CaptureRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Capture"), !_busy));
             profile.Children.Add(FxButton("Ripristina configurazione salvata", "RestoreRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Restore"), !_busy && !status.Changed));
+            SpaceDlssPanel(profile);
             _content.Children.Add(AssetPanel(profile, 20));
             if (status.Changed) Card("Modifiche effettuate nel gioco", "Salva la configurazione attuale per riconoscerle. Questa scelta aggiorna il punto di ripristino con le impostazioni presenti.");
             var recommended = new StackPanel(); recommended.Children.Add(Text(RemixRecommendedProfile.Name, 17, Ink, FontWeights.SemiBold));
             recommended.Children.Add(Text("Profilo derivato dal collaudo dell'utente: DLSS Auto, Ray Reconstruction Transformer e Frame Generation 4×. Include regolazioni di immagine e luci; applicarlo sostituisce i corrispondenti parametri personalizzati.", 12, Muted));
             recommended.Children.Add(FxButton("Prepara profilo consigliato", "RecommendedRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Recommended"), !_busy && !status.Changed && MatchesRecommendedMachine));
             if (!MatchesRecommendedMachine) recommended.Children.Add(Text("Questo profilo è riservato alla RTX 5080 Laptop con schermo selezionato 3440 × 1440. Puoi conservare la tua configurazione e usare i controlli disponibili.", 12, Muted));
+            SpaceDlssPanel(recommended);
             _content.Children.Add(AssetPanel(recommended, 18));
             var controls = new StackPanel();
             controls.Children.Add(Text("Parametri DLSS", 20, Ink, FontWeights.SemiBold));
             controls.Children.Add(Text("Valori letti dai file locali, non misurazioni del renderer in esecuzione. I campi senza valore esplicito non confermano un valore attivo. «Lascia invariato» non modifica la relativa chiave.", 12, Muted));
-            controls.Children.Add(DlssChoice("Super Resolution", "DlssQuality", _dlssSettings.DlssMode,
+            var settingsGrid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, Margin = new Thickness(-6, 16, -6, 14) };
+            controls.Children.Add(settingsGrid);
+            settingsGrid.Children.Add(DlssChoice("Super Resolution", "DlssQuality", _dlssSettings.DlssMode,
                 [(null, "Lascia invariato"), (4, "Auto"), (3, "Qualità"), (2, "Bilanciato"), (1, "Performance"), (0, "Ultra Performance"), (5, "DLAA")], value => _dlssSettings = _dlssSettings with { DlssMode = value, Upscaler = value is null ? null : 1 }));
-            controls.Children.Add(DlssChoice("Ray Reconstruction", "DlssRayReconstruction", _dlssSettings.RayReconstruction is bool rr ? rr ? 1 : 0 : null,
+            settingsGrid.Children.Add(DlssChoice("Ray Reconstruction", "DlssRayReconstruction", _dlssSettings.RayReconstruction is bool rr ? rr ? 1 : 0 : null,
                 [(null, "Lascia invariato"), (1, "Attivo"), (0, "Disattivo")], value => _dlssSettings = _dlssSettings with { RayReconstruction = value is null ? null : value == 1 }));
-            controls.Children.Add(DlssChoice("Modello di ricostruzione", "DlssReconstructionModel", _dlssSettings.Transformer is bool transformer ? transformer ? 1 : 0 : null,
+            settingsGrid.Children.Add(DlssChoice("Modello di ricostruzione", "DlssReconstructionModel", _dlssSettings.Transformer is bool transformer ? transformer ? 1 : 0 : null,
                 [(null, "Lascia invariato"), (1, "Transformer"), (0, "CNN")], value => _dlssSettings = _dlssSettings with { Transformer = value is null ? null : value == 1 }));
             var frameChoices = HasMultiFrameHardware ? new (int?, string)[] { (null, "Lascia invariato"), (0, "Disattiva"), (1, "2×"), (2, "3×"), (3, "4×") }
                 : [(null, "Lascia invariato"), (0, "Disattiva")];
             var fg = _dlssSettings.FrameGeneration == false ? 0 : _dlssSettings.FrameGeneration == true ? _dlssSettings.GeneratedFrames : null;
-            controls.Children.Add(DlssChoice("Frame Generation", "DlssFrameGeneration", fg, frameChoices,
+            settingsGrid.Children.Add(DlssChoice("Frame Generation", "DlssFrameGeneration", fg, frameChoices,
                 value => _dlssSettings = _dlssSettings with { FrameGeneration = value is null ? null : value > 0, GeneratedFrames = value is > 0 ? value : null }));
             if (!HasMultiFrameHardware) controls.Children.Add(Text("L'attivazione della generazione multipla richiede hardware RTX 50 rilevato; la sua disponibilità effettiva dipende anche da runtime e driver.", 12, Muted));
-            controls.Children.Add(DlssChoice("Reflex", "DlssReflex", _dlssSettings.Reflex,
+            settingsGrid.Children.Add(DlssChoice("Reflex", "DlssReflex", _dlssSettings.Reflex,
                 [(null, "Lascia invariato"), (0, "Disattivo"), (1, "Attivo"), (2, "Attivo + Boost")], value => _dlssSettings = _dlssSettings with { Reflex = value }));
             controls.Children.Add(FxButton("Prepara modifiche DLSS", "PrepareRemixDlss", async (_, _) => await PrepareRemixManagedAsync("Apply"), !_busy && !status.Changed));
             var advanced = new Expander { Header = "Avanzate · parametri DLSS", Content = controls, Foreground = Ink, Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 16) };
+            advanced.Header = "Avanzate · personalizza DLSS e fluidità";
+            advanced.IsExpanded = true; StyleAdvanced(advanced);
             System.Windows.Automation.AutomationProperties.SetAutomationId(advanced, "DlssAdvancedSettings");
             _content.Children.Add(advanced);
             Details("Fluidità e prestazioni", "Frame Generation aggiunge fotogrammi generati. Un contatore che li include non misura gli FPS di rendering. GamePanel non ricava un valore dividendo per il moltiplicatore e non promette lo stesso risultato su altri PC.");
@@ -119,6 +125,7 @@ internal sealed partial class MainWindow
                 preview.Children.Add(new Expander { Header = $"Parametri modificati · {plan.SettingChanges.Count}", Foreground = Ink,
                     Content = Text(changes, 12, Muted), Margin = new Thickness(0, 12, 0, 12) });
             }
+            SpaceDlssPanel(preview);
             preview.Children.Add(FxButton("Conferma " + RemixActionTitle(plan.Action).ToLowerInvariant(), "ApplyRemixProfile", async (_, _) => await ApplyRemixManagedAsync(), !_busy));
             _content.Children.Add(AssetPanel(preview, 20));
         }
@@ -134,7 +141,7 @@ internal sealed partial class MainWindow
         combo.SelectedIndex = Array.FindIndex(choices, item => item.Value == value);
         if (combo.SelectedIndex < 0) { combo.SelectedIndex = 0; body.Children.Add(Text("Valore nel file: " + value + " · lasciato invariato", 11, Muted)); }
         combo.SelectionChanged += (_, _) => { if (combo.SelectedIndex < 0) return; var selected = choices[combo.SelectedIndex].Value; change(selected); TrackDlssEdit(id, selected); _remixManagedPlan = null; };
-        body.Children.Add(combo); return body;
+        body.Children.Add(combo); return new Border { Child = body, Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(6) };
     }
     private void TrackDlssEdit(string id, int? value)
     {
