@@ -187,6 +187,7 @@ internal sealed partial class MainWindow
                 if (_report is not null) { await RefreshEffectsAsync(_report.ExecutablePath); await RefreshScreenAsync(_report.ExecutablePath); await RefreshAssetsAsync(_report.ExecutablePath); }
                 _screenPlan = null; _assetPlan = null; _assetPackage = null; _directXPlan = null;
                 ClearAutomaticAssetFeedback();
+                ResetRemixTrial();
                 _fxMessage = e is OperationCanceledException ? "Operazione interrotta. Se il journal è aperto, riprendi o annulla il recupero." : e.Message;
                 if (_page == 6) _screenMessage = _fxMessage;
                 if (_page == 7) { _assetMessage = _fxMessage; _directXMessage = _fxMessage; }

@@ -1,5 +1,7 @@
 # Underground 2 Remix: analisi locale, profilo renderer da verificare
 
+Aggiornamento alpha.12: questo documento descrive l’analisi preliminare. Sono ora disponibili [l’audit dei componenti](REMIX-COMPONENT-REVIEW.md) e una [prova locale su copia separata](REMIX-TRIAL.md), con AntiCull escluso e compatibilità da collaudare.
+
 GamePanel può analizzare l'archivio originale **Underground 2 Remix 0.4** e
 produrre un piccolo inventario JSON. L'analisi non installa il mod, non estrae
 file, non modifica il gioco e non avvia DLL, ASI, script o eseguibili.

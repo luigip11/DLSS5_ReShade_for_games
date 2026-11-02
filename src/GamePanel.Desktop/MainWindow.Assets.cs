@@ -33,6 +33,7 @@ internal sealed partial class MainWindow
         _assetsTab = 0;
         ResetAutomaticAssets();
         ResetDirectXTextures();
+        ResetRemixTrial();
     }
 
     private async Task RefreshAssetsAsync(string executablePath)
@@ -54,7 +55,7 @@ internal sealed partial class MainWindow
     {
         _assetApplyButton = null;
         _assetPreviewPanel = null;
-        Heading("Texture e modelli", "Underground 2 · preparazione automatica · installazione verificata.");
+        Heading("Texture e modelli", "Underground 2 · texture, modelli e prova Remix sperimentale.");
         var state = Text(_assetMessage, 13, Muted);
         _assetStatusText = state;
         System.Windows.Automation.AutomationProperties.SetAutomationId(state, "AssetStatus");
@@ -97,9 +98,9 @@ internal sealed partial class MainWindow
 
     private void RenderAvailableAssets()
     {
+        RenderRemixTrial();
         RenderAutomaticTextures();
         RenderSmolModels();
-        RenderModelSourceCards();
         var advancedContent = CaptureAssetContent(RenderAdvancedAssets);
         var legacyTextures = _assetState?.State?.Packs.Any(p => p.Manifest.Kind == "Textures") == true;
         var needsSetup = _directXState?.Installed != true && !legacyTextures;
@@ -120,6 +121,7 @@ internal sealed partial class MainWindow
 
     private void RenderAdvancedAssets()
     {
+        RenderModelSourceCards();
         RenderDirectXTextures();
 
         var builtin = new StackPanel();
@@ -152,10 +154,10 @@ internal sealed partial class MainWindow
 
     private void RenderModelSourceCards()
     {
-        var body = new StackPanel(); body.Children.Add(DesignSystem.Chip("GEOMETRIE CITTÀ · PERCORSO SEPARATO", Accent));
-        var title = Text("Città RTX Remix", 21, Ink, FontWeights.SemiBold);
+        var body = new StackPanel(); body.Children.Add(DesignSystem.Chip("RTX REMIX · FONTI E VERIFICA", Accent));
+        var title = Text("Fonti e componenti Remix 0.4", 21, Ink, FontWeights.SemiBold);
         title.Margin = new Thickness(0, 12, 0, 8); body.Children.Add(title);
-        var city = Text("Underground 2 Remix richiede un profilo renderer RTX Remix separato e l'archivio 0.4 verificato. Non è installabile da questo riquadro. Nessun pacchetto personaggi documentato è disponibile.", 13, Muted);
+        var city = Text("Consulta il progetto dell'autore o controlla l'archivio locale. Analisi ed esportazione servono alla verifica dei componenti; la copia sperimentale si prepara dal riquadro in cima alla scheda. Nessun pacchetto personaggi documentato è disponibile.", 13, Muted);
         city.Margin = new Thickness(0, 12, 0, 6); body.Children.Add(city);
         var sources = new WrapPanel();
         sources.Children.Add(FxButton("Progetto autore · Underground 2 Remix", "OpenCityRemixSource", (_, _) => OpenAssetSource("https://www.moddb.com/mods/need-for-speed-underground-2-remix"), !_busy));

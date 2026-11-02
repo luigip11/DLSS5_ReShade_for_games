@@ -1,3 +1,9 @@
+# Candidato alpha.12 — verifiche della prova Remix
+
+In ambiente Linux: 214/214 controlli superati, zero saltati; compilazione Desktop Windows con zero avvisi/errori. Le nuove prove usano un archivio 7z sintetico e file inerti: verificano origine immutata, conservazione EXE/Widescreen/modelli, esclusione AntiCull e script autore, camera libera disattivata, manifest finale, annullamento durante copia/estrazione, rifiuto di sorgente/archivio cambiati, plugin sconosciuti, link e destinazioni occupate.
+
+Il collaudo del gioco reale con RTX Remix non è stato eseguito. Il 7z completo resta sul PC dell'utente. Le verifiche Windows e i risultati del candidato sono riportati nella PR dedicata; le verifiche native DX9 già esistenti riguardano Texture Toolkit/ReShade su una fixture, non attestano RTX Remix.
+
 # Verifiche prima della prima pubblicazione
 
 Data: 29 ottobre 2026. Ambiente di sviluppo Linux; nessuna GPU Windows disponibile per eseguire l'app.

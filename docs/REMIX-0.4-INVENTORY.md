@@ -1,5 +1,7 @@
 # Underground 2 Remix 0.4: inventario ricevuto
 
+Aggiornamento alpha.12: questo documento descrive l’analisi preliminare. Sono ora disponibili [l’audit dei componenti](REMIX-COMPONENT-REVIEW.md) e una [prova locale su copia separata](REMIX-TRIAL.md), con AntiCull escluso e compatibilità da collaudare.
+
 Analisi del solo `GamePanel-RemixAudit.json` (schema 1), senza archivio, estrazione,
 installazione o esecuzione dei componenti. I percorsi sotto sono relativi alla
 cartella contenitore `Underground 2 Remix 0.4/`, conservata nel report.
