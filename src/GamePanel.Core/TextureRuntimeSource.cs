@@ -143,7 +143,7 @@ public static class TextureRuntimeCatalog
 
 public static class BuiltinAsphaltCatalog
 {
-    public const string Url = "https://github.com/luigip11/DLSS5_ReShade_for_games/releases/download/v0.1.0-alpha.8/GamePanel-AsphaltHD.zip";
+    public const string Url = "https://github.com/luigip11/GamePanel/releases/download/v0.1.0-alpha.8/GamePanel-AsphaltHD.zip";
     public const string Sha256 = "45fe214ba832782c2f46ed32265f5428bf34e82ac0c7bc3f1b5c4d9c11e3d67a";
     public const long Bytes = 8397130;
 }

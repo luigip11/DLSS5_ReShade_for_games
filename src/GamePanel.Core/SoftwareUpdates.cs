@@ -57,7 +57,7 @@ public static class PackageInventory
 
 public sealed class SoftwareUpdates
 {
-    public const string Repository = "luigip11/DLSS5_ReShade_for_games";
+    public const string Repository = "luigip11/GamePanel";
     public const string ReleasesUrl = "https://api.github.com/repos/" + Repository + "/releases?per_page=30";
     public const string PackageName = "GamePanel-win-x64.zip";
     public const string MetadataName = "GamePanel-update.json";

@@ -1,6 +1,6 @@
 param([Parameter(Mandatory = $true)][string]$PackageDirectory, [Parameter(Mandatory = $true)][string]$AsphaltPackagePath)
 $ErrorActionPreference = 'Stop'
-$repository = 'luigip11/DLSS5_ReShade_for_games'
+$repository = 'luigip11/GamePanel'
 if ($env:GITHUB_REPOSITORY -cne $repository -or $env:GITHUB_SHA -notmatch '^[a-f0-9]{40}$') { throw 'Unexpected release repository or commit.' }
 [xml]$props = Get-Content (Join-Path $PSScriptRoot '../Directory.Build.props') -Raw
 $version = [string]$props.Project.PropertyGroup.Version
