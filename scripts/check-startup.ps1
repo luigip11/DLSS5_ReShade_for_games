@@ -146,6 +146,25 @@ try {
     Invoke-Button 'AnalyzePath'
     Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'static executable analysis'
     Write-Host 'PASS GUI quoted path analysis'
+    $versionCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ([string]::Concat('Versione dichiarata nell', [char]0x2019, 'EXE')))
+    $versionElement = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $versionCondition)
+    if ($null -eq $versionElement) { throw 'Executable version section not found.' }
+    $versionExpanded = $false
+    for ($depth = 0; $depth -lt 5 -and $null -ne $versionElement; $depth++) {
+        $versionPattern = $null
+        if ($versionElement.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$versionPattern)) {
+            $versionPattern.Expand()
+            $versionExpanded = $true
+            break
+        }
+        $versionElement = [Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($versionElement)
+    }
+    if (-not $versionExpanded) { throw 'Executable version section cannot be expanded.' }
+    Write-Host 'PASS GUI declared executable version section available'
+    if ($PreviewDirectory) {
+        Start-Sleep -Milliseconds 800
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '09-game-version.png')))
+    }
     Invoke-Button 'AssetsPage'
     Wait-Until { Has-Heading 'Grafica del gioco' } 'generic graphics page'
     foreach ($specific in @('DownloadAsphaltPack', 'PrepareSmolModels', 'SelectSmolArchive', 'PrepareRemixTrial', 'PrepareAllDirectXTextures')) {
