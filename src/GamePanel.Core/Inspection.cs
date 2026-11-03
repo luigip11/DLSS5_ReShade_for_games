@@ -12,7 +12,10 @@ public sealed record GameReport(
     int SchemaVersion, DateTimeOffset InspectedAt, string ExecutablePath,
     string Sha256, string Architecture, IReadOnlyList<string> GraphicsApis,
     IReadOnlyList<ComponentInfo> Components, IReadOnlyList<string> Notes,
-    bool HasAntiCheatIndicators, bool ScanWasLimited);
+    bool HasAntiCheatIndicators, bool ScanWasLimited)
+{
+    public ExecutableVersion? Version { get; init; }
+}
 
 /// <summary>Read PE headers and import descriptors; never loads the inspected image.</summary>
 public static class PeInspector
@@ -167,7 +170,8 @@ public sealed class GameInspector
         token.ThrowIfCancellationRequested();
         var hash = Convert.ToHexString(digest.GetHashAndReset()).ToLowerInvariant();
         return new(1, DateTimeOffset.UtcNow, path, hash, details.Architecture, apis,
-            components.OrderBy(c => c.RelativePath, StringComparer.OrdinalIgnoreCase).ToArray(), notes, antiCheat, limited);
+            components.OrderBy(c => c.RelativePath, StringComparer.OrdinalIgnoreCase).ToArray(), notes, antiCheat, limited)
+        { Version = ExecutableVersion.Read(path) };
     }
 
     public static string ToJson(GameReport report) => JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
