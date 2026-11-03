@@ -189,6 +189,7 @@ internal sealed partial class MainWindow : Window
             case 6: RenderScreen(); break;
             case 7: RenderAssets(); break;
         }
+        DesignSystem.SpaceActions(_content);
     }
 
     private void RenderGame() => RenderDashboard();

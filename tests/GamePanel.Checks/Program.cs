@@ -108,6 +108,22 @@ Check("L'analisi non modifica file e rileva componenti", () =>
     using var json = JsonDocument.Parse(GameInspector.ToJson(report));
     Require(json.RootElement.GetProperty("SchemaVersion").GetInt32() == 1, "Schema report errato.");
 });
+Check("Versione EXE: risorsa assente non inventa una patch e resta esportabile", () =>
+{
+    var report = new GameInspector().Inspect(Fixture("version-1.2.exe"));
+    Require(report.Version is { ProductVersion: null, FileVersion: null }, "Versione dedotta dal nome o risorsa assente non gestita.");
+    var restored = JsonSerializer.Deserialize<GameReport>(GameInspector.ToJson(report));
+    Require(restored?.Version == report.Version, "Versione persa nel report JSON.");
+    using var legacy = JsonDocument.Parse(GameInspector.ToJson(report));
+    var fields = legacy.RootElement.EnumerateObject().Where(p => p.Name != "Version").ToDictionary(p => p.Name, p => p.Value.Clone());
+    Require(JsonSerializer.Deserialize<GameReport>(JsonSerializer.Serialize(fields))?.Version is null, "Report precedenti non compatibili.");
+});
+Check("Versione EXE: legge una vera risorsa versione senza eseguire il file", () =>
+{
+    var version = ExecutableVersion.Read(typeof(GameInspector).Assembly.Location);
+    Require(version.ProductVersion?.StartsWith("0.1.0", StringComparison.Ordinal) == true, "Versione prodotto della build non letta.");
+    Require(version.FileVersion?.StartsWith("0.1.0", StringComparison.Ordinal) == true, "Versione file della build non letta.");
+});
 Check("Rifiuto DLL rinominata EXE", () => Reject(() => new GameInspector().Inspect(Fixture("dll.exe", dll: true))));
 Check("Rifiuto file non PE", () =>
 {

@@ -8,6 +8,32 @@ namespace GamePanel.Desktop;
 
 internal static class DesignSystem
 {
+    // Keep explanatory copy clear of the following action without changing button padding.
+    public static void SpaceActions(DependencyObject root)
+    {
+        if (root is StackPanel { Orientation: Orientation.Vertical } stack)
+        {
+            FrameworkElement? previous = null;
+            foreach (var child in stack.Children.OfType<FrameworkElement>())
+            {
+                if (child.Visibility == Visibility.Collapsed) continue;
+                var followsText = previous is TextBlock or System.Windows.Controls.Label
+                    or Border { Child: TextBlock } or ScrollViewer { Content: TextBlock };
+                var isAction = child is Button || child is Panel row && row.Children.OfType<Button>().Any();
+                if (followsText && isAction)
+                {
+                    var margin = child.Margin;
+                    var inset = child is Button action && action.Background == Brushes.Transparent ? action.Padding.Top : 0;
+                    var top = Math.Max(margin.Top, 12 - previous!.Margin.Bottom - inset);
+                    child.Margin = new Thickness(margin.Left, top, margin.Right, margin.Bottom);
+                }
+                previous = child;
+            }
+        }
+        foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+            SpaceActions(child);
+    }
+
     public static readonly Brush Background = Color("#0A0F16");
     public static readonly Brush Sidebar = Color("#0D141F");
     public static readonly Brush Panel = Color("#121D2B");

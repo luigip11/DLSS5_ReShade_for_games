@@ -197,6 +197,14 @@ internal sealed partial class MainWindow
             Grid.SetColumn(card, i); stats.Children.Add(card);
         }
         _content.Children.Add(stats);
+        if (_report is not null)
+        {
+            var version = _report.Version;
+            Details("Versione dichiarata nell’EXE",
+                "Versione prodotto: " + (version?.ProductVersion ?? "Non disponibile")
+                + "\nVersione file: " + (version?.FileVersion ?? "Non disponibile")
+                + "\nDati dichiarati dal file; non confermano la patch del gioco (es. 1.0, 1.1, 1.2). La compatibilità delle mod viene verificata separatamente.");
+        }
         var section = new Grid { Margin = new Thickness(0, 0, 0, 12) }; section.ColumnDefinitions.Add(new ColumnDefinition()); section.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         section.Children.Add(Text("Prepara la prossima sessione", 20, Ink, FontWeights.SemiBold));
         var mode = Text("ANALISI + RECUPERO", 9, Muted); mode.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(mode, 1); section.Children.Add(mode); _content.Children.Add(section);
