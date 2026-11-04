@@ -189,12 +189,17 @@ try {
     Invoke-Button 'GraphicsOpenScreen'
     Wait-Until { $null -ne (Find-Element 'GameResolutionMethod') } 'general game resolution controls'
     $resolutionMethod = Find-Element 'GameResolutionMethod'
+    Write-Host ('Resolution method control: ' + $resolutionMethod.Current.ControlType.ProgrammaticName + '; expand available: ' + $resolutionMethod.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::IsExpandCollapsePatternAvailableProperty))
     $resolutionMethod.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
     $unityChoice = [Windows.Automation.AndCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
-        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('Unity ' + [char]0x00b7 + ' parametri di avvio')))
-    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $unityChoice) } 'Unity resolution choice'
-    $choice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $unityChoice)
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true))
+    function Find-UnityResolutionChoice {
+        $items = [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Descendants, $unityChoice)
+        return @($items | Where-Object { $_.Current.Name -like '*Unity*parametri di avvio*' } | Select-Object -First 1)
+    }
+    Wait-Until { @(Find-UnityResolutionChoice).Count -eq 1 } 'Unity resolution choice'
+    $choice = @(Find-UnityResolutionChoice)[0]
     $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
     Invoke-Button 'PrepareGameResolution'
     Wait-Until { $null -ne (Find-Element 'ApplyGameResolution') -and (Find-Element 'ApplyGameResolution').Current.IsEnabled } 'resolution no-write preview'

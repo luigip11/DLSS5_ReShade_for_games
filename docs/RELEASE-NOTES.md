@@ -2,6 +2,8 @@
 
 La pagina Schermo offre risoluzioni del monitor selezionato e profili separati per EXE. Underground 1 può installare il fix ThirteenAG verificato e impostare RES.cfg2; Unity e Unreal usano parametri di avvio, gli altri giochi possono usare un adattatore INI/CFG personalizzato. Anteprima, backup e recupero accompagnano le scritture. Il profilo non cambia la modalità di Windows né misura il rendering effettivo: i giochi devono supportare il metodo scelto. [Guida ai metodi](RESOLUTION-PROFILES.md).
 
+L’EXE incorpora l’icona GamePanel a più dimensioni. Il pacchetto raccoglie guide in Docs e licenze in Licenses, mantiene Assets separata e include il runtime negli eseguibili. Nella radice rimangono avvio, updater, guida rapida e i piccoli file di compatibilità richiesti dai precedenti client di aggiornamento. Estrarre in una cartella nuova per ottenere la disposizione aggiornata; gli aggiornamenti gestiti rimuovono i file obsoleti registrati senza toccare i dati personali.
+
 La gestione della configurazione UG2 Remix riconosce anche l’EXE NoCD esaminato. Il cambio dal precedente EXE richiede registrazione esplicita con anteprima degli hash; i percorsi Windows vengono confrontati senza distinguere maiuscole e minuscole. Il riconoscimento del file non certifica la patch 1.2 né il funzionamento del runtime Remix con quel NoCD.
 
 # Candidato alpha.14 — controlli illustrati e deselezione

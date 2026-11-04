@@ -14,6 +14,7 @@ try {
     Copy-Item "$source/*" $ready -Recurse
     [IO.File]::WriteAllText((Join-Path $app 'LEGGIMI.md'), 'Previous-version test content.')
     [IO.File]::WriteAllText((Join-Path $app 'obsolete-test.txt'), 'Old owned file.')
+    [IO.File]::WriteAllText((Join-Path $app 'coreclr.dll'), 'Inert legacy flat-layout fixture, never loaded.')
     $manifest = Get-ChildItem $app -File -Recurse | Where-Object { $_.Name -ne 'FILES-SHA256SUMS.txt' } | Sort-Object FullName | ForEach-Object {
         '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($app.Length + 1).Replace('\', '/')
     }
@@ -42,6 +43,8 @@ try {
         if ((Get-FileHash -LiteralPath (Join-Path $app $name) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $hash) { throw "Installed hash mismatch: $name" }
     }
     if (Test-Path (Join-Path $app 'obsolete-test.txt')) { throw 'Owned obsolete file not removed.' }
+    if (Test-Path (Join-Path $app 'coreclr.dll')) { throw 'Legacy loose runtime file not removed.' }
+    if (Test-Path (Join-Path $app 'LEGGIMI.md')) { throw 'Legacy root guide not removed.' }
     if ((Get-Content (Join-Path $app 'personal.txt') -Raw) -ne 'Preserve extra app file.') { throw 'Extra file lost.' }
     foreach ($relative in @('Library/library.json', 'Components/cache.bin', 'Backups/copy.bin', 'Settings/display.json')) {
         if ((Get-Content (Join-Path $data $relative) -Raw) -ne 'User data sentinel.') { throw "User data changed: $relative" }

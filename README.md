@@ -10,14 +10,15 @@ Il progetto comprende la gestione delle configurazioni DLSS per le copie RTX Rem
 
 La build alpha.14 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre l’archivio e avviare GamePanel. Giochi, asset e runtime RTX Remix non sono inclusi.
 
-## Changelog alpha.14
+## Changelog alpha.15
 
-- Chevron vettoriali uniformi per aprire e chiudere i menu **Avanzate** nella sidebar e nei parametri DLSS.
-- Illustrazioni minimali verde fluo accanto alle scelte DLSS, Ray Reconstruction, Frame Generation e Reflex.
-- Nuovo pulsante **Deseleziona gioco** nella libreria: rimuove il contesto attivo mantenendo giochi, profili e file.
-- Altezza di **Deseleziona gioco** allineata a **Importa gioco**.
+- Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
+- Metodo dedicato a Underground 1 con Widescreen Fix verificato; parametri di avvio Unity/Unreal e configurazioni INI/CFG personalizzate.
+- Recupero delle operazioni interrotte e conservazione delle modifiche esterne ai file di configurazione.
+- Gestione del nuovo EXE NoCD UG2 identificato, con registrazione esplicita del cambio e confronto corretto dei percorsi Windows.
+- Icona GamePanel incorporata negli EXE; runtime incluso negli eseguibili, guide in **Docs**, licenze in **Licenses** e materiali in **Assets**.
 
-Verifica su Windows: **231/231 controlli superati**, inclusa la deselezione del gioco dalla libreria.
+La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una richiesta di risoluzione: verificarne l’effetto nel gioco. [Guida alla risoluzione](docs/RESOLUTION-PROFILES.md).
 
 ## Schermate
 
@@ -28,3 +29,4 @@ Schermate reali di GamePanel alpha.14 nell’ambiente di test Windows; le voci d
 
 ### Grafica e contenuti
 ![Pagina Grafica di GamePanel con le opzioni dei contenuti e la sidebar](docs/images/alpha14-graphics.png)
+

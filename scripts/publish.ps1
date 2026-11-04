@@ -23,17 +23,26 @@ try {
     if (Test-Path $portable) { Remove-Item -LiteralPath $portable -Recurse -Force }
     & dotnet publish src/GamePanel.Desktop/GamePanel.Desktop.csproj -c Release --no-restore -o $portable -p:DebugType=None -p:DebugSymbols=false
     if ($LASTEXITCODE -ne 0) { throw 'Compilazione Windows non riuscita.' }
+    # Preserve the small managed entry files required by alpha.7+ update clients.
+    # Runtime/framework DLLs are bundled into the executable rather than spread through the root.
+    $desktopBinaries = Join-Path $repository 'src/GamePanel.Desktop/bin/Release/net10.0-windows/win-x64'
+    foreach ($name in @('GamePanel.dll', 'GamePanel.deps.json', 'GamePanel.runtimeconfig.json', 'GamePanel.Core.dll')) {
+        Copy-Item -LiteralPath (Join-Path $desktopBinaries $name) -Destination (Join-Path $portable $name)
+    }
     & dotnet restore src/GamePanel.Updater/GamePanel.Updater.csproj --locked-mode
     if ($LASTEXITCODE -ne 0) { throw 'Restore updater non riuscito.' }
     $updater = Join-Path $repository 'artifacts/GamePanel-updater-build'
     if (Test-Path $updater) { Remove-Item -LiteralPath $updater -Recurse -Force }
     & dotnet publish src/GamePanel.Updater/GamePanel.Updater.csproj -c Release --no-restore -o $updater -p:DebugType=None -p:DebugSymbols=false
     if ($LASTEXITCODE -ne 0) { throw 'Compilazione updater non riuscita.' }
-    # Both executables use the same pinned runtime; copy the helper's own files only.
-    foreach ($name in @('GamePanel.Updater.exe', 'GamePanel.Updater.dll', 'GamePanel.Updater.deps.json', 'GamePanel.Updater.runtimeconfig.json')) {
-        Copy-Item -LiteralPath (Join-Path $updater $name) -Destination (Join-Path $portable $name)
+    Copy-Item -LiteralPath (Join-Path $updater 'GamePanel.Updater.exe') -Destination (Join-Path $portable 'GamePanel.Updater.exe')
+    $updaterBinaries = Join-Path $repository 'src/GamePanel.Updater/bin/Release/net10.0-windows/win-x64'
+    foreach ($name in @('GamePanel.Updater.dll', 'GamePanel.Updater.deps.json', 'GamePanel.Updater.runtimeconfig.json')) {
+        Copy-Item -LiteralPath (Join-Path $updaterBinaries $name) -Destination (Join-Path $portable $name)
     }
-    Copy-Item README.md (Join-Path $portable 'LEGGIMI.md')
+    [xml]$props = Get-Content (Join-Path $repository 'Directory.Build.props') -Raw
+    $quickStart = (Get-Content (Join-Path $repository 'docs/PORTABLE-START.txt') -Raw).Replace('@VERSION@', [string]$props.Project.PropertyGroup.Version)
+    [IO.File]::WriteAllText((Join-Path $portable 'LEGGIMI.txt'), $quickStart, [Text.UTF8Encoding]::new($false))
     Copy-Item LICENSE (Join-Path $portable 'LICENSE-GamePanel.txt')
     Copy-Item docs/WINDOWS-CHECK.md (Join-Path $portable 'COLLAUDO-WINDOWS.md')
     Copy-Item docs/BACKUP.md (Join-Path $portable 'BACKUP.md')
@@ -46,6 +55,7 @@ try {
     Copy-Item docs/REMIX-PROFILE.md (Join-Path $portable 'REMIX-PROFILE.md')
     Copy-Item docs/REMIX-0.4-INVENTORY.md (Join-Path $portable 'REMIX-0.4-INVENTORY.md')
     Copy-Item docs/GAME-PROFILES.md (Join-Path $portable 'GAME-PROFILES.md')
+    Copy-Item docs/RESOLUTION-PROFILES.md (Join-Path $portable 'RESOLUTION-PROFILES.md')
     Copy-Item docs/REMIX-TRIAL.md (Join-Path $portable 'REMIX-TRIAL.md')
     Copy-Item docs/REMIX-COMPONENT-REVIEW.md (Join-Path $portable 'REMIX-COMPONENT-REVIEW.md')
     Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')
@@ -59,6 +69,13 @@ try {
     Copy-Item docs/TEXWIZARD-CATALOG.md (Join-Path $portable 'TEXWIZARD-CATALOG.md')
     Copy-Item docs/WIDESCREEN-CATALOG.md (Join-Path $portable 'WIDESCREEN-CATALOG.md')
     Copy-Item docs/licenses/ThirteenAG-MIT.txt (Join-Path $portable 'LICENSE-WidescreenFix.txt')
+    $docs = Join-Path $portable 'Docs'
+    $licenses = Join-Path $portable 'Licenses'
+    [IO.Directory]::CreateDirectory($docs) | Out-Null
+    [IO.Directory]::CreateDirectory($licenses) | Out-Null
+    Get-ChildItem -LiteralPath $portable -File -Filter '*.md' | Move-Item -Destination $docs
+    Get-ChildItem -LiteralPath $portable -File -Filter '*.txt' | Where-Object { $_.Name -ne 'LEGGIMI.txt' } | Move-Item -Destination $licenses
+    & (Join-Path $PSScriptRoot 'check-package-layout.ps1') -PackageDirectory $portable
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {
         $relative = $_.FullName.Substring($portable.Length + 1).Replace('\', '/')
         '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant(), $relative

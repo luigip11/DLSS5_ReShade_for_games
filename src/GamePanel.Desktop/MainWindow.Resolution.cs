@@ -18,7 +18,10 @@ internal sealed partial class MainWindow
     private Border? _resolutionPreview;
     private Button? _resolutionApply;
     private string _resolutionMessage = "Scegli una risoluzione del monitor e il metodo adatto al gioco.";
-    private sealed record ResolutionChoice(ResolutionMethod? Method, string Label);
+    private sealed record ResolutionChoice(ResolutionMethod? Method, string Label)
+    {
+        public override string ToString() => Label;
+    }
 
     private void ResetResolution()
     {

@@ -55,6 +55,9 @@ internal sealed partial class MainWindow
         if (SelectedIsRemix) lines.Add("RTX Remix · percorso della copia rilevato. Profilo e ripristino sono nella sezione DLSS.");
         if (_fxState?.State?.Installed == true) lines.Add("Immagine e filtri · profilo ReShade gestito.");
         if (_screenState?.State?.Installed == true) lines.Add("Schermo · Widescreen Fix gestito.");
+        if (_resolutionState is not null) lines.Add($"Risoluzione · {_resolutionState.Options.Width} × {_resolutionState.Options.Height} · profilo del gioco salvato nella pagina Schermo.");
+        if (_resolutionPending) lines.Add("Risoluzione · operazione da recuperare nella pagina Schermo.");
+        if (_resolutionReadError is not null) lines.Add("Risoluzione · stato da verificare nella pagina Schermo.");
         if (_directXState?.Installed == true) lines.Add("Texture · componente DirectX gestito.");
         Card("Profili e componenti", lines.Count > 0 ? string.Join("\n", lines)
             : _report is null ? "Seleziona un gioco dalla libreria per leggerne lo stato."

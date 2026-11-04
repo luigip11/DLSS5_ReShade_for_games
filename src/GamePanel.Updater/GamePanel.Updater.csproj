@@ -6,7 +6,10 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
-    <PublishSingleFile>false</PublishSingleFile>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <ApplicationIcon>../GamePanel.Desktop/Assets/GamePanel.ico</ApplicationIcon>
     <ApplicationManifest>../GamePanel.Desktop/app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../GamePanel.Core/GamePanel.Core.csproj" /></ItemGroup>
