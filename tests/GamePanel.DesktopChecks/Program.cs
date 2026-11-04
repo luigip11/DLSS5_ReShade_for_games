@@ -64,7 +64,8 @@ try
     Refused("truncated", Dds(4, 4, "DXT1", red)[..^1]);
     var oversized = Dds(4, 4, "DXT1", red); U32(oversized, 16, 8193); Refused("oversized-header", oversized);
     var wrongDx10 = ToDx10(Dds(4, 4, "DXT1", red), 98); Refused("unsupported-BC7", wrongDx10);
-    Console.WriteLine($"PASS {count} independent DDS preview golden checks."); return 0;
+    Console.WriteLine($"PASS {count} independent DDS preview golden checks.");
+    CoverChecks.Run(); return 0;
 }
 catch (Exception e) { Console.Error.WriteLine(e); return 1; }
 finally { Directory.Delete(root, true); }

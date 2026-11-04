@@ -49,6 +49,7 @@ internal sealed partial class MainWindow
         if (SelectedIsRemix && _report?.Sha256.Equals(RemixExecutableCatalog.NoCdSha256, StringComparison.OrdinalIgnoreCase) == true)
             Card("EXE NoCD identificato", "Questa build può gestirne la configurazione. Il funzionamento di RTX Remix con questo eseguibile è ancora da collaudare; il riconoscimento non certifica la versione 1.2.");
         if (_report is null) { Card("Scegli un gioco", "Apri la libreria e analizza il gioco che vuoi configurare."); return; }
+        RenderDlssHardware();
         if (status?.Supported != true)
         {
             Card("Disponibilità per questo gioco", SelectedIsRemix
@@ -71,14 +72,6 @@ internal sealed partial class MainWindow
         if (status.LocalInstallation)
         {
             Card("Underground · configurazione essenziale", "Gestisce la configurazione della mod già installata. Non installa pacchetti e non applica il preset grafico di Underground 2. La compatibilità delle singole funzioni dipende dal runtime Remix e dal driver.");
-            Card("GPU rilevate in Windows", (_graphicsAdapters ??= Hardware.DisplayDevices()) + "\nGli identificativi personalizzati della mod restano conservati: non selezionano la GPU fisica. Per assegnarla usa Impostazioni Windows → Sistema → Schermo → Grafica e seleziona l'EXE di questa copia.");
-            _content.Children.Add(FxButton("Schermo e risoluzione", "Ug1RemixOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy));
-            _content.Children.Add(FxButton("Preferenze GPU di Windows", "Ug1RemixGpuSettings", (_, _) =>
-            {
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:display-advancedgraphics") { UseShellExecute = true }); }
-                catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-                { MessageBox.Show(this, "Apri Impostazioni Windows → Sistema → Schermo → Grafica.\n" + e.Message, "Preferenze GPU"); }
-            }, !_busy));
             if (!HasDlssHardware) Card("Hardware DLSS da verificare", "Non è stata rilevata una scheda RTX. Le opzioni che attivano DLSS restano disabilitate; la scansione non misura quale GPU sta usando il gioco.");
         }
         if (!status.Adopted)
@@ -164,7 +157,8 @@ internal sealed partial class MainWindow
             preview.Children.Add(FxButton("Conferma " + RemixActionTitle(plan.Action).ToLowerInvariant(), "ApplyRemixProfile", async (_, _) => await ApplyRemixManagedAsync(), !_busy));
             _content.Children.Add(AssetPanel(preview, 20));
         }
-        _content.Children.Add(FxButton("Gioca", "RemixProfilePlay", (_, _) => Launch(), !_busy));
+        var play = FxButton("Gioca", "RemixProfilePlay", (_, _) => Launch(), !_busy);
+        DecorateAction(play, "Gioca", "play", primary: true); _content.Children.Add(play);
     }
     private static string RemixActionTitle(string action) => action switch { "Adopt" => "Registrazione", "Capture" => "Salvataggio", "Restore" => "Ripristino", _ => "Applicazione" };
     private FrameworkElement DlssChoice(string label, string id, int? value, (int? Value, string Label)[] choices, Action<int?> change)

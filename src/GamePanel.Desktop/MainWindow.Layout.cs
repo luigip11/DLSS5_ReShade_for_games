@@ -200,10 +200,12 @@ internal sealed partial class MainWindow
         if (_report is not null)
         {
             var version = _report.Version;
+            var missing = version?.ProductVersion is null && version?.FileVersion is null;
             Details("Versione dichiarata nell’EXE",
-                "Versione prodotto: " + (version?.ProductVersion ?? "Non disponibile")
-                + "\nVersione file: " + (version?.FileVersion ?? "Non disponibile")
-                + "\nDati dichiarati dal file; non confermano la patch del gioco (es. 1.0, 1.1, 1.2). La compatibilità delle mod viene verificata separatamente.");
+                "Versione prodotto: " + (version?.ProductVersion ?? "Non dichiarata nel file")
+                + "\nVersione file: " + (version?.FileVersion ?? "Non dichiarata nel file")
+                + (missing ? "\n\nQuesto EXE non espone metadati di versione leggibili da Windows. La versione che appare nel menu può provenire da una stringa interna o dai dati del gioco; alcuni EXE modificati non conservano la risorsa VERSIONINFO." : "\n\nQuesti valori provengono dai metadati del file.")
+                + "\nLa versione mostrata nel gioco e la patch installata non vengono dedotte da nomi di file, DLL o semplici numeri trovati nell'EXE.");
         }
         var section = new Grid { Margin = new Thickness(0, 0, 0, 12) }; section.ColumnDefinitions.Add(new ColumnDefinition()); section.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         section.Children.Add(Text("Prepara la prossima sessione", 20, Ink, FontWeights.SemiBold));
@@ -216,7 +218,9 @@ internal sealed partial class MainWindow
         if (_report?.HasAntiCheatIndicators == true) Card("Da verificare", "Sono presenti possibili indicatori anti-cheat. Controlla la compatibilità prima delle future modifiche.");
         if (_report is not null)
         {
-            var play = Button("Avvia il gioco  →", (_, _) => Launch()); play.IsEnabled = !_busy;
+            var play = Button("Avvia il gioco", (_, _) => Launch()); play.IsEnabled = !_busy;
+            DecorateAction(play, "Avvia il gioco", "play", primary: true);
+            System.Windows.Automation.AutomationProperties.SetAutomationId(play, "GamePlay");
             play.ToolTip = "Avvia la variante selezionata con la configurazione attualmente presente.";
             _content.Children.Add(play);
             if (UseExplorerForSelectedGame)
@@ -233,7 +237,10 @@ internal sealed partial class MainWindow
             screen.IsEnabled = !_busy; _content.Children.Add(screen);
         }
         var gpu = Hardware.DisplayDevices();
-        Card("Il tuo hardware", gpu + "\nIl supporto HDR dello schermo verrà verificato nella fase di integrazione.");
+        IllustratedHardwareCard("Il tuo hardware", gpu);
+        var about = Button("Informazioni sul sistema", (_, _) => OpenWindowsSettings("ms-settings:about", "Apri Impostazioni → Sistema → Informazioni sul sistema."));
+        DecorateAction(about, "Informazioni sul sistema", "info"); about.IsEnabled = !_busy;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(about, "WindowsSystemInfo"); _content.Children.Add(about);
     }
 
     private static Border ActionTile(string icon, string title, string description, string action, RoutedEventHandler click, Brush color)

@@ -1,5 +1,7 @@
 # Candidato alpha.15 — risoluzione per gioco e nuovo EXE UG2
 
+Copertine per scheda, da file locale o ricerca Wikipedia esplicita con anteprima e cache offline. GPU illustrate e azioni Schermo/GPU affiancate nella pagina DLSS; Gioca e Avvia il gioco in verde fluo. La pagina Gioco collega alle informazioni di sistema Windows e chiarisce i metadati versione mancanti negli EXE.
+
 La libreria consente di collegare esplicitamente una copia Remix al gioco originale, mantenendo una sola scheda con selettore Originale/Remix. Il collegamento è reversibile, persistente dopo rianalisi e non richiede modifiche a file o journal del gioco.
 
 UG1 Remix già installato: registrazione locale, backup/ripristino e controlli DLSS secondo i componenti rilevati, senza preset UG2. Risoluzione tramite ResX/ResY nell’INI della mod; GPU rilevate e accesso alle preferenze Windows. Nessun pacchetto o eseguibile del gioco è distribuito. Transformer e Multi Frame Generation non vengono dedotti dalla sola presenza del renderer.

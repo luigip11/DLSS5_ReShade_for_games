@@ -185,6 +185,7 @@ RemixBundleChecks.Register(Check, temp);
 RemixTrialChecks.Register(Check, temp, Fixture);
 RemixManagedChecks.Register(Check, temp, Fixture);
 Underground1RemixChecks.Register(Check, temp, Fixture);
+OnlineCoverChecks.Register(Check);
 CapabilityChecks.Register(Check, temp, Fixture);
 var localSmolAt = Array.IndexOf(args, "--verify-smol-archive");
 SmolModelChecks.Register(Check, temp, localSmolAt >= 0 && localSmolAt + 1 < args.Length ? args[localSmolAt + 1] : null);

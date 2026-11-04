@@ -57,6 +57,8 @@ try {
     Copy-Item docs/GAME-PROFILES.md (Join-Path $portable 'GAME-PROFILES.md')
     Copy-Item docs/RESOLUTION-PROFILES.md (Join-Path $portable 'RESOLUTION-PROFILES.md')
     Copy-Item docs/UG1-REMIX.md (Join-Path $portable 'UG1-REMIX.md')
+    Copy-Item docs/LIBRARY-COVERS.md (Join-Path $portable 'LIBRARY-COVERS.md')
+    Copy-Item docs/REMIX-PERFORMANCE.md (Join-Path $portable 'REMIX-PERFORMANCE.md')
     Copy-Item docs/REMIX-TRIAL.md (Join-Path $portable 'REMIX-TRIAL.md')
     Copy-Item docs/REMIX-COMPONENT-REVIEW.md (Join-Path $portable 'REMIX-COMPONENT-REVIEW.md')
     Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')

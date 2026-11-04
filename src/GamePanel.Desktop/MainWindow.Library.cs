@@ -101,8 +101,9 @@ internal sealed partial class MainWindow
             var game = group.Preferred(_library.SelectedId);
             var available = File.Exists(game.ExecutablePath);
             var body = new StackPanel();
-            var art = new Grid { Height = 100, ClipToBounds = true };
+            var art = new Grid { Height = 180, ClipToBounds = true };
             art.Children.Add(DesignSystem.HeroArtwork());
+            AddLibraryCover(art, original);
             var badge = DesignSystem.Chip(available ? "GIOCO IMPORTATO" : "PERCORSO DA VERIFICARE", available ? Accent : DesignSystem.Amber);
             badge.Margin = new Thickness(16); badge.VerticalAlignment = VerticalAlignment.Top; art.Children.Add(badge); body.Children.Add(art);
             var details = new StackPanel { Margin = new Thickness(16) };

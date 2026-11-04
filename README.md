@@ -12,6 +12,10 @@ La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla s
 
 ## Changelog alpha.15
 
+- Copertine locali e ricerca online su Wikipedia, con anteprima, fonte e cache offline. [Guida](docs/LIBRARY-COVERS.md).
+- Schede GPU illustrate, azioni DLSS affiancate, pulsanti Gioca verde fluo e accesso alle informazioni di sistema Windows.
+- Spiegazione dei metadati versione EXE e della differenza rispetto al numero mostrato nel gioco. [Confronto FPS Remix](docs/REMIX-PERFORMANCE.md).
+
 - Avvio UG1 Remix tramite il desktop di Esplora file e report locale del contesto di avvio, conservando la configurazione del gioco.
 
 - Cambio variante sincronizzato con l’analisi attiva nelle pagine Gioco, Grafica e DLSS.

@@ -2,6 +2,7 @@ param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDir
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName System.Drawing
 if ($PreviewDirectory) {
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($PreviewDirectory)) | Out-Null
     Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
@@ -161,6 +162,8 @@ try {
     }
     if (-not $versionExpanded) { throw 'Executable version section cannot be expanded.' }
     Write-Host 'PASS GUI declared executable version section available'
+    if ($null -eq (Find-Element 'GamePlay') -or $null -eq (Find-Element 'WindowsSystemInfo')) { throw 'Game play/system settings actions missing.' }
+
     if ($PreviewDirectory) {
         Start-Sleep -Milliseconds 800
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '09-game-version.png')))
@@ -173,6 +176,12 @@ try {
     if ((Has-Heading 'Asfalto 2K') -or (Has-Heading 'Correzioni ai modelli auto')) { throw 'UG2-specific content shown for an unrelated game.' }
     Invoke-Button 'DlssPage'
     Wait-Until { $null -ne (Find-Element 'DlssStatus') } 'contextual DLSS page'
+    Wait-Until { $null -ne (Find-Element 'DlssOpenScreen') -and $null -ne (Find-Element 'DlssGpuSettings') } 'DLSS display and GPU action row'
+    $screenBounds = (Find-Element 'DlssOpenScreen').Current.BoundingRectangle
+    $gpuBounds = (Find-Element 'DlssGpuSettings').Current.BoundingRectangle
+    if ([Math]::Abs($screenBounds.Top - $gpuBounds.Top) -gt 3 -or $gpuBounds.Left -le $screenBounds.Left -or $screenBounds.Width -lt 100 -or $gpuBounds.Width -lt 100) { throw 'DLSS screen/GPU buttons are not adjacent and aligned.' }
+    Write-Host 'PASS GUI DLSS hardware illustration and aligned screen/GPU action row'
+
     $dlssNavigation = Find-Element 'DlssPage'
     $dlssParts = $dlssNavigation.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
     $dlssNavigationText = $dlssNavigation.Current.Name + ' ' + (@($dlssParts | ForEach-Object { $_.Current.Name }) -join ' ')
@@ -411,6 +420,20 @@ try {
         $process.CloseMainWindow() | Out-Null
         if (-not $process.WaitForExit(5000)) { Stop-Process -Id $process.Id -Force }
         $process.Dispose()
+        # Original test artwork, generated only for this disposable UI fixture.
+        $coverFolder = Join-Path $fixtureData 'Library/Covers'
+        [IO.Directory]::CreateDirectory($coverFolder) | Out-Null
+        $coverBitmap = [Drawing.Bitmap]::new(480, 270)
+        $coverGraphics = [Drawing.Graphics]::FromImage($coverBitmap)
+        $coverFont = [Drawing.Font]::new('Segoe UI', 26, [Drawing.FontStyle]::Bold)
+        $coverBrush = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(188, 255, 105))
+        try {
+            $coverGraphics.Clear([Drawing.Color]::FromArgb(18, 29, 43))
+            $coverGraphics.DrawString('TEST GAME', $coverFont, $coverBrush, 34, 34)
+            $coverGraphics.FillRectangle($coverBrush, 34, 108, 260, 5)
+            $coverGraphics.DrawString('LOCAL COVER', $coverFont, [Drawing.Brushes]::White, 34, 155)
+            $coverBitmap.Save((Join-Path $coverFolder ($libraryGame[0].Id + '.png')), [Drawing.Imaging.ImageFormat]::Png)
+        } finally { $coverBrush.Dispose(); $coverFont.Dispose(); $coverGraphics.Dispose(); $coverBitmap.Dispose() }
         $process = Start-Process -FilePath $executable -WorkingDirectory (Split-Path -Parent $executable) -PassThru
         Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero } 'library restart'
         $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
