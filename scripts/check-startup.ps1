@@ -545,6 +545,28 @@ try {
     Invoke-Button 'LibraryPage'
     $persisted = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
     if (@($persisted.Variants).Count -ne 1) { throw 'Reanalysis dropped explicit variant relationship.' }
+    foreach ($variantStep in @(@{ Label = 'Originale'; Game = $variantParent }, @{ Label = 'Remix'; Game = $variantCopy })) {
+        $variantPicker = Find-Element ('LibraryVariant-' + $variantParent.Id)
+        $variantPicker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+        $variantCondition = [Windows.Automation.AndCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $variantStep.Label))
+        Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $variantCondition) } 'library variant choice'
+        $variantChoice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $variantCondition)
+        $variantChoice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+        try { $variantPicker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse() }
+        catch [Windows.Automation.ElementNotAvailableException] { }
+        Wait-Until {
+            $state = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+            return $state.SelectedId -eq $variantStep.Game.Id -and $null -ne (Find-Element ('LibraryVariant-' + $variantParent.Id))
+        } 'variant selection and analysis completed'
+        Invoke-Button 'OverviewPage'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'active variant analysis'
+        if ((Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne $variantStep.Game.ExecutablePath) { throw 'Variant selector retained another active executable in the game page.' }
+        Invoke-Button 'LibraryPage'
+    }
+    Write-Host 'PASS GUI variant selection refreshes the analyzed executable and all game-specific pages'
     Write-Host 'PASS GUI explicit Remix association: user chooses original, one card with variant selector, entries preserved across reanalysis'
     Invoke-Button 'DeselectLibraryGame'
     Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Nessun gioco selezionato' } 'deselect analyzed game'

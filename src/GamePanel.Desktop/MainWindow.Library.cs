@@ -120,12 +120,19 @@ internal sealed partial class MainWindow
                 }
                 selector.SelectedIndex = group.Variants.ToList().FindIndex(g => g.Id == game.Id);
                 System.Windows.Automation.AutomationProperties.SetAutomationId(selector, "LibraryVariant-" + original.Id);
-                selector.SelectionChanged += (_, _) =>
+                selector.SelectionChanged += async (_, _) =>
                 {
                     if (_busy || selector.SelectedItem is not ComboBoxItem { Tag: string id } || id == game.Id) return;
-                    try { _library = _libraryStore.Select(id); _libraryMessage = "Versione selezionata. Gioca avvia il percorso mostrato nella scheda."; }
-                    catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { _libraryMessage = e.Message; }
-                    RenderLibraryCards();
+                    var selected = _library.Games.Single(g => g.Id == id);
+                    try { _library = _libraryStore.Select(id); }
+                    catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+                    { _libraryMessage = e.Message; Render(); return; }
+                    await InspectAsync(selected.ExecutablePath);
+                    if (_closing) return;
+                    _libraryMessage = _report is not null && string.Equals(_report.ExecutablePath, selected.ExecutablePath, StringComparison.OrdinalIgnoreCase)
+                        ? "Versione selezionata e analizzata. Gioco, Grafica e DLSS seguono il percorso mostrato nella scheda."
+                        : "Versione selezionata, ma analisi non completata. Verifica il percorso prima dell'avvio.";
+                    _page = 5; Render();
                 };
                 details.Children.Add(selector);
             }

@@ -31,3 +31,9 @@ Lo script legge file, hash, alcune opzioni INI e le chiavi EA di lingua/installa
 Il file v0.5 esaminato imposta `ignoreGamePointLights`, `ignoreGameSpotLights` e `ignoreGameDirectionalLights` su `True`, con `fallbackLightMode=0`. Se i contenuti/luci sostitutivi sono disabilitati, può mancare l'illuminazione prevista dalla mod. Questo è un indizio di configurazione, non una diagnosi ricavabile dalla sola immagine.
 
 Prima di cambiare esposizione o intensità: apri **Alt+X → Content**, abilita **Enable All Enhanced Assets** e verifica **Enable Enhanced Lights**, salva e riavvia completamente il gioco. Se le voci erano già attive oppure la scena resta scura, servono configurazioni effettive e log per verificare il caricamento dei contenuti. Dopo una prova riuscita, **Salva configurazione attuale** in GamePanel registra il nuovo punto di ripristino senza riscrivere il gioco.
+
+## Confronto tra avvio diretto e GamePanel
+
+Se lo stesso EXE funziona avviato da Esplora file, conserva quella configurazione. Confronta il percorso nella pagina Gioco e usa gli stessi privilegi: un GamePanel avviato come amministratore può avviare il gioco elevato, a differenza dell'avvio normale, con possibili differenze nella lettura di file e registro virtualizzati. Per il confronto chiudi entrambi e apri GamePanel normalmente. Il manifest dell'app usa già `asInvoker`; eventuali opzioni di compatibilità di Windows o del collegamento possono imporre l'elevazione.
+
+Il selettore Originale/Remix aggiorna anche l'analisi attiva e i profili delle pagine Gioco/Grafica/DLSS. La cartella di lavoro del processo è quella dell'EXE; l'avvio non applica preset grafici o modifiche alle luci.
