@@ -440,6 +440,20 @@ try {
         if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw "Library-launched probe failed: $($renderProcess.ExitCode)" }
         if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Selected library executable did not execute our launcher probe.' }
         $renderProcess.Dispose(); $renderProcess = $null
+        $launchReportPath = Join-Path $fixtureData 'Diagnostics/last-launch.json'
+        $launchReport = Get-Content -LiteralPath $launchReportPath -Raw | ConvertFrom-Json
+        if ($launchReport.Executable -cne $profileExe -or $launchReport.WorkingDirectory -cne $fixtureGame -or @($launchReport.Arguments).Count -ne 0 -or $launchReport.Route -ne 'GamePanel' -or $launchReport.Result -ne 'Started') { throw 'Direct-launch diagnostic does not match the real probe.' }
+        Remove-Item -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result')
+        Invoke-Button 'LaunchThroughExplorer'
+        Wait-Until { @(Get-Process -Name speed2 -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $profileExe }).Count -eq 1 -and (Test-Path -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result')) } 'Explorer-launched GUI probe'
+        $renderProcess = @(Get-Process -Name speed2 -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $profileExe })[0]
+        $explorerProbeHandle = $renderProcess.Handle
+        if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw 'Explorer GUI probe did not complete.' }
+        $renderProcess.Dispose(); $renderProcess = $null
+        $launchReport = Get-Content -LiteralPath $launchReportPath -Raw | ConvertFrom-Json
+        if ($launchReport.Route -ne 'ExplorerDesktop' -or $launchReport.Result -ne 'Requested' -or $launchReport.Executable -cne $profileExe -or $launchReport.WorkingDirectory -cne $fixtureGame -or @($launchReport.Arguments).Count -ne 0) { throw 'Explorer-launch diagnostic differs from the accepted request.' }
+        if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Explorer GUI probe did not find its game-relative request.' }
+        Write-Host 'PASS GUI Explorer desktop launch and diagnostics: same EXE and working directory, no added arguments'
         Write-Host 'PASS GUI launch directly from saved library card and persisted last-played timestamp'
 
     }

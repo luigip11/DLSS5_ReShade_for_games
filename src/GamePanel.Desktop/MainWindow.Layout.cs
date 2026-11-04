@@ -219,6 +219,13 @@ internal sealed partial class MainWindow
             var play = Button("Avvia il gioco  →", (_, _) => Launch()); play.IsEnabled = !_busy;
             play.ToolTip = "Avvia la variante selezionata con la configurazione attualmente presente.";
             _content.Children.Add(play);
+            if (UseExplorerForSelectedGame)
+                Details("Modalità di avvio", "Questa copia viene avviata tramite il desktop di Esplora file, con la cartella del gioco e senza parametri aggiunti. La configurazione resta conservata. Il report dell'ultimo tentativo è in " + LaunchReportPath);
+            else
+            {
+                var explorer = Button("Avvia tramite Esplora file", (_, _) => Launch(viaExplorer: true)); explorer.IsEnabled = !_busy;
+                System.Windows.Automation.AutomationProperties.SetAutomationId(explorer, "LaunchThroughExplorer"); _content.Children.Add(explorer);
+            }
         }
         if (_report is not null)
         {

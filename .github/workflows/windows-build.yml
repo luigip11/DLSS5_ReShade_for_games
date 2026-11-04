@@ -63,6 +63,17 @@ jobs:
       - name: Compile synthetic DX9 x86 fixture
         shell: pwsh
         run: ./scripts/build-graphics-fixture.ps1
+      - name: Verify Explorer launch directory and environment isolation
+        shell: pwsh
+        run: |
+          Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class DesktopShellProbe { [DllImport("user32.dll")] public static extern IntPtr GetShellWindow(); }'
+          if ([DesktopShellProbe]::GetShellWindow() -eq [IntPtr]::Zero) {
+            Start-Process explorer.exe
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            while ([DesktopShellProbe]::GetShellWindow() -eq [IntPtr]::Zero -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          }
+          dotnet run --project tests/GamePanel.DesktopChecks -c Release --no-restore -- --explorer-probe ./artifacts/graphics-fixture/speed2.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Explorer launch broker check failed.' }
       - name: Check desktop startup
         shell: powershell
         run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe -AssetFixturePath ./artifacts/asset-fixture/speed2.exe -AssetPackagePath ./artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip

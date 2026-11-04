@@ -12,6 +12,8 @@ La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla s
 
 ## Changelog alpha.15
 
+- Avvio UG1 Remix tramite il desktop di Esplora file e report locale del contesto di avvio, conservando la configurazione del gioco.
+
 - Cambio variante sincronizzato con l’analisi attiva nelle pagine Gioco, Grafica e DLSS.
 - Collegamento esplicito delle copie Remix all’originale in libreria, con selettore Originale/Remix e separazione reversibile.
 - UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
