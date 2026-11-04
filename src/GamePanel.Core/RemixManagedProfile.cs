@@ -68,7 +68,7 @@ public sealed class RemixManagedService
         {
             var identity = VerifyIdentity(executable, null, CancellationToken.None); var folder = Folder(executable);
             var state = LoadState(folder, executable); var pending = LoadOperation(folder, executable)?.Status == "Pending";
-            if (state is not null && (state.MarkerSha256 != identity.MarkerHash || state.OriginalExecutablePath != identity.Original)) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
+            if (state is not null && (state.MarkerSha256 != identity.MarkerHash || !SamePath(state.OriginalExecutablePath, identity.Original))) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
             var live = ReadConfigs(Path.GetDirectoryName(executable)!);
             var changed = state is not null && !SameFiles(state.Current, live);
             return new(true, state is not null, pending, changed,
@@ -92,7 +92,7 @@ public sealed class RemixManagedService
             {
                 GuardPath(folder); var path = Path.Combine(folder, StateName); if (!File.Exists(path)) continue;
                 var state = ReadJson<SavedState>(path, StateLimit); ValidateState(state, state.ExecutablePath);
-                if (Folder(state.ExecutablePath) != folder) continue;
+                if (!SamePath(Folder(state.ExecutablePath), folder)) continue;
                 result.Add(new(state.OriginalExecutablePath, state.ExecutablePath));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or JsonException) { }
@@ -118,7 +118,7 @@ public sealed class RemixManagedService
         var identity = VerifyIdentity(executable, report.Sha256, CancellationToken.None); var folder = Folder(executable);
         CheckOtherPending(folder); if (LoadOperation(folder, executable)?.Status == "Pending") throw Invalid("Prima recupera l'operazione Remix interrotta.");
         var previous = LoadState(folder, executable); var before = ReadConfigs(Path.GetDirectoryName(executable)!);
-        if (previous is not null && (previous.MarkerSha256 != identity.MarkerHash || previous.OriginalExecutablePath != identity.Original)) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
+        if (previous is not null && (previous.MarkerSha256 != identity.MarkerHash || !SamePath(previous.OriginalExecutablePath, identity.Original))) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
         if (action == "Adopt" && previous is not null) throw Invalid("Copia già adottata: usa Salva configurazione attuale.");
         if (action != "Adopt" && previous is null) throw Invalid("Adotta prima la copia Remix esistente.");
         if (action is "Apply" or "Restore" && !SameFiles(previous!.Current, before)) throw Invalid("Configurazione cambiata: salva la configurazione attuale prima di applicare modifiche.");
@@ -142,7 +142,7 @@ public sealed class RemixManagedService
     {
         token.ThrowIfCancellationRequested(); if (plan.Owner != _owner) throw Invalid("Anteprima di un'altra sessione: preparala di nuovo.");
         var executable = plan.ExecutablePath; Stopped(executable); var identity = VerifyIdentity(executable, plan.Report.Sha256, token);
-        if (identity != plan.Identity) throw Invalid("Identità della copia cambiata dall'anteprima.");
+        if (!SameIdentity(identity, plan.Identity)) throw Invalid("Identità della copia cambiata dall'anteprima.");
         var folder = Folder(executable); Directory.CreateDirectory(folder); GuardPath(folder); using var lease = Acquire(folder);
         CheckOtherPending(folder); var operation = LoadOperation(folder, executable);
         if (operation?.Status == "Pending") throw Invalid("Prima recupera l'operazione Remix interrotta.");
@@ -159,7 +159,7 @@ public sealed class RemixManagedService
         var folder = Folder(executable); GuardPath(folder); using var lease = Acquire(folder); CheckOtherPending(folder);
         var operation = LoadOperation(folder, executable) ?? throw Invalid("Nessuna operazione Remix da recuperare.");
         if (operation.Status != "Pending") return Status(executable);
-        if (identity != operation.Identity) throw Invalid("Identità della copia cambiata: recupero bloccato.");
+        if (!SameIdentity(identity, operation.Identity)) throw Invalid("Identità della copia cambiata: recupero bloccato.");
         Run(operation, folder, rollback, token, progress); return Status(executable);
     }
     private void Run(Operation operation, string folder, bool rollback, CancellationToken token, IProgress<BackupProgress>? progress)
@@ -175,14 +175,14 @@ public sealed class RemixManagedService
         for (var i = 0; i < target.Count; i++)
         {
             token.ThrowIfCancellationRequested(); Stopped(operation.Identity.Executable);
-            if (VerifyIdentity(operation.Identity.Executable, operation.Identity.ExecutableHash, token) != operation.Identity) throw Invalid("Copia cambiata durante l'operazione.");
+            if (!SameIdentity(VerifyIdentity(operation.Identity.Executable, operation.Identity.ExecutableHash, token), operation.Identity)) throw Invalid("Copia cambiata durante l'operazione.");
             var current = ReadConfigs(root)[i];
             if (!SameFile(current, operation.Before[i]) && !SameFile(current, operation.After[i])) throw Invalid("File cambiato durante l'operazione: " + current.Path);
             if (!SameFile(current, target[i])) Replace(root, current, target[i], token);
             progress?.Report(new("Configurazione Remix: " + target[i].Path, i + 1, target.Count));
         }
         token.ThrowIfCancellationRequested(); Stopped(operation.Identity.Executable);
-        if (VerifyIdentity(operation.Identity.Executable, operation.Identity.ExecutableHash, token) != operation.Identity) throw Invalid("Copia cambiata prima del completamento.");
+        if (!SameIdentity(VerifyIdentity(operation.Identity.Executable, operation.Identity.ExecutableHash, token), operation.Identity)) throw Invalid("Copia cambiata prima del completamento.");
         if (!SameFiles(ReadConfigs(root), target)) throw Invalid("Verifica finale della configurazione fallita.");
         stored = LoadState(folder, operation.Identity.Executable);
         if (!SameState(stored, operation.Previous) && !SameState(stored, operation.Next)) throw Invalid("Stato Remix cambiato prima del completamento.");
@@ -341,21 +341,23 @@ public sealed class RemixManagedService
     }
     private void ValidateState(SavedState state, string executable)
     {
-        if (state is null || state.SchemaVersion != 1 || !ValidId(state.Revision) || state.ExecutablePath != executable || !Path.IsPathFullyQualified(state.OriginalExecutablePath)
-            || !Same(state.ExecutableSha256, _pins.Executable) || !ValidHash(state.MarkerSha256) || state.OriginalExecutablePath == executable)
+        if (state is null || state.SchemaVersion != 1 || !ValidId(state.Revision) || !SamePath(state.ExecutablePath, executable) || !Path.IsPathFullyQualified(state.OriginalExecutablePath)
+            || !Same(state.ExecutableSha256, _pins.Executable) || !ValidHash(state.MarkerSha256) || SamePath(state.OriginalExecutablePath, executable))
             throw Invalid("Stato Remix non valido.");
         ValidateFiles(state.Captured); ValidateFiles(state.Current);
     }
     private void ValidateOperation(Operation operation, string executable)
     {
-        if (operation.SchemaVersion != 1 || !ValidId(operation.Id) || operation.Identity is null || operation.Identity.Executable != executable
+        if (operation.SchemaVersion != 1 || !ValidId(operation.Id) || operation.Identity is null
             || !Same(operation.Identity.ExecutableHash, _pins.Executable) || !ValidHash(operation.Identity.MarkerHash)
             || operation.Action is not ("Adopt" or "Capture" or "Apply" or "Restore") || operation.Status is not ("Pending" or "Committed" or "RolledBack"))
             throw Invalid("Journal Remix non valido.");
+        if (!SamePath(operation.Identity.Executable, executable))
+            throw Invalid("Il journal Remix appartiene a un altro eseguibile. Rianalizza il percorso registrato: " + operation.Identity.Executable);
         ValidateState(operation.Next, executable); if (operation.Previous is not null) ValidateState(operation.Previous, executable);
-        if (operation.Next.OriginalExecutablePath != operation.Identity.Original || operation.Next.MarkerSha256 != operation.Identity.MarkerHash)
+        if (!SamePath(operation.Next.OriginalExecutablePath, operation.Identity.Original) || operation.Next.MarkerSha256 != operation.Identity.MarkerHash)
             throw Invalid("Journal Remix non legato alla copia.");
-        if (operation.Previous is not null && (operation.Previous.OriginalExecutablePath != operation.Identity.Original
+        if (operation.Previous is not null && (!SamePath(operation.Previous.OriginalExecutablePath, operation.Identity.Original)
             || operation.Previous.MarkerSha256 != operation.Identity.MarkerHash || operation.Previous.Revision == operation.Next.Revision))
             throw Invalid("Stato precedente del journal Remix non legato alla copia.");
         ValidateFiles(operation.Before); ValidateFiles(operation.After);
@@ -399,6 +401,10 @@ public sealed class RemixManagedService
     private static string Full(string path) => Path.GetFullPath(ExecutablePath.Normalize(path));
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+    private static bool SamePath(string? a, string? b) => string.Equals(a, b,
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    private static bool SameIdentity(Identity a, Identity b) => SamePath(a.Executable, b.Executable)
+        && SamePath(a.Original, b.Original) && Same(a.ExecutableHash, b.ExecutableHash) && Same(a.MarkerHash, b.MarkerHash);
     private static string FileHash(string path, int maximum, CancellationToken token)
     {
         token.ThrowIfCancellationRequested(); GuardPath(path); var attributes = File.GetAttributes(path);

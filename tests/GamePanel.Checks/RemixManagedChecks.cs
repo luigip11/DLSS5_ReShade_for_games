@@ -104,6 +104,24 @@ internal static class RemixManagedChecks
             File.WriteAllText(journal, "{\"SchemaVersion\":1}");
             Refused(() => f.Service.HasPendingOperation(f.Exe));
         });
+        check("Remix gestito: journal concluso rifiuta un nome EXE diverso nella stessa cartella", () =>
+        {
+            using var f = new Fixture(root, makeExe); f.Adopt(); var before = f.Configs();
+            Refused(() => f.Service.HasPendingOperation(f.Path("other-speed2.exe")));
+            Require(before.SequenceEqual(f.Configs()) && !f.Service.HasPendingOperation(f.Exe), "Journal valido modificato o avvio riconosciuto bloccato.");
+        });
+        if (OperatingSystem.IsWindows()) check("Remix gestito: maiuscole del percorso Windows non invalidano journal, stato o recupero", () =>
+        {
+            using var f = new Fixture(root, makeExe); f.Adopt(); var before = f.Configs();
+            var alternate = f.Exe.ToUpperInvariant();
+            Require(!f.Service.HasPendingOperation(alternate) && f.Service.Status(alternate).Adopted, "Journal concluso o stato rifiutati per sole maiuscole.");
+            var report = new GameInspector().Inspect(alternate);
+            var plan = f.Service.PrepareApply(report, new(DlssMode: 4));
+            Canceled(() => f.Service.Execute(plan, progress: new InlineProgress(p => { if (p.Completed == 1) throw new OperationCanceledException(); })));
+            Require(f.Service.HasPendingOperation(f.Exe), "Journal sospeso non riconosciuto dal percorso originale.");
+            f.Service.Recover(f.Exe, true);
+            Require(before.SequenceEqual(f.Configs()) && !f.Service.HasPendingOperation(alternate), "Recupero fra percorsi equivalenti non esatto.");
+        });
         if (!OperatingSystem.IsWindows()) check("Remix gestito: link configurazione e stato non seguiti", () =>
         {
             using var f = new Fixture(root, makeExe); f.Adopt(); var outside = System.IO.Path.Combine(f.Root, "outside.conf"); File.WriteAllText(outside, "preserve = external\n");
