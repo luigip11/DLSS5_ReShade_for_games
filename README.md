@@ -6,7 +6,7 @@ Il progetto comprende la gestione delle configurazioni DLSS per le copie RTX Rem
 
 ## Download
 
-**[Scarica GamePanel alpha.15 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41880892399/artifacts/13349796054)**
+**[Scarica GamePanel alpha.15 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41888585024/artifacts/13353151499)**
 
 La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre tutto l’archivio in una cartella nuova e avviare **GamePanel.exe**. Guide, licenze e materiali sono raccolti in **Docs**, **Licenses** e **Assets**. Giochi, asset e runtime RTX Remix non sono inclusi.
 
@@ -34,8 +34,11 @@ La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una ri
 
 Schermate reali di GamePanel alpha.15 nell’ambiente di test Windows; le voci dei giochi sono dimostrative.
 
-### Libreria
-![Libreria di GamePanel con i pulsanti Importa gioco e Deseleziona gioco allineati](docs/images/alpha15-library.png)
+### Libreria e copertine
+![Libreria di GamePanel con copertina locale dimostrativa e menu Copertina](docs/images/alpha15-library-covers.png)
+
+### GPU e impostazioni DLSS
+![Scheda GPU illustrata e pulsanti Schermo e risoluzione e Preferenze GPU di Windows affiancati](docs/images/alpha15-dlss-hardware.png)
 
 ### Schermo e risoluzione
 ![Profilo di risoluzione per gioco con dimensioni del monitor e metodo di applicazione](docs/images/alpha15-resolution.png)
