@@ -15,7 +15,10 @@ internal sealed partial class MainWindow
     private string _remixManagedMessage = "Seleziona un gioco per vedere il percorso DLSS disponibile.";
     private string? _graphicsAdapters;
     private bool SelectedIsUnderground2 => SelectedCapabilities.IsUnderground2;
+    private bool SelectedIsUnderground1 => SelectedCapabilities.IsUnderground1;
     private bool SelectedIsRemix => SelectedCapabilities.HasRemixRenderer;
+    private bool HasDlssHardware => (_graphicsAdapters ??= Hardware.DisplayDevices()).Contains("RTX", StringComparison.OrdinalIgnoreCase);
+    private bool HasFrameHardware => HasMultiFrameHardware || (_graphicsAdapters ??= Hardware.DisplayDevices()).Contains("RTX 40", StringComparison.OrdinalIgnoreCase);
     private bool HasMultiFrameHardware => (_graphicsAdapters ??= Hardware.DisplayDevices()).Contains("RTX 50", StringComparison.OrdinalIgnoreCase);
     private bool MatchesRecommendedMachine
     {
@@ -65,9 +68,23 @@ internal sealed partial class MainWindow
             _content.Children.Add(FxButton("Annulla e recupera", "RollbackRemixProfile", async (_, _) => await RecoverRemixManagedAsync(true), !_busy));
             return;
         }
+        if (status.LocalInstallation)
+        {
+            Card("Underground · configurazione essenziale", "Gestisce la configurazione della mod già installata. Non installa pacchetti e non applica il preset grafico di Underground 2. La compatibilità delle singole funzioni dipende dal runtime Remix e dal driver.");
+            Card("GPU rilevate in Windows", (_graphicsAdapters ??= Hardware.DisplayDevices()) + "\nGli identificativi personalizzati della mod restano conservati: non selezionano la GPU fisica. Per assegnarla usa Impostazioni Windows → Sistema → Schermo → Grafica e seleziona l'EXE di questa copia.");
+            _content.Children.Add(FxButton("Schermo e risoluzione", "Ug1RemixOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy));
+            _content.Children.Add(FxButton("Preferenze GPU di Windows", "Ug1RemixGpuSettings", (_, _) =>
+            {
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:display-advancedgraphics") { UseShellExecute = true }); }
+                catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
+                { MessageBox.Show(this, "Apri Impostazioni Windows → Sistema → Schermo → Grafica.\n" + e.Message, "Preferenze GPU"); }
+            }, !_busy));
+            if (!HasDlssHardware) Card("Hardware DLSS da verificare", "Non è stata rilevata una scheda RTX. Le opzioni che attivano DLSS restano disabilitate; la scansione non misura quale GPU sta usando il gioco.");
+        }
         if (!status.Adopted)
         {
-            Card("La copia esistente è pronta da registrare", "Conserva le impostazioni che hai già collaudato. Registrare questa copia salva i file di configurazione attuali e collega la variante all'originale in libreria. Non serve riestrarre Remix.");
+            Card("La copia esistente è pronta da registrare", status.LocalInstallation ? "Registra le impostazioni di questa cartella come punto di ripristino. EXE, DLL, asset, risoluzione e dxvk.conf restano conservati. Non serve collegare una copia originale."
+                : "Conserva le impostazioni che hai già collaudato. Registrare questa copia salva i file di configurazione attuali e collega la variante all'originale in libreria. Non serve riestrarre Remix.");
             _content.Children.Add(FxButton("Prepara registrazione della copia", "AdoptRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Adopt"), !_busy));
         }
         else
@@ -80,12 +97,15 @@ internal sealed partial class MainWindow
             SpaceDlssPanel(profile);
             _content.Children.Add(AssetPanel(profile, 20));
             if (status.Changed) Card("Modifiche da registrare", "Salva la configurazione attuale per registrare le impostazioni presenti e un eventuale cambio a un EXE identificato. Questa scelta aggiorna il punto di ripristino, senza riscrivere i file del gioco.");
-            var recommended = new StackPanel(); recommended.Children.Add(Text(RemixRecommendedProfile.Name, 17, Ink, FontWeights.SemiBold));
-            recommended.Children.Add(Text("Profilo derivato dal collaudo dell'utente: DLSS Auto, Ray Reconstruction Transformer e Frame Generation 4×. Include regolazioni di immagine e luci; applicarlo sostituisce i corrispondenti parametri personalizzati.", 12, Muted));
-            recommended.Children.Add(FxButton("Prepara profilo consigliato", "RecommendedRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Recommended"), !_busy && !status.Changed && MatchesRecommendedMachine));
-            if (!MatchesRecommendedMachine) recommended.Children.Add(Text("Questo profilo è riservato alla RTX 5080 Laptop con schermo selezionato 3440 × 1440. Puoi conservare la tua configurazione e usare i controlli disponibili.", 12, Muted));
-            SpaceDlssPanel(recommended);
-            _content.Children.Add(AssetPanel(recommended, 18));
+            if (!status.LocalInstallation)
+            {
+                var recommended = new StackPanel(); recommended.Children.Add(Text(RemixRecommendedProfile.Name, 17, Ink, FontWeights.SemiBold));
+                recommended.Children.Add(Text("Profilo derivato dal collaudo dell'utente: DLSS Auto, Ray Reconstruction Transformer e Frame Generation 4×. Include regolazioni di immagine e luci; applicarlo sostituisce i corrispondenti parametri personalizzati.", 12, Muted));
+                recommended.Children.Add(FxButton("Prepara profilo consigliato", "RecommendedRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Recommended"), !_busy && !status.Changed && MatchesRecommendedMachine));
+                if (!MatchesRecommendedMachine) recommended.Children.Add(Text("Questo profilo è riservato alla RTX 5080 Laptop con schermo selezionato 3440 × 1440. Puoi conservare la tua configurazione e usare i controlli disponibili.", 12, Muted));
+                SpaceDlssPanel(recommended);
+                _content.Children.Add(AssetPanel(recommended, 18));
+            }
             var controls = new StackPanel();
             controls.Children.Add(Text("Parametri DLSS", 20, Ink, FontWeights.SemiBold));
             controls.Children.Add(Text("Valori letti dai file locali, non misurazioni del renderer in esecuzione. I campi senza valore esplicito non confermano un valore attivo. «Lascia invariato» non modifica la relativa chiave.", 12, Muted));
@@ -97,12 +117,22 @@ internal sealed partial class MainWindow
                 [(null, "Lascia invariato"), (1, "Attivo"), (0, "Disattivo")], value => _dlssSettings = _dlssSettings with { RayReconstruction = value is null ? null : value == 1 }));
             settingsGrid.Children.Add(DlssChoice("Modello di ricostruzione", "DlssReconstructionModel", _dlssSettings.Transformer is bool transformer ? transformer ? 1 : 0 : null,
                 [(null, "Lascia invariato"), (1, "Transformer"), (0, "CNN")], value => _dlssSettings = _dlssSettings with { Transformer = value is null ? null : value == 1 }));
-            var frameChoices = HasMultiFrameHardware ? new (int?, string)[] { (null, "Lascia invariato"), (0, "Disattiva"), (1, "2×"), (2, "3×"), (3, "4×") }
+            if (status.LocalInstallation)
+            {
+                settingsGrid.Children[0].IsEnabled = HasDlssHardware && status.HasSuperResolution;
+                settingsGrid.Children[1].IsEnabled = HasDlssHardware && status.HasRayReconstruction;
+                settingsGrid.Children[2].IsEnabled = HasDlssHardware && status.HasRayReconstruction && status.HasTransformer;
+                controls.Children.Add(Text("Sono attivi solo i controlli con i componenti richiesti rilevati. Il modello Transformer richiede anche la relativa chiave dichiarata dal runtime. Le DLL presenti non provano che la funzione sia in uso.", 12, Muted));
+            }
+            var frameChoices = status.LocalInstallation
+                ? (HasFrameHardware && status.HasFrameGeneration ? new (int?, string)[] { (null, "Lascia invariato"), (0, "Disattiva"), (1, "2×") } : new (int?, string)[] { (null, "Lascia invariato"), (0, "Disattiva") })
+                : HasMultiFrameHardware ? new (int?, string)[] { (null, "Lascia invariato"), (0, "Disattiva"), (1, "2×"), (2, "3×"), (3, "4×") }
                 : [(null, "Lascia invariato"), (0, "Disattiva")];
             var fg = _dlssSettings.FrameGeneration == false ? 0 : _dlssSettings.FrameGeneration == true ? _dlssSettings.GeneratedFrames : null;
             settingsGrid.Children.Add(DlssChoice("Frame Generation", "DlssFrameGeneration", fg, frameChoices,
                 value => _dlssSettings = _dlssSettings with { FrameGeneration = value is null ? null : value > 0, GeneratedFrames = value is > 0 ? value : null }));
-            if (!HasMultiFrameHardware) controls.Children.Add(Text("L'attivazione della generazione multipla richiede hardware RTX 50 rilevato; la sua disponibilità effettiva dipende anche da runtime e driver.", 12, Muted));
+            if (status.LocalInstallation) controls.Children.Add(Text("Per questa installazione locale, 3× e 4× richiedono una verifica del runtime. Eventuali valori già presenti vengono conservati. Dopo l'applicazione verifica le opzioni con Alt+X.", 12, Muted));
+            else if (!HasMultiFrameHardware) controls.Children.Add(Text("L'attivazione della generazione multipla richiede hardware RTX 50 rilevato; la sua disponibilità effettiva dipende anche da runtime e driver.", 12, Muted));
             settingsGrid.Children.Add(DlssChoice("Reflex", "DlssReflex", _dlssSettings.Reflex,
                 [(null, "Lascia invariato"), (0, "Disattivo"), (1, "Attivo"), (2, "Attivo + Boost")], value => _dlssSettings = _dlssSettings with { Reflex = value }));
             controls.Children.Add(FxButton("Prepara modifiche DLSS", "PrepareRemixDlss", async (_, _) => await PrepareRemixManagedAsync("Apply"), !_busy && !status.Changed));

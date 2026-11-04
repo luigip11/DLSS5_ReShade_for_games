@@ -38,7 +38,7 @@ internal sealed partial class MainWindow
         if (!SelectedIsUnderground2 || SelectedIsRemix)
         {
             Card(SelectedIsRemix ? "Risoluzione della variante Remix" : "Risoluzione del gioco", SelectedIsRemix
-                ? "La copia conserva il Widescreen Fix del gioco originale. Scegli la risoluzione nelle opzioni video del gioco; il monitor selezionato resta salvato in GamePanel."
+                ? "La copia conserva il Widescreen Fix fornito con la mod. Su UG1 Remix il profilo modifica le dimensioni nell’INI esistente; verifica il risultato nel gioco."
                 : "Il metodo del profilo determina come viene richiesta la risoluzione. I giochi possono ignorare parametri non supportati: verifica sempre il risultato nelle opzioni video.");
             return;
         }

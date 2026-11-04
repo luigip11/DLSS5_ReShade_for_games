@@ -12,6 +12,8 @@ La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla s
 
 ## Changelog alpha.15
 
+- UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
+
 - Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
 - Metodo dedicato a Underground 1 con Widescreen Fix verificato; parametri di avvio Unity/Unreal e configurazioni INI/CFG personalizzate.
 - Recupero delle operazioni interrotte e conservazione delle modifiche esterne ai file di configurazione.

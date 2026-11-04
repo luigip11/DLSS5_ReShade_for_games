@@ -1,5 +1,7 @@
 # Candidato alpha.15 — risoluzione per gioco e nuovo EXE UG2
 
+UG1 Remix già installato: registrazione locale, backup/ripristino e controlli DLSS secondo i componenti rilevati, senza preset UG2. Risoluzione tramite ResX/ResY nell’INI della mod; GPU rilevate e accesso alle preferenze Windows. Nessun pacchetto o eseguibile del gioco è distribuito. Transformer e Multi Frame Generation non vengono dedotti dalla sola presenza del renderer.
+
 La pagina Schermo offre risoluzioni del monitor selezionato e profili separati per EXE. Underground 1 può installare il fix ThirteenAG verificato e impostare RES.cfg2; Unity e Unreal usano parametri di avvio, gli altri giochi possono usare un adattatore INI/CFG personalizzato. Anteprima, backup e recupero accompagnano le scritture. Il profilo non cambia la modalità di Windows né misura il rendering effettivo: i giochi devono supportare il metodo scelto. [Guida ai metodi](RESOLUTION-PROFILES.md).
 
 L’EXE incorpora l’icona GamePanel a più dimensioni. Il pacchetto raccoglie guide in Docs e licenze in Licenses, mantiene Assets separata e include il runtime negli eseguibili. Nella radice rimangono avvio, updater, guida rapida e i piccoli file di compatibilità richiesti dai precedenti client di aggiornamento. Estrarre in una cartella nuova per ottenere la disposizione aggiornata; gli aggiornamenti gestiti rimuovono i file obsoleti registrati senza toccare i dati personali.

@@ -9,6 +9,7 @@ public sealed record GameCapabilities(bool IsUnderground2, bool HasRemixRenderer
     bool SupportsReShade, bool SupportsWidescreen, bool SupportsDirectXTextures, bool SupportsTexWizard,
     string DisplayName, string RemixMessage)
 {
+    public bool IsUnderground1 { get; init; }
     public static GameCapabilities From(GameReport? report)
     {
         if (report is null) return new(false, false, false, false, false, false, false, "Nessun gioco selezionato", "Seleziona un gioco dalla libreria.");
@@ -22,7 +23,9 @@ public sealed record GameCapabilities(bool IsUnderground2, bool HasRemixRenderer
             var texWizard = candidate && TextureRuntimeCatalog.CheckGame(report) is null;
             var gameFolders = candidate && new[] { "GLOBAL", "TRACKS", "CARS" }.All(name => RegularDirectory(Path.Combine(root, name)));
             var underground = known || texWizard || gameFolders;
-            var renderer = candidate && KnownRemixRenderer(root);
+            var ug1 = Path.GetFileName(report.ExecutablePath).Equals("Speed.exe", StringComparison.OrdinalIgnoreCase)
+                && report.Sha256.Equals(Underground1DisplayFix.ExecutableSha256, StringComparison.OrdinalIgnoreCase);
+            var renderer = candidate && KnownRemixRenderer(root) || ug1 && Underground1RemixInstallation.HasRenderer(root);
             var trial = renderer && known && OwnedTrial(root);
             var safe = !report.HasAntiCheatIndicators && !report.ScanWasLimited;
             var legacy = !renderer && safe;
@@ -31,11 +34,12 @@ public sealed record GameCapabilities(bool IsUnderground2, bool HasRemixRenderer
                 underground && legacy && ReShadeProfileService.Eligibility(report, true) is null,
                 underground && legacy && DirectXTextureCatalog.CheckGame(report) is null,
                 underground && legacy && texWizard,
-                underground ? "Need for Speed Underground 2" : "Gioco selezionato",
+                underground ? "Need for Speed Underground 2" : ug1 ? "Need for Speed Underground" : "Gioco selezionato",
                 trial ? "Copia Remix riconosciuta. Puoi conservarne la configurazione e gestire il profilo."
+                    : renderer && ug1 ? "Installazione locale UG1 Remix rilevata. Registra la configurazione per gestire DLSS."
                     : renderer ? "Runtime Remix riconosciuto; la copia non dispone dei metadati GamePanel richiesti per gestirla."
                     : underground ? "Per questo gioco è disponibile una preparazione Remix su copia separata."
-                    : "Nessun percorso Remix verificato disponibile per questo gioco.");
+                    : "Nessun percorso Remix verificato disponibile per questo gioco.") { IsUnderground1 = ug1 };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or BadImageFormatException)
         { return new(false, false, false, false, false, false, false, "Gioco selezionato", "Disponibilità da verificare: " + e.Message); }

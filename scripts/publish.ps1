@@ -56,6 +56,7 @@ try {
     Copy-Item docs/REMIX-0.4-INVENTORY.md (Join-Path $portable 'REMIX-0.4-INVENTORY.md')
     Copy-Item docs/GAME-PROFILES.md (Join-Path $portable 'GAME-PROFILES.md')
     Copy-Item docs/RESOLUTION-PROFILES.md (Join-Path $portable 'RESOLUTION-PROFILES.md')
+    Copy-Item docs/UG1-REMIX.md (Join-Path $portable 'UG1-REMIX.md')
     Copy-Item docs/REMIX-TRIAL.md (Join-Path $portable 'REMIX-TRIAL.md')
     Copy-Item docs/REMIX-COMPONENT-REVIEW.md (Join-Path $portable 'REMIX-COMPONENT-REVIEW.md')
     Copy-Item docs/SHARPCOMPRESS-LICENSE.txt (Join-Path $portable 'LICENSE-SharpCompress.txt')
@@ -75,6 +76,7 @@ try {
     [IO.Directory]::CreateDirectory($licenses) | Out-Null
     Get-ChildItem -LiteralPath $portable -File -Filter '*.md' | Move-Item -Destination $docs
     Get-ChildItem -LiteralPath $portable -File -Filter '*.txt' | Where-Object { $_.Name -ne 'LEGGIMI.txt' } | Move-Item -Destination $licenses
+    Copy-Item (Join-Path $PSScriptRoot 'diagnose-ug1.ps1') (Join-Path $docs 'Diagnosi-UG1.ps1')
     & (Join-Path $PSScriptRoot 'check-package-layout.ps1') -PackageDirectory $portable
     $manifest = Get-ChildItem -LiteralPath $portable -File -Recurse | Sort-Object FullName | ForEach-Object {
         $relative = $_.FullName.Substring($portable.Length + 1).Replace('\', '/')

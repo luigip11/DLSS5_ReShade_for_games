@@ -69,7 +69,15 @@ internal sealed partial class MainWindow
             _resolutionDraft = _resolutionState?.Options ?? new(ResolutionMethod.Ini, display.TargetWidth, display.TargetHeight, display.Id);
             if (_resolutionDraft.DisplayId != display.Id) _resolutionDraft = _resolutionDraft with { Width = display.TargetWidth, Height = display.TargetHeight, DisplayId = display.Id };
             _resolutionMethod = _resolutionState?.Options.Method;
-            if (_resolutionState is null && _report.Sha256 == Underground1DisplayFix.ExecutableSha256) _resolutionMethod = ResolutionMethod.Underground1;
+            if (_resolutionState is null && _report.Sha256 == Underground1DisplayFix.ExecutableSha256)
+            {
+                if (SelectedIsRemix)
+                {
+                    _resolutionMethod = ResolutionMethod.Ini;
+                    _resolutionDraft = _resolutionDraft with { Method = ResolutionMethod.Ini, ConfigPath = Path.Combine(Path.GetDirectoryName(_report.ExecutablePath)!, "scripts", "NFSUnderground.WidescreenFix.ini"), Section = "MAIN", WidthKey = "ResX", HeightKey = "ResY" };
+                }
+                else _resolutionMethod = ResolutionMethod.Underground1;
+            }
             var root = Path.GetDirectoryName(_report.ExecutablePath)!;
             if (_resolutionState is null && _resolutionMethod is null && File.Exists(Path.Combine(root, "UnityPlayer.dll"))
                 && Directory.Exists(Path.Combine(root, Path.GetFileNameWithoutExtension(_report.ExecutablePath) + "_Data"))) _resolutionMethod = ResolutionMethod.Unity;
@@ -89,13 +97,14 @@ internal sealed partial class MainWindow
         mode.SelectionChanged += (_, _) => { if (mode.SelectedItem is DisplayCatalog.ResolutionSize value) { _resolutionDraft = _resolutionDraft! with { Width = value.Width, Height = value.Height }; InvalidateResolution(); } };
         body.Children.Add(mode);
         var choices = new List<ResolutionChoice> { new(null, "Scegli il metodo compatibile") };
-        if (_report.Sha256 == Underground1DisplayFix.ExecutableSha256) choices.Add(new(ResolutionMethod.Underground1, "Underground 1 · fix verificato"));
+        if (_report.Sha256 == Underground1DisplayFix.ExecutableSha256 && !SelectedIsRemix) choices.Add(new(ResolutionMethod.Underground1, "Underground 1 · fix verificato"));
         choices.AddRange([new(ResolutionMethod.Unity, "Unity · parametri di avvio"), new(ResolutionMethod.Unreal, "Unreal · parametri di avvio"), new(ResolutionMethod.Ini, "Configurazione INI/CFG · personalizzata")]);
         body.Children.Add(Text("METODO DI APPLICAZIONE", 10, Muted, FontWeights.SemiBold));
         var method = new ComboBox { ItemsSource = choices, DisplayMemberPath = nameof(ResolutionChoice.Label), SelectedIndex = Math.Max(0, choices.FindIndex(c => c.Method == _resolutionMethod)), IsEnabled = !_busy, Margin = new Thickness(0, 8, 0, 14) };
         System.Windows.Automation.AutomationProperties.SetAutomationId(method, "GameResolutionMethod");
         method.SelectionChanged += (_, _) => { if (method.SelectedItem is ResolutionChoice value) { _resolutionMethod = value.Method; InvalidateResolution(); Render(); } };
         body.Children.Add(method);
+        if (SelectedIsUnderground1 && SelectedIsRemix) body.Children.Add(Text("UG1 Remix usa il proprio Widescreen Fix: vengono aggiornate soltanto ResX e ResY nell'INI esistente. Non viene installato il fix del gioco originale. Per conservare una risoluzione già funzionante, non applicare un nuovo profilo.", 12, Muted));
         if (_resolutionMethod == ResolutionMethod.Underground1)
             body.Children.Add(Text("Installa il Widescreen Fix UG1 verificato e salva le dimensioni in RES.cfg2. EXE, ReShade, lingua e salvataggi restano separati. La combinazione sul tuo PC richiede una prova nel gioco.", 12, Muted));
         else if (_resolutionMethod is ResolutionMethod.Unity or ResolutionMethod.Unreal)

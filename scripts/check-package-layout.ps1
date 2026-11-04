@@ -29,3 +29,7 @@ foreach ($name in @('GamePanel.exe', 'GamePanel.Updater.exe')) {
     } finally { $bitmap.Dispose(); $icon.Dispose() }
 }
 Write-Host 'PASS portable layout: bundled runtimes, organized Docs/Licenses/Assets, legacy updater entry files and embedded brand icons'
+
+$syntaxTokens = $null; $syntaxErrors = $null
+[Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'Docs/Diagnosi-UG1.ps1'), [ref]$syntaxTokens, [ref]$syntaxErrors) | Out-Null
+if ($syntaxErrors.Count -gt 0) { throw ('UG1 diagnostic script syntax: ' + ($syntaxErrors.Message -join '; ')) }

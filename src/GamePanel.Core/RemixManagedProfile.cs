@@ -10,7 +10,8 @@ public sealed record RemixDlssSettings(int? Upscaler = null, int? DlssMode = nul
     bool? Transformer = null, bool? FrameGeneration = null, int? GeneratedFrames = null, int? Reflex = null);
 public sealed record RemixManagedVariant(string OriginalExecutablePath, string RemixExecutablePath);
 public sealed record RemixManagedStatus(bool Supported, bool Adopted, bool Pending, bool Changed, string Message,
-    string? OriginalExecutablePath, RemixDlssSettings Settings);
+    string? OriginalExecutablePath, RemixDlssSettings Settings, bool LocalInstallation = false,
+    bool HasSuperResolution = false, bool HasRayReconstruction = false, bool HasFrameGeneration = false, bool HasTransformer = false);
 public sealed record RemixManagedChange(string Path, string? BeforeSha256, string? AfterSha256);
 public sealed record RemixSettingChange(string Path, string Key, string? Before, string? After);
 public sealed class RemixManagedPlan
@@ -27,7 +28,11 @@ public sealed class RemixManagedPlan
     public string ExecutableSha256 => Identity.ExecutableHash;
     public IReadOnlyList<RemixManagedChange> Changes { get; }
     public IReadOnlyList<RemixSettingChange> SettingChanges { get; }
-    public IReadOnlyList<string> Warnings => ["La copia può condividere salvataggi e registro con l'originale.",
+    public IReadOnlyList<string> Warnings => Identity.Executable == Identity.Original
+        ? ["Installazione locale: la registrazione non certifica la versione della mod né le funzioni del runtime.",
+            "Si modificano solo rtx.conf e user.conf. EXE, runtime, asset, dxvk.conf e risoluzione restano conservati.",
+            "Verifica nel pannello Remix le opzioni effettive dopo il riavvio."]
+        : ["La copia può condividere salvataggi e registro con l'originale.",
         "Il profilo consigliato combina il file utente con le scelte confermate nel pannello; non certifica prestazioni su altri PC.",
         "Le impostazioni salvate non provano le opzioni effettive durante l'esecuzione; controllarle nel pannello Remix dopo il riavvio."];
     internal string Owner { get; }
@@ -49,7 +54,8 @@ public sealed class RemixManagedService
     private readonly string _store, _owner = Guid.NewGuid().ToString("N");
     private readonly Func<string, bool> _running;
     private readonly Pins _pins;
-    internal sealed record Pins(string Executable, string Client, string Bridge, string Archive, string? AlternateExecutable = null);
+    internal sealed record Pins(string Executable, string Client, string Bridge, string Archive, string? AlternateExecutable = null,
+        string Underground1Executable = Underground1DisplayFix.ExecutableSha256);
     internal sealed record Identity(string Executable, string Original, string ExecutableHash, string MarkerHash);
     internal sealed record ConfigFile(string Path, byte[]? Bytes, string? Sha256);
     internal sealed record SavedState(int SchemaVersion, string Revision, string ExecutablePath, string OriginalExecutablePath,
@@ -74,12 +80,15 @@ public sealed class RemixManagedService
             var live = ReadConfigs(Path.GetDirectoryName(executable)!);
             var executableChanged = state is not null && !Same(state.ExecutableSha256, identity.ExecutableHash);
             var changed = state is not null && (!SameFiles(state.Current, live) || executableChanged);
+            var local = IsUnderground1(executable, identity.ExecutableHash);
             return new(true, state is not null, pending, changed,
                 pending ? "Operazione Remix interrotta: riprendi o annulla."
                 : state is null ? "Copia Remix riconosciuta. Adottala per salvare e gestire il profilo."
                 : executableChanged ? "Nuovo EXE identificato: usa Salva configurazione attuale per registrare il cambio con anteprima. La compatibilità di Remix nel gioco resta da collaudare."
                 : changed ? "Configurazione cambiata fuori da GamePanel: salva la configurazione attuale prima di applicare altre modifiche."
-                : "Profilo Remix gestito. Le impostazioni effettive vanno verificate nel gioco.", identity.Original, ReadSettings(live));
+                : "Profilo Remix gestito. Le impostazioni effettive vanno verificate nel gioco.", identity.Original, ReadSettings(live), local,
+                local && HasLocalDll(executable, "nvngx_dlss.dll"), local && HasLocalDll(executable, "nvngx_dlssd.dll"), local && HasLocalDll(executable, "nvngx_dlssg.dll"),
+                local && live.Any(f => f.Bytes is not null && Parse(f.Bytes).ContainsKey("rtx.rayreconstruction.enableTransformerModelD")));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or JsonException or BadImageFormatException or KeyNotFoundException or InvalidOperationException or FormatException)
         { return new(false, false, false, false, e.Message, null, new()); }
@@ -97,7 +106,7 @@ public sealed class RemixManagedService
                 GuardPath(folder); var path = Path.Combine(folder, StateName); if (!File.Exists(path)) continue;
                 var state = ReadJson<SavedState>(path, StateLimit); ValidateState(state, state.ExecutablePath);
                 if (!SamePath(Folder(state.ExecutablePath), folder)) continue;
-                result.Add(new(state.OriginalExecutablePath, state.ExecutablePath));
+                if (!SamePath(state.OriginalExecutablePath, state.ExecutablePath)) result.Add(new(state.OriginalExecutablePath, state.ExecutablePath));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or JsonException) { }
         }
@@ -133,6 +142,11 @@ public sealed class RemixManagedService
         if (action == "Restore") after = captured;
         if (action == "Apply")
         {
+            if (IsUnderground1(executable, identity.ExecutableHash))
+            {
+                if (recommended) throw Invalid("Il profilo consigliato UG2 non è applicabile a Underground 1.");
+                ValidateLocalSettings(executable, before, settings);
+            }
             var edits = recommended ? RemixRecommendedProfile.Values.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal)
                 : new Dictionary<string, string>(StringComparer.Ordinal);
             if (settings is not null) foreach (var pair in SettingValues(settings)) edits[pair.Key] = pair.Value;
@@ -225,8 +239,15 @@ public sealed class RemixManagedService
     {
         GuardPath(executable); var root = Path.GetDirectoryName(executable)!; _ = Folder(executable);
         var executableHash = FileHash(executable, 64 * 1024 * 1024, token);
+        if (IsUnderground1(executable, executableHash))
+        {
+            if (expected is not null && !Same(expected, executableHash)) throw Invalid("EXE UG1 cambiato dall'analisi.");
+            var game = PeInspector.Read(executable);
+            if (game.IsDll || game.Architecture != "x86 (32 bit)" || !game.Imports.Contains("d3d9.dll", StringComparer.OrdinalIgnoreCase)) throw Invalid("EXE UG1 non compatibile.");
+            return new(executable, executable, executableHash, Underground1RemixInstallation.Fingerprint(root, token));
+        }
         if (!Path.GetFileName(executable).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
-            || !KnownExecutable(executableHash) || expected is not null && !Same(expected, executableHash))
+            || !KnownUnderground2(executableHash) || expected is not null && !Same(expected, executableHash))
             throw Invalid("EXE Underground 2 non identificato per la gestione della configurazione Remix.");
         var pe = PeInspector.Read(executable);
         if (pe.IsDll || pe.Architecture != "x86 (32 bit)" || !pe.Imports.Contains("d3d9.dll", StringComparer.OrdinalIgnoreCase)) throw Invalid("EXE Remix non compatibile.");
@@ -242,7 +263,7 @@ public sealed class RemixManagedService
         originalFolder = Path.GetFullPath(originalFolder); GuardPath(originalFolder);
         if (Inside(root, originalFolder) || Inside(originalFolder, root) || Inside(originalFolder, _store) || Inside(_store, originalFolder)) throw Invalid("Sorgente e copia Remix non separate.");
         var original = GameFile(originalFolder, Path.GetFileName(executable));
-        if (!KnownExecutable(FileHash(original, 64 * 1024 * 1024, token))) throw Invalid("L'originale associato è mancante o non identificato: ricollega una copia identificata.");
+        if (!KnownUnderground2(FileHash(original, 64 * 1024 * 1024, token))) throw Invalid("L'originale associato è mancante o non identificato: ricollega una copia identificata.");
         foreach (var (path, hash) in new[] { ("d3d9.dll", _pins.Client), (".trex/NvRemixBridge.exe", _pins.Bridge) })
         {
             var matches = m.GetProperty("Files").EnumerateArray().Where(f => f.GetProperty("RelativePath").GetString() == path).ToArray();
@@ -349,7 +370,8 @@ public sealed class RemixManagedService
     private void ValidateState(SavedState state, string executable)
     {
         if (state is null || state.SchemaVersion != 1 || !ValidId(state.Revision) || !SamePath(state.ExecutablePath, executable) || !Path.IsPathFullyQualified(state.OriginalExecutablePath)
-            || !KnownExecutable(state.ExecutableSha256) || !ValidHash(state.MarkerSha256) || SamePath(state.OriginalExecutablePath, executable))
+            || !KnownExecutable(state.ExecutableSha256) || !ValidHash(state.MarkerSha256)
+            || (SamePath(state.OriginalExecutablePath, executable) != IsUnderground1(executable, state.ExecutableSha256)))
             throw Invalid("Stato Remix non valido.");
         ValidateFiles(state.Captured); ValidateFiles(state.Current);
     }
@@ -411,7 +433,21 @@ public sealed class RemixManagedService
     private static string Full(string path) => Path.GetFullPath(ExecutablePath.Normalize(path));
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
-    private bool KnownExecutable(string hash) => Same(hash, _pins.Executable)
+    private bool IsUnderground1(string executable, string hash) => Path.GetFileName(executable).Equals("Speed.exe", StringComparison.OrdinalIgnoreCase)
+        && Same(hash, _pins.Underground1Executable);
+    private static bool HasLocalDll(string executable, string name) => Underground1RemixInstallation.HasDlssFile(Path.GetDirectoryName(executable)!, name);
+    private static void ValidateLocalSettings(string executable, IReadOnlyList<ConfigFile> files, RemixDlssSettings? settings)
+    {
+        if (settings is null) return;
+        if ((settings.Upscaler is not null || settings.DlssMode is not null) && !HasLocalDll(executable, "nvngx_dlss.dll")) throw Invalid("Libreria DLSS Super Resolution non rilevata nel runtime UG1.");
+        if (settings.RayReconstruction == true && !HasLocalDll(executable, "nvngx_dlssd.dll")) throw Invalid("Libreria Ray Reconstruction non rilevata nel runtime UG1.");
+        if (settings.Transformer is not null && !files.Any(f => f.Bytes is not null && Parse(f.Bytes).ContainsKey("rtx.rayreconstruction.enableTransformerModelD")))
+            throw Invalid("Il runtime UG1 non dichiara il parametro Transformer: configuralo prima nel pannello Remix se disponibile.");
+        if (settings.FrameGeneration == true && !HasLocalDll(executable, "nvngx_dlssg.dll")) throw Invalid("Libreria Frame Generation non rilevata nel runtime UG1.");
+        if (settings.GeneratedFrames is > 1 || settings.FrameGeneration == true && (settings.GeneratedFrames ?? ReadSettings(files).GeneratedFrames) is > 1) throw Invalid("La compatibilità Multi Frame Generation del runtime UG1 non è verificata. Usa 2× o il pannello Remix.");
+    }
+    private bool KnownExecutable(string hash) => KnownUnderground2(hash) || Same(hash, _pins.Underground1Executable);
+    private bool KnownUnderground2(string hash) => Same(hash, _pins.Executable)
         || _pins.AlternateExecutable is not null && Same(hash, _pins.AlternateExecutable);
     private static bool SamePath(string? a, string? b) => string.Equals(a, b,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
