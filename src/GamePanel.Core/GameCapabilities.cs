@@ -98,7 +98,11 @@ public static class GameLibraryVariants
     {
         var comparison = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var byPath = snapshot.Games.ToDictionary(g => g.ExecutablePath, comparison);
-        var pairs = registered.Where(p => p.OriginalExecutablePath is not null && p.RemixExecutablePath is not null
+        var byId = snapshot.Games.ToDictionary(g => g.Id, StringComparer.Ordinal);
+        var explicitLinks = (snapshot.Variants ?? []).Where(v => byId.ContainsKey(v.OriginalId) && byId.ContainsKey(v.VariantId))
+            .Select(v => (OriginalExecutablePath: byId[v.OriginalId].ExecutablePath, RemixExecutablePath: byId[v.VariantId].ExecutablePath)).ToArray();
+        var explicitCopies = explicitLinks.Select(v => v.RemixExecutablePath).ToHashSet(comparison);
+        var pairs = registered.Where(p => !explicitCopies.Contains(p.RemixExecutablePath)).Concat(explicitLinks).Where(p => p.OriginalExecutablePath is not null && p.RemixExecutablePath is not null
             && byPath.ContainsKey(p.OriginalExecutablePath) && byPath.ContainsKey(p.RemixExecutablePath)
             && !comparison.Equals(p.OriginalExecutablePath, p.RemixExecutablePath)).Distinct().ToArray();
         var ambiguous = pairs.GroupBy(p => p.RemixExecutablePath, comparison)

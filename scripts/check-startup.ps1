@@ -515,6 +515,37 @@ try {
     }
     Invoke-Button 'LibraryPage'
     $savedBefore = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    $variantCopy = @($savedBefore.Games | Where-Object { $_.ExecutablePath -eq $fixtureExe })[0]
+    $variantParent = @($savedBefore.Games | Where-Object { $_.Id -ne $variantCopy.Id })[0]
+    if ($null -eq $variantCopy -or $null -eq $variantParent) { throw 'Expected two library entries for explicit variant checks.' }
+    Invoke-Button ('LibraryLinkVariant-' + $variantCopy.Id)
+    function Find-VariantDialogControl([string]$Id) {
+        $condition = [Windows.Automation.AndCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $Id))
+        return [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+    }
+    Wait-Until { $null -ne (Find-VariantDialogControl 'LibraryVariantParent') } 'explicit original-game picker'
+    if ((Find-VariantDialogControl 'ConfirmLibraryVariantLink').Current.IsEnabled) { throw 'Variant parent was selected without user choice.' }
+    (Find-VariantDialogControl 'LibraryVariantParent').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $parentName = $variantParent.Title + ' ' + [char]0x00b7 + ' ' + $variantParent.ExecutablePath
+    $parentCondition = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $parentName))
+    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $parentCondition) } 'variant original choice'
+    $parentChoice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $parentCondition)
+    $parentChoice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    (Find-VariantDialogControl 'ConfirmLibraryVariantLink').GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Wait-Until { $null -ne (Find-Element ('LibraryVariant-' + $variantParent.Id)) } 'one library card with variant selector'
+    $linked = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    if (@($linked.Variants).Count -ne 1 -or $linked.Variants[0].OriginalId -ne $variantParent.Id -or $linked.Variants[0].VariantId -ne $variantCopy.Id -or @($linked.Games).Count -ne @($savedBefore.Games).Count) { throw 'Explicit variant relationship or library entries mismatch.' }
+    Invoke-Button ('LibraryOpen-' + $variantParent.Id)
+    Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'group original analysis'
+    Invoke-Button 'LibraryPage'
+    $persisted = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    if (@($persisted.Variants).Count -ne 1) { throw 'Reanalysis dropped explicit variant relationship.' }
+    Write-Host 'PASS GUI explicit Remix association: user chooses original, one card with variant selector, entries preserved across reanalysis'
     Invoke-Button 'DeselectLibraryGame'
     Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Nessun gioco selezionato' } 'deselect analyzed game'
     $savedAfter = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json

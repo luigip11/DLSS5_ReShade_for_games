@@ -6,7 +6,9 @@ namespace GamePanel.Core;
 public sealed record LibraryGame(string Id, string Title, string ExecutablePath, string Sha256,
     string Architecture, IReadOnlyList<string> GraphicsApis, DateTimeOffset AddedAt,
     DateTimeOffset LastInspectedAt, DateTimeOffset? LastPlayedAt, bool CustomTitle = false);
-public sealed record LibrarySnapshot(int SchemaVersion, string? SelectedId, IReadOnlyList<LibraryGame> Games);
+public sealed record LibraryVariantLink(string OriginalId, string VariantId);
+public sealed record LibrarySnapshot(int SchemaVersion, string? SelectedId, IReadOnlyList<LibraryGame> Games,
+    IReadOnlyList<LibraryVariantLink>? Variants = null);
 
 /// <summary>Local metadata only. Opening a library never analyzes or executes saved paths.</summary>
 public sealed class GameLibrary
@@ -42,7 +44,7 @@ public sealed class GameLibrary
             var game = new LibraryGame(existing?.Id ?? Guid.NewGuid().ToString("N"), title, path, report.Sha256,
                 report.Architecture, report.GraphicsApis.ToArray(), existing?.AddedAt ?? DateTimeOffset.UtcNow,
                 report.InspectedAt, existing?.LastPlayedAt, existing?.CustomTitle ?? false);
-            return new(1, game.Id, snapshot.Games.Where(g => g.Id != game.Id).Append(game).ToArray());
+            return snapshot with { SelectedId = game.Id, Games = snapshot.Games.Where(g => g.Id != game.Id).Append(game).ToArray() };
         });
     }
     public LibrarySnapshot Rename(string id, string title)
@@ -55,7 +57,19 @@ public sealed class GameLibrary
         });
     }
     public LibrarySnapshot Remove(string id) => Change(snapshot => snapshot with
-    { SelectedId = snapshot.SelectedId == id ? null : snapshot.SelectedId, Games = snapshot.Games.Where(g => g.Id != id).ToArray() });
+    { SelectedId = snapshot.SelectedId == id ? null : snapshot.SelectedId, Games = snapshot.Games.Where(g => g.Id != id).ToArray(),
+        Variants = snapshot.Variants?.Where(v => v.OriginalId != id && v.VariantId != id).ToArray() });
+    /// <summary>Explicit relationship only; never guesses parentage from file names or matching hashes.</summary>
+    public LibrarySnapshot LinkRemixVariant(string originalId, string variantId) => Change(snapshot =>
+    {
+        if (originalId == variantId || !snapshot.Games.Any(g => g.Id == originalId) || !snapshot.Games.Any(g => g.Id == variantId))
+            throw new InvalidDataException("Scegli due giochi distinti già importati.");
+        var links = snapshot.Variants ?? [];
+        if (links.Any(v => v.VariantId == originalId || v.OriginalId == variantId)) throw new InvalidDataException("Le varianti devono essere collegate direttamente all'originale, senza gruppi annidati.");
+        return snapshot with { Variants = links.Where(v => v.VariantId != variantId).Append(new(originalId, variantId)).ToArray() };
+    });
+    public LibrarySnapshot UnlinkRemixVariant(string variantId) => Change(snapshot => snapshot with
+    { Variants = snapshot.Variants?.Where(v => v.VariantId != variantId).ToArray() });
     public LibrarySnapshot ClearSelection() => Change(snapshot => snapshot with { SelectedId = null });
     public LibrarySnapshot Select(string id) => Change(snapshot =>
     {
@@ -102,6 +116,12 @@ public sealed class GameLibrary
                 || !paths.Add(g.ExecutablePath) || string.IsNullOrWhiteSpace(g.Architecture) || g.Architecture.Length > 80
                 || g.GraphicsApis is null || g.GraphicsApis.Count > 16 || g.GraphicsApis.Any(a => string.IsNullOrWhiteSpace(a) || a.Length > 80 || a.Any(char.IsControl)))
                 throw new InvalidDataException("Voce della libreria non valida: il file viene conservato.");
+        }
+        if (value.Variants is { } links)
+        {
+            if (links.Count > MaximumGames || links.Any(v => v is null || v.OriginalId == v.VariantId || !ids.Contains(v.OriginalId) || !ids.Contains(v.VariantId))
+                || links.Select(v => v.VariantId).Distinct(StringComparer.Ordinal).Count() != links.Count
+                || links.Any(v => links.Any(other => other.VariantId == v.OriginalId))) throw new InvalidDataException("Collegamenti delle varianti non validi.");
         }
         if (value.SelectedId is not null && !ids.Contains(value.SelectedId)) throw new InvalidDataException("Selezione della libreria non valida.");
     }

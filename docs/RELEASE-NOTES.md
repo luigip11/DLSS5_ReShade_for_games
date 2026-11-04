@@ -1,5 +1,7 @@
 # Candidato alpha.15 — risoluzione per gioco e nuovo EXE UG2
 
+La libreria consente di collegare esplicitamente una copia Remix al gioco originale, mantenendo una sola scheda con selettore Originale/Remix. Il collegamento è reversibile, persistente dopo rianalisi e non richiede modifiche a file o journal del gioco.
+
 UG1 Remix già installato: registrazione locale, backup/ripristino e controlli DLSS secondo i componenti rilevati, senza preset UG2. Risoluzione tramite ResX/ResY nell’INI della mod; GPU rilevate e accesso alle preferenze Windows. Nessun pacchetto o eseguibile del gioco è distribuito. Transformer e Multi Frame Generation non vengono dedotti dalla sola presenza del renderer.
 
 La pagina Schermo offre risoluzioni del monitor selezionato e profili separati per EXE. Underground 1 può installare il fix ThirteenAG verificato e impostare RES.cfg2; Unity e Unreal usano parametri di avvio, gli altri giochi possono usare un adattatore INI/CFG personalizzato. Anteprima, backup e recupero accompagnano le scritture. Il profilo non cambia la modalità di Windows né misura il rendering effettivo: i giochi devono supportare il metodo scelto. [Guida ai metodi](RESOLUTION-PROFILES.md).

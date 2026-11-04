@@ -12,6 +12,7 @@ La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla s
 
 ## Changelog alpha.15
 
+- Collegamento esplicito delle copie Remix all’originale in libreria, con selettore Originale/Remix e separazione reversibile.
 - UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
 
 - Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
