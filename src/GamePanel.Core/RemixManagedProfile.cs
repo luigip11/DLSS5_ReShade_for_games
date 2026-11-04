@@ -23,6 +23,8 @@ public sealed class RemixManagedPlan
         SettingChanges = RemixManagedService.ConfigurationChanges(before, after); }
     public string Action { get; }
     public string ExecutablePath => Report.ExecutablePath;
+    public string? PreviousExecutableSha256 => Previous?.ExecutableSha256;
+    public string ExecutableSha256 => Identity.ExecutableHash;
     public IReadOnlyList<RemixManagedChange> Changes { get; }
     public IReadOnlyList<RemixSettingChange> SettingChanges { get; }
     public IReadOnlyList<string> Warnings => ["La copia può condividere salvataggi e registro con l'originale.",
@@ -47,7 +49,7 @@ public sealed class RemixManagedService
     private readonly string _store, _owner = Guid.NewGuid().ToString("N");
     private readonly Func<string, bool> _running;
     private readonly Pins _pins;
-    internal sealed record Pins(string Executable, string Client, string Bridge, string Archive);
+    internal sealed record Pins(string Executable, string Client, string Bridge, string Archive, string? AlternateExecutable = null);
     internal sealed record Identity(string Executable, string Original, string ExecutableHash, string MarkerHash);
     internal sealed record ConfigFile(string Path, byte[]? Bytes, string? Sha256);
     internal sealed record SavedState(int SchemaVersion, string Revision, string ExecutablePath, string OriginalExecutablePath,
@@ -57,7 +59,7 @@ public sealed class RemixManagedService
     public RemixManagedService(string? store = null, Func<string, bool>? running = null)
         : this(store ?? ReShadeProfileService.DefaultStore, running ?? IsGameRunning,
             new(RemixTrialService.WorkingExecutableSha256, RemixTrialService.ClientSha256,
-                "4a9acb0191a78a48afb92879de372c807887294e40503ddb3d9530605142a911", RemixComponentBundle.SourceSha256)) { }
+                "4a9acb0191a78a48afb92879de372c807887294e40503ddb3d9530605142a911", RemixComponentBundle.SourceSha256, RemixExecutableCatalog.NoCdSha256)) { }
     internal RemixManagedService(string store, Func<string, bool> running, Pins pins)
     { _store = Path.GetFullPath(store); _running = running; _pins = pins; }
 
@@ -70,10 +72,12 @@ public sealed class RemixManagedService
             var state = LoadState(folder, executable); var pending = LoadOperation(folder, executable)?.Status == "Pending";
             if (state is not null && (state.MarkerSha256 != identity.MarkerHash || !SamePath(state.OriginalExecutablePath, identity.Original))) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
             var live = ReadConfigs(Path.GetDirectoryName(executable)!);
-            var changed = state is not null && !SameFiles(state.Current, live);
+            var executableChanged = state is not null && !Same(state.ExecutableSha256, identity.ExecutableHash);
+            var changed = state is not null && (!SameFiles(state.Current, live) || executableChanged);
             return new(true, state is not null, pending, changed,
                 pending ? "Operazione Remix interrotta: riprendi o annulla."
                 : state is null ? "Copia Remix riconosciuta. Adottala per salvare e gestire il profilo."
+                : executableChanged ? "Nuovo EXE identificato: usa Salva configurazione attuale per registrare il cambio con anteprima. La compatibilità di Remix nel gioco resta da collaudare."
                 : changed ? "Configurazione cambiata fuori da GamePanel: salva la configurazione attuale prima di applicare altre modifiche."
                 : "Profilo Remix gestito. Le impostazioni effettive vanno verificate nel gioco.", identity.Original, ReadSettings(live));
         }
@@ -121,6 +125,8 @@ public sealed class RemixManagedService
         if (previous is not null && (previous.MarkerSha256 != identity.MarkerHash || !SamePath(previous.OriginalExecutablePath, identity.Original))) throw Invalid("Il manifest della copia è cambiato dopo l'adozione.");
         if (action == "Adopt" && previous is not null) throw Invalid("Copia già adottata: usa Salva configurazione attuale.");
         if (action != "Adopt" && previous is null) throw Invalid("Adotta prima la copia Remix esistente.");
+        if (previous is not null && !Same(previous.ExecutableSha256, identity.ExecutableHash) && action != "Capture")
+            throw Invalid("EXE cambiato: registra prima il cambio con Salva configurazione attuale.");
         if (action is "Apply" or "Restore" && !SameFiles(previous!.Current, before)) throw Invalid("Configurazione cambiata: salva la configurazione attuale prima di applicare modifiche.");
         var captured = action is "Adopt" or "Capture" ? before : previous!.Captured;
         IReadOnlyList<ConfigFile> after = before;
@@ -218,9 +224,10 @@ public sealed class RemixManagedService
     private Identity VerifyIdentityCore(string executable, string? expected, CancellationToken token)
     {
         GuardPath(executable); var root = Path.GetDirectoryName(executable)!; _ = Folder(executable);
+        var executableHash = FileHash(executable, 64 * 1024 * 1024, token);
         if (!Path.GetFileName(executable).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
-            || expected is not null && !Same(expected, _pins.Executable) || !Same(FileHash(executable, 64 * 1024 * 1024, token), _pins.Executable))
-            throw Invalid("Questa gestione richiede la copia Remix del CD EXE Underground 2 identificato.");
+            || !KnownExecutable(executableHash) || expected is not null && !Same(expected, executableHash))
+            throw Invalid("EXE Underground 2 non identificato per la gestione della configurazione Remix.");
         var pe = PeInspector.Read(executable);
         if (pe.IsDll || pe.Architecture != "x86 (32 bit)" || !pe.Imports.Contains("d3d9.dll", StringComparer.OrdinalIgnoreCase)) throw Invalid("EXE Remix non compatibile.");
         var marker = GameFile(root, Marker); var bytes = ReadBytes(marker, 24 * 1024 * 1024);
@@ -235,7 +242,7 @@ public sealed class RemixManagedService
         originalFolder = Path.GetFullPath(originalFolder); GuardPath(originalFolder);
         if (Inside(root, originalFolder) || Inside(originalFolder, root) || Inside(originalFolder, _store) || Inside(_store, originalFolder)) throw Invalid("Sorgente e copia Remix non separate.");
         var original = GameFile(originalFolder, Path.GetFileName(executable));
-        if (!Same(FileHash(original, 64 * 1024 * 1024, token), _pins.Executable)) throw Invalid("L'originale associato è mancante o cambiato: ricollega una copia identificata.");
+        if (!KnownExecutable(FileHash(original, 64 * 1024 * 1024, token))) throw Invalid("L'originale associato è mancante o non identificato: ricollega una copia identificata.");
         foreach (var (path, hash) in new[] { ("d3d9.dll", _pins.Client), (".trex/NvRemixBridge.exe", _pins.Bridge) })
         {
             var matches = m.GetProperty("Files").EnumerateArray().Where(f => f.GetProperty("RelativePath").GetString() == path).ToArray();
@@ -249,7 +256,7 @@ public sealed class RemixManagedService
         if (!ValidHash(serverHash) || serverBytes is < 1 or > 64 * 1024 * 1024 || new FileInfo(server).Length != serverBytes
             || !Same(FileHash(server, 64 * 1024 * 1024, token), serverHash!)) throw Invalid("Runtime server Remix cambiato dalla copia identificata.");
         if (File.Exists(GameFile(root, "scripts/NFSU2AntiCull.asi"))) throw Invalid("AntiCull ASI non è compatibile con questo profilo.");
-        return new(executable, original, _pins.Executable, Hash(bytes));
+        return new(executable, original, executableHash, Hash(bytes));
     }
     private static IReadOnlyList<ConfigFile> ReadConfigs(string root) => ConfigPaths.Select(p => ReadConfig(root, p)).ToArray();
     private static ConfigFile ReadConfig(string root, string path)
@@ -342,20 +349,23 @@ public sealed class RemixManagedService
     private void ValidateState(SavedState state, string executable)
     {
         if (state is null || state.SchemaVersion != 1 || !ValidId(state.Revision) || !SamePath(state.ExecutablePath, executable) || !Path.IsPathFullyQualified(state.OriginalExecutablePath)
-            || !Same(state.ExecutableSha256, _pins.Executable) || !ValidHash(state.MarkerSha256) || SamePath(state.OriginalExecutablePath, executable))
+            || !KnownExecutable(state.ExecutableSha256) || !ValidHash(state.MarkerSha256) || SamePath(state.OriginalExecutablePath, executable))
             throw Invalid("Stato Remix non valido.");
         ValidateFiles(state.Captured); ValidateFiles(state.Current);
     }
     private void ValidateOperation(Operation operation, string executable)
     {
         if (operation.SchemaVersion != 1 || !ValidId(operation.Id) || operation.Identity is null
-            || !Same(operation.Identity.ExecutableHash, _pins.Executable) || !ValidHash(operation.Identity.MarkerHash)
+            || !KnownExecutable(operation.Identity.ExecutableHash) || !ValidHash(operation.Identity.MarkerHash)
             || operation.Action is not ("Adopt" or "Capture" or "Apply" or "Restore") || operation.Status is not ("Pending" or "Committed" or "RolledBack"))
             throw Invalid("Journal Remix non valido.");
         if (!SamePath(operation.Identity.Executable, executable))
             throw Invalid("Il journal Remix appartiene a un altro eseguibile. Rianalizza il percorso registrato: " + operation.Identity.Executable);
         ValidateState(operation.Next, executable); if (operation.Previous is not null) ValidateState(operation.Previous, executable);
-        if (!SamePath(operation.Next.OriginalExecutablePath, operation.Identity.Original) || operation.Next.MarkerSha256 != operation.Identity.MarkerHash)
+        if (operation.Previous is not null && !Same(operation.Previous.ExecutableSha256, operation.Next.ExecutableSha256) && operation.Action != "Capture")
+            throw Invalid("Il cambio di EXE richiede una registrazione esplicita della configurazione.");
+        if (!SamePath(operation.Next.OriginalExecutablePath, operation.Identity.Original) || operation.Next.MarkerSha256 != operation.Identity.MarkerHash
+            || !Same(operation.Next.ExecutableSha256, operation.Identity.ExecutableHash))
             throw Invalid("Journal Remix non legato alla copia.");
         if (operation.Previous is not null && (!SamePath(operation.Previous.OriginalExecutablePath, operation.Identity.Original)
             || operation.Previous.MarkerSha256 != operation.Identity.MarkerHash || operation.Previous.Revision == operation.Next.Revision))
@@ -401,6 +411,8 @@ public sealed class RemixManagedService
     private static string Full(string path) => Path.GetFullPath(ExecutablePath.Normalize(path));
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+    private bool KnownExecutable(string hash) => Same(hash, _pins.Executable)
+        || _pins.AlternateExecutable is not null && Same(hash, _pins.AlternateExecutable);
     private static bool SamePath(string? a, string? b) => string.Equals(a, b,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
     private static bool SameIdentity(Identity a, Identity b) => SamePath(a.Executable, b.Executable)

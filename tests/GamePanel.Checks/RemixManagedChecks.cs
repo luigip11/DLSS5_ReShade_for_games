@@ -104,6 +104,39 @@ internal static class RemixManagedChecks
             File.WriteAllText(journal, "{\"SchemaVersion\":1}");
             Refused(() => f.Service.HasPendingOperation(f.Exe));
         });
+        check("Remix gestito: EXE alternativo identificato richiede cattura esplicita, conserva il journal concluso e non scrive nel gioco", () =>
+        {
+            using var f = new Fixture(root, makeExe); f.Adopt();
+            var alternate = File.ReadAllBytes(f.Exe).Concat(new byte[] { 42 }).ToArray(); var service = f.VariantService(alternate);
+            File.WriteAllBytes(f.Exe, alternate); File.WriteAllBytes(f.OriginalExe, alternate);
+            var copy = Snapshot(f.Game); var original = Snapshot(f.Original);
+            var status = service.Status(f.Exe);
+            Require(status.Supported && status.Adopted && status.Changed && !service.HasPendingOperation(f.Exe), "Cambio EXE o journal precedente non riconosciuti.");
+            Refused(() => service.PrepareApply(f.Report, new(DlssMode: 4))); Refused(() => service.PrepareRestore(f.Report));
+            var capture = service.PrepareCapture(f.Report);
+            Require(capture.PreviousExecutableSha256 != capture.ExecutableSha256 && capture.ExecutableSha256 == Hash(alternate) && capture.Changes.Count == 0, "Cambio EXE non esposto o cattura tenta scritture.");
+            status = service.Execute(capture);
+            Require(!status.Changed && status.Adopted && copy.SequenceEqual(Snapshot(f.Game)) && original.SequenceEqual(Snapshot(f.Original)), "Registrazione cambia gioco/originale o resta incoerente.");
+            status = service.Execute(service.PrepareApply(f.Report, new(DlssMode: 4)));
+            Require(status.Settings.DlssMode == 4 && !service.HasPendingOperation(f.Exe), "Configurazione sul nuovo EXE non gestita.");
+        });
+        check("Remix gestito: migrazione EXE interrotta recuperabile, varianti sconosciute e operazioni precedenti pendenti bloccate", () =>
+        {
+            using var f = new Fixture(root, makeExe); f.Adopt(); var initialExe = File.ReadAllBytes(f.Exe);
+            var alternate = initialExe.Concat(new byte[] { 43 }).ToArray(); var service = f.VariantService(alternate);
+            var oldPlan = f.Service.PrepareApply(f.Report, new(DlssMode: 4));
+            Canceled(() => f.Service.Execute(oldPlan, progress: new InlineProgress(p => { if (p.Completed == 1) throw new OperationCanceledException(); })));
+            File.WriteAllBytes(f.Exe, alternate); File.WriteAllBytes(f.OriginalExe, alternate);
+            Refused(() => service.PrepareCapture(f.Report)); Refused(() => service.Recover(f.Exe, false));
+            File.WriteAllBytes(f.Exe, initialExe); File.WriteAllBytes(f.OriginalExe, initialExe); f.Service.Recover(f.Exe, true);
+            File.WriteAllBytes(f.Exe, alternate); File.WriteAllBytes(f.OriginalExe, alternate);
+            var capture = service.PrepareCapture(f.Report); var configs = f.Configs();
+            Canceled(() => service.Execute(capture, progress: new InlineProgress(p => { if (p.Completed == 1) throw new OperationCanceledException(); })));
+            service.Recover(f.Exe, true);
+            Require(service.Status(f.Exe).Changed && configs.SequenceEqual(f.Configs()), "Rollback migrazione perde lo stato precedente o cambia configurazioni.");
+            capture = service.PrepareCapture(f.Report); File.AppendAllText(f.Exe, "unknown");
+            Refused(() => service.Execute(capture)); Require(!service.Status(f.Exe).Supported, "EXE sconosciuto accettato.");
+        });
         check("Remix gestito: journal concluso rifiuta un nome EXE diverso nella stessa cartella", () =>
         {
             using var f = new Fixture(root, makeExe); f.Adopt(); var before = f.Configs();
@@ -158,6 +191,7 @@ internal static class RemixManagedChecks
             Service = NewService();
         }
         public RemixManagedService NewService(Func<string, bool>? running = null) => new(Store, running ?? (_ => false), Pins);
+        public RemixManagedService VariantService(byte[] executable) => new(Store, _ => false, Pins with { AlternateExecutable = Hash(executable) });
         public void Adopt() => Service.Execute(Service.PrepareAdopt(Report));
         public string Path(string relative) => System.IO.Path.Combine(Game, relative.Replace('/', System.IO.Path.DirectorySeparatorChar));
         public string[] Configs() => new[] { "rtx.conf", "user.conf" }.Select(p => File.Exists(Path(p)) ? Convert.ToBase64String(File.ReadAllBytes(Path(p))) : "MISSING").ToArray();

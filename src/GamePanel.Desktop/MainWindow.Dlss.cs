@@ -43,6 +43,8 @@ internal sealed partial class MainWindow
         var message = Text(displayMessage, 13, Muted);
         System.Windows.Automation.AutomationProperties.SetAutomationId(message, "DlssStatus");
         _content.Children.Add(AssetPanel(message, 14));
+        if (SelectedIsRemix && _report?.Sha256.Equals(RemixExecutableCatalog.NoCdSha256, StringComparison.OrdinalIgnoreCase) == true)
+            Card("EXE NoCD identificato", "Questa build può gestirne la configurazione. Il funzionamento di RTX Remix con questo eseguibile è ancora da collaudare; il riconoscimento non certifica la versione 1.2.");
         if (_report is null) { Card("Scegli un gioco", "Apri la libreria e analizza il gioco che vuoi configurare."); return; }
         if (status?.Supported != true)
         {
@@ -77,7 +79,7 @@ internal sealed partial class MainWindow
             profile.Children.Add(FxButton("Ripristina configurazione salvata", "RestoreRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Restore"), !_busy && !status.Changed));
             SpaceDlssPanel(profile);
             _content.Children.Add(AssetPanel(profile, 20));
-            if (status.Changed) Card("Modifiche effettuate nel gioco", "Salva la configurazione attuale per riconoscerle. Questa scelta aggiorna il punto di ripristino con le impostazioni presenti.");
+            if (status.Changed) Card("Modifiche da registrare", "Salva la configurazione attuale per registrare le impostazioni presenti e un eventuale cambio a un EXE identificato. Questa scelta aggiorna il punto di ripristino, senza riscrivere i file del gioco.");
             var recommended = new StackPanel(); recommended.Children.Add(Text(RemixRecommendedProfile.Name, 17, Ink, FontWeights.SemiBold));
             recommended.Children.Add(Text("Profilo derivato dal collaudo dell'utente: DLSS Auto, Ray Reconstruction Transformer e Frame Generation 4×. Include regolazioni di immagine e luci; applicarlo sostituisce i corrispondenti parametri personalizzati.", 12, Muted));
             recommended.Children.Add(FxButton("Prepara profilo consigliato", "RecommendedRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Recommended"), !_busy && !status.Changed && MatchesRecommendedMachine));
@@ -116,6 +118,9 @@ internal sealed partial class MainWindow
             var preview = new StackPanel(); preview.Children.Add(Text("Anteprima · " + RemixActionTitle(plan.Action), 20, Ink, FontWeights.SemiBold));
             preview.Children.Add(Text(plan.ExecutablePath, 12, Muted));
             if (plan.Action == "Capture") preview.Children.Add(Text("Il punto di ripristino viene aggiornato alla configurazione attuale. I file del gioco non vengono modificati.", 12, Muted));
+            if (plan.PreviousExecutableSha256 is not null && plan.PreviousExecutableSha256 != plan.ExecutableSha256)
+                preview.Children.Add(Text("Cambio EXE da registrare\nPrima: " + plan.PreviousExecutableSha256 + "\nOra: " + plan.ExecutableSha256
+                    + "\nViene aggiornata solo l’associazione del profilo; GamePanel non sostituisce l’eseguibile e non certifica il funzionamento di Remix nel gioco.", 12, Muted));
             preview.Children.Add(Text(plan.Changes.Count == 0 ? "Nessuna scrittura nella cartella del gioco. Viene registrata la configurazione attuale."
                 : string.Join("\n", plan.Changes.Select(c => c.Path + " · configurazione prima/dopo verificata")), 12, Muted));
             preview.Children.Add(Text(string.Join("\n", plan.Warnings), 12, Muted));

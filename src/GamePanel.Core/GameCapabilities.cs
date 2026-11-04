@@ -17,7 +17,7 @@ public sealed record GameCapabilities(bool IsUnderground2, bool HasRemixRenderer
             var root = Path.GetDirectoryName(Path.GetFullPath(report.ExecutablePath))!;
             var candidate = Path.GetFileName(report.ExecutablePath).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
                 && report.Architecture == "x86 (32 bit)" && report.GraphicsApis.Contains("Direct3D 9");
-            var known = candidate && report.Sha256.Equals(RemixTrialService.WorkingExecutableSha256, StringComparison.OrdinalIgnoreCase);
+            var known = candidate && RemixExecutableCatalog.Contains(report.Sha256);
             // The strict TexWizard signature also recognizes the inert compatibility fixture used in Windows checks.
             var texWizard = candidate && TextureRuntimeCatalog.CheckGame(report) is null;
             var gameFolders = candidate && new[] { "GLOBAL", "TRACKS", "CARS" }.All(name => RegularDirectory(Path.Combine(root, name)));
