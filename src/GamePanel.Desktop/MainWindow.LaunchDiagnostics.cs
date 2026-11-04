@@ -43,7 +43,7 @@ internal sealed partial class MainWindow
             var elevated = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
             var environment = new Dictionary<string, string?>();
             // Explicit rendering variables only. Never export the full process environment.
-            foreach (var name in new[] { "DXVK_CONFIG_FILE", "DXVK_LOG_PATH", "DXVK_FILTER_DEVICE_NAME", "RTX_CONFIG", "RTX_CONF", "RTX_MODS_PATH", "VK_INSTANCE_LAYERS" })
+            foreach (var name in new[] { "DXVK_CONFIG_FILE", "DXVK_LOG_PATH", "DXVK_FILTER_DEVICE_NAME", "RTX_CONFIG", "RTX_CONF", "RTX_MODS_PATH", "VK_INSTANCE_LAYERS", "VK_LAYER_PATH", "__COMPAT_LAYER" })
             {
                 var value = Environment.GetEnvironmentVariable(name);
                 environment[name] = value?.Length > 4096 ? "oltre limite di lettura" : value;
@@ -54,7 +54,7 @@ internal sealed partial class MainWindow
                 WorkingDirectory = root, Arguments = arguments, GamePanelElevated = elevated,
                 SelectedExecutable = selected?.ExecutablePath, RequestedProcessId = processId,
                 ConfigurationHashes = hashes, GamePanelRenderingEnvironment = environment,
-                Note = route == "ExplorerDesktop" ? "Avvio richiesto alla shell desktop; ambiente e privilegi effettivi del gioco non misurati dal report." : "Processo avviato da GamePanel.", Error = error };
+                Note = route == "ExplorerDesktop" ? "Avvio richiesto alla shell desktop; ambiente e privilegi effettivi del gioco non misurati dal report." : "Avvio dal processo GamePanel; consultare Result per l’esito.", Error = error };
             var target = LaunchReportPath; var folder = Path.GetDirectoryName(target)!; GuardLaunchPath(folder); Directory.CreateDirectory(folder); GuardLaunchPath(target);
             var temporary = Path.Combine(folder, "launch-" + Guid.NewGuid().ToString("N") + ".tmp");
             try { File.WriteAllText(temporary, JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true })); File.Move(temporary, target, true); }
