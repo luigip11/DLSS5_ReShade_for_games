@@ -8,6 +8,41 @@ internal static class LibraryChecks
         GameReport Report(string folder, string name = "game.exe")
         { Directory.CreateDirectory(folder); return new GameInspector().Inspect(makeExe(Path.Combine(folder, name), false, false, "d3d9.dll")); }
         string Folder() { var p = Path.Combine(root, "library-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(p); return p; }
+        check("Libreria: associazione Remix esplicita, selezione e persistenza senza modificare i giochi", () =>
+        {
+            var p = Folder(); var a = Report(Path.Combine(p, "Originale")); var b = Report(Path.Combine(p, "Remix"));
+            var store = new GameLibrary(Path.Combine(p, "metadata")); var originalId = store.Remember(a).SelectedId!; var copyId = store.Remember(b).SelectedId!;
+            var aBytes = File.ReadAllBytes(a.ExecutablePath); var bBytes = File.ReadAllBytes(b.ExecutablePath);
+            Require(GameLibraryVariants.Group(store.Load(), []).Count == 2, "Copie con hash uguale associate automaticamente.");
+            store.LinkRemixVariant(originalId, copyId); store.Remember(b); store.Rename(originalId, "Underground"); store.MarkPlayed(b.ExecutablePath);
+            var reopened = new GameLibrary(Path.Combine(p, "metadata")).Load(); var group = GameLibraryVariants.Group(reopened, []).Single();
+            Require(reopened.Variants?.Count == 1 && group.Original.Id == originalId && group.Variants.Count == 2 && group.Preferred(reopened.SelectedId).Id == copyId, "Collegamento/selezione non persistente.");
+            Require(aBytes.SequenceEqual(File.ReadAllBytes(a.ExecutablePath)) && bBytes.SequenceEqual(File.ReadAllBytes(b.ExecutablePath)), "Collegamento ha modificato i giochi.");
+            store.UnlinkRemixVariant(copyId); Require(GameLibraryVariants.Group(store.Load(), []).Count == 2, "Separazione perde una voce.");
+        });
+        check("Libreria: collegamenti duplicati, ciclici, annidati ed estranei rifiutati", () =>
+        {
+            var p = Folder(); var store = new GameLibrary(Path.Combine(p, "metadata"));
+            var a = store.Remember(Report(Path.Combine(p, "A"))).SelectedId!; var b = store.Remember(Report(Path.Combine(p, "B"))).SelectedId!; var c = store.Remember(Report(Path.Combine(p, "C"))).SelectedId!;
+            store.LinkRemixVariant(a, b); Refused(() => store.LinkRemixVariant(b, a)); Refused(() => store.LinkRemixVariant(b, c));
+            Refused(() => store.LinkRemixVariant(a, a)); Refused(() => store.LinkRemixVariant(a, new string('a', 32)));
+            var valid = store.Load();
+            foreach (var invalid in new[] { new LibraryVariantLink[] { new(a, b), new(c, b) }, [new(b, a), new(a, b)], [new(a, "unknown")] })
+            { File.WriteAllText(store.FilePath, JsonSerializer.Serialize(valid with { Variants = invalid })); Refused(() => store.Load()); }
+            File.WriteAllText(store.FilePath, JsonSerializer.Serialize(valid)); store.LinkRemixVariant(c, b);
+            Require(GameLibraryVariants.Group(store.Load(), []).Single(g => g.Original.Id == c).Variants.Count == 2, "Riassegnazione esplicita non riuscita.");
+        });
+        check("Libreria: rimozione originale/variante conserva le altre voci e accetta JSON precedente", () =>
+        {
+            foreach (var removeOriginal in new[] { false, true })
+            {
+                var p = Folder(); var store = new GameLibrary(Path.Combine(p, "metadata")); var a = store.Remember(Report(Path.Combine(p, "A"))).SelectedId!; var b = store.Remember(Report(Path.Combine(p, "B"))).SelectedId!;
+                var before = store.Load(); File.WriteAllText(store.FilePath, JsonSerializer.Serialize(new { before.SchemaVersion, before.SelectedId, before.Games }));
+                Require(store.Load().Variants is null, "Vecchio JSON non compatibile.");
+                store.LinkRemixVariant(a, b); var after = store.Remove(removeOriginal ? a : b);
+                Require(after.Games.Count == 1 && after.Variants?.Count == 0 && GameLibraryVariants.Group(after, []).Count == 1, "Rimozione elimina anche l'altra versione.");
+            }
+        });
         check("Libreria: deselezione persistente conserva giochi e file", () =>
         {
             var p = Folder(); var report = Report(Path.Combine(p, "Game")); var service = new GameLibrary(Path.Combine(p, "metadata"));

@@ -57,12 +57,28 @@ jobs:
       - name: Check native updater and preservation of user data
         shell: pwsh
         run: ./scripts/check-updater.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
+      - name: Capture documentation views with isolated NFS demonstration data
+        shell: pwsh
+        run: |
+          dotnet run --project tests/GamePanel.DesktopChecks -c Release --no-restore -- --documentation-preview ./artifacts/ui-preview
+          if ($LASTEXITCODE -ne 0) { throw 'Documentation screenshots failed.' }
       - name: Create non-executable static texture compatibility fixture
         shell: pwsh
         run: dotnet run --project tests/GamePanel.Checks -c Release --no-restore -- --write-asset-fixture ./artifacts/asset-fixture/speed2.exe
       - name: Compile synthetic DX9 x86 fixture
         shell: pwsh
         run: ./scripts/build-graphics-fixture.ps1
+      - name: Verify Explorer launch directory and environment isolation
+        shell: pwsh
+        run: |
+          Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class DesktopShellProbe { [DllImport("user32.dll")] public static extern IntPtr GetShellWindow(); }'
+          if ([DesktopShellProbe]::GetShellWindow() -eq [IntPtr]::Zero) {
+            Start-Process explorer.exe
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            while ([DesktopShellProbe]::GetShellWindow() -eq [IntPtr]::Zero -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          }
+          dotnet run --project tests/GamePanel.DesktopChecks -c Release --no-restore -- --explorer-probe ./artifacts/graphics-fixture/speed2.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Explorer launch broker check failed.' }
       - name: Check desktop startup
         shell: powershell
         run: ./scripts/check-startup.ps1 -ExecutablePath ./artifacts/GamePanel-win-x64/GamePanel.exe -PreviewDirectory ./artifacts/ui-preview -GraphicsFixturePath ./artifacts/graphics-fixture/speed2.exe -AssetFixturePath ./artifacts/asset-fixture/speed2.exe -AssetPackagePath ./artifacts/asphalt-pack-build/GamePanel-AsphaltHD.zip

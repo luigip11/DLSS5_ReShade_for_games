@@ -1,3 +1,19 @@
+# Alpha.15 — libreria con copertine, controlli DLSS e avvio Remix
+
+Copertine per scheda, da file locale o ricerca Wikipedia esplicita con anteprima e cache offline. GPU illustrate e azioni Schermo/GPU affiancate nella pagina DLSS; Gioca e Avvia il gioco in verde fluo. La pagina Gioco collega alle informazioni di sistema Windows e chiarisce i metadati versione mancanti negli EXE.
+
+Avvio UG1 Remix tramite il desktop di Esplora file, con directory di lavoro esplicita e diagnostica locale. Il percorso di avvio è stato confermato sul PC dell’utente; il profilo conserva le impostazioni di illuminazione della mod. La guida alle prestazioni distingue i fotogrammi renderizzati da quelli generati e propone confronti ripetibili.
+
+La libreria consente di collegare esplicitamente una copia Remix al gioco originale, mantenendo una sola scheda con selettore Originale/Remix. Il collegamento è reversibile, persistente dopo rianalisi e non richiede modifiche a file o journal del gioco.
+
+UG1 Remix già installato: registrazione locale, backup/ripristino e controlli DLSS secondo i componenti rilevati, senza preset UG2. Risoluzione tramite ResX/ResY nell’INI della mod; GPU rilevate e accesso alle preferenze Windows. Nessun pacchetto o eseguibile del gioco è distribuito. Transformer e Multi Frame Generation non vengono dedotti dalla sola presenza del renderer.
+
+La pagina Schermo offre risoluzioni del monitor selezionato e profili separati per EXE. Underground 1 può installare il fix ThirteenAG verificato e impostare RES.cfg2; Unity e Unreal usano parametri di avvio, gli altri giochi possono usare un adattatore INI/CFG personalizzato. Anteprima, backup e recupero accompagnano le scritture. Il profilo non cambia la modalità di Windows né misura il rendering effettivo: i giochi devono supportare il metodo scelto. [Guida ai metodi](RESOLUTION-PROFILES.md).
+
+L’EXE incorpora l’icona GamePanel a più dimensioni. Il pacchetto raccoglie guide in Docs e licenze in Licenses, mantiene Assets separata e include il runtime negli eseguibili. Nella radice rimangono avvio, updater, guida rapida e i piccoli file di compatibilità richiesti dai precedenti client di aggiornamento. Estrarre in una cartella nuova per ottenere la disposizione aggiornata; gli aggiornamenti gestiti rimuovono i file obsoleti registrati senza toccare i dati personali.
+
+La gestione della configurazione UG2 Remix riconosce anche l’EXE NoCD esaminato. Il cambio dal precedente EXE richiede registrazione esplicita con anteprima degli hash; i percorsi Windows vengono confrontati senza distinguere maiuscole e minuscole. Il riconoscimento del file non certifica la patch 1.2 né il funzionamento del runtime Remix con quel NoCD.
+
 # Candidato alpha.14 — controlli illustrati e deselezione
 
 Chevron vettoriale unico, ruotato fra apertura e chiusura dei menu Avanzate. I parametri DLSS hanno schemi illustrativi verde fluo accanto alle scelte; non rappresentano immagini reali del gioco o misurazioni. In Libreria, Deseleziona gioco libera il contesto analizzato senza rimuovere giochi, file o profili.
@@ -59,3 +75,4 @@ La release non include un pacchetto di geometrie già verificato. RAR/TPF/script
 La build GamePanel rimane senza firma Authenticode e Smart App Control può bloccarla. Hash e audit statici non attestano l'assenza assoluta di malware o la fiducia Windows.
 
 [Guida alpha.8](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/ALPHA8.md) · [Formato asset](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/ASSET-PACKS.md) · [Catalogo e provenienza](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/TEXWIZARD-CATALOG.md)
+

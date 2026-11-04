@@ -6,25 +6,42 @@ Il progetto comprende la gestione delle configurazioni DLSS per le copie RTX Rem
 
 ## Download
 
-**[Scarica GamePanel alpha.14 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41721019504/artifacts/13273252324)**
+**[Scarica GamePanel alpha.15 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41902799353/artifacts/13358743051)**
 
-La build alpha.14 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre l’archivio e avviare GamePanel. Giochi, asset e runtime RTX Remix non sono inclusi.
+La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre tutto l’archivio in una cartella nuova e avviare **GamePanel.exe**. Guide, licenze e materiali sono raccolti in **Docs**, **Licenses** e **Assets**. Giochi, asset e runtime RTX Remix non sono inclusi.
 
-## Changelog alpha.14
+## Changelog alpha.15
 
-- Chevron vettoriali uniformi per aprire e chiudere i menu **Avanzate** nella sidebar e nei parametri DLSS.
-- Illustrazioni minimali verde fluo accanto alle scelte DLSS, Ray Reconstruction, Frame Generation e Reflex.
-- Nuovo pulsante **Deseleziona gioco** nella libreria: rimuove il contesto attivo mantenendo giochi, profili e file.
-- Altezza di **Deseleziona gioco** allineata a **Importa gioco**.
+- Copertine locali e ricerca online su Wikipedia, con anteprima, fonte e cache offline. [Guida](docs/LIBRARY-COVERS.md).
+- Schede GPU illustrate, azioni DLSS affiancate, pulsanti Gioca verde fluo e accesso alle informazioni di sistema Windows.
+- Spiegazione dei metadati versione EXE e della differenza rispetto al numero mostrato nel gioco. [Confronto FPS Remix](docs/REMIX-PERFORMANCE.md).
+- Avvio UG1 Remix tramite il desktop di Esplora file e report locale del contesto di avvio, conservando la configurazione del gioco.
+- Cambio variante sincronizzato con l’analisi attiva nelle pagine Gioco, Grafica e DLSS.
+- Collegamento esplicito delle copie Remix all’originale in libreria, con selettore Originale/Remix e separazione reversibile.
+- UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
+- Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
+- Metodo dedicato a Underground 1 con Widescreen Fix verificato; parametri di avvio Unity/Unreal e configurazioni INI/CFG personalizzate.
+- Recupero delle operazioni interrotte e conservazione delle modifiche esterne ai file di configurazione.
+- Gestione del nuovo EXE NoCD UG2 identificato, con registrazione esplicita del cambio e confronto corretto dei percorsi Windows.
+- Icona GamePanel incorporata negli EXE; runtime incluso negli eseguibili, guide in **Docs**, licenze in **Licenses** e materiali in **Assets**.
 
-Verifica su Windows: **231/231 controlli superati**, inclusa la deselezione del gioco dalla libreria.
+La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una richiesta di risoluzione: verificarne l’effetto nel gioco. [Guida alla risoluzione](docs/RESOLUTION-PROFILES.md).
 
 ## Schermate
 
-Schermate reali di GamePanel alpha.14 nell’ambiente di test Windows; le voci dei giochi sono dimostrative.
+Catture reali dell’interfaccia GamePanel alpha.15 su Windows, con voci NFS Underground 1 e 2 e configurazioni dimostrative isolate. Le copertine sono illustrazioni locali, non artwork ufficiali; GPU e valori DLSS sono esempi, non misurazioni della macchina dell’utente.
 
-### Libreria
-![Libreria di GamePanel con i pulsanti Importa gioco e Deseleziona gioco allineati](docs/images/alpha14-library.png)
+### Libreria e anteprime gioco
 
-### Grafica e contenuti
-![Pagina Grafica di GamePanel con le opzioni dei contenuti e la sidebar](docs/images/alpha14-graphics.png)
+![Libreria di GamePanel con Underground 1 e 2, copertine illustrative e selettore Originale/Remix](docs/images/alpha15-library-nfs.png)
+
+### Grafica e contenuti · parametri DLSS
+
+I parametri illustrati sono nella pagina **DLSS**, raggiungibile anche da **Grafica → Profilo e DLSS** per le copie Remix compatibili.
+
+![Parametri DLSS illustrati: Super Resolution, Ray Reconstruction, modello, Frame Generation e Reflex](docs/images/alpha15-dlss-parameters.png)
+
+### Schermo e risoluzione
+
+![Profilo di risoluzione per gioco con dimensioni del monitor e metodo di applicazione](docs/images/alpha15-resolution.png)
+

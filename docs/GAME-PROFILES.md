@@ -27,7 +27,15 @@ Se user.conf esiste, le chiavi modificate vengono aggiornate anche lì per evita
 
 ## Protezione dei dati e limiti
 
-Sono gestite solo le copie alpha.12 identificate, con EXE CD noto, manifest locale, client e bridge identificati e renderer server corrispondente al manifest. Le modifiche riguardano solo rtx.conf/user.conf, con lock per gioco, journal, verifica prima/dopo e ripresa o annullamento. Il gioco deve essere chiuso. L'originale associato non viene modificato. I salvataggi esterni possono restare condivisi, come già nella prova alpha.12.
+### Cambio all’EXE NoCD identificato
+
+La gestione della configurazione riconosce anche l’EXE NoCD esaminato, SHA-256 `5a4be6a2d072cf27f1aedf3119b75fd685a4ae5ecdf567cae7db26278c596e97`. Il riconoscimento non certifica la patch 1.2 né il funzionamento di RTX Remix nel gioco. La creazione iniziale della copia continua a richiedere l’EXE CD già collaudato.
+
+Su una copia esistente con manifest originale valido, originale e copia possono usare uno dei due EXE identificati. Il cambio viene segnalato e richiede **Salva configurazione attuale**, anteprima con i due hash e conferma prima di nuove applicazioni o ripristini. Questa operazione registra l’identità attuale e acquisisce le configurazioni senza riscrivere EXE, manifest o file del gioco. Un’operazione precedente ancora Pending deve essere recuperata con la sua identità originale prima della migrazione; i journal conclusi restano leggibili. EXE sconosciuti, runtime o manifest modificati continuano a essere rifiutati.
+
+I percorsi equivalenti per maiuscole/minuscole vengono trattati come lo stesso percorso su Windows. Un nome o una cartella realmente differente non viene considerato equivalente.
+
+Sono gestite solo le copie alpha.12 identificate, con uno degli EXE riconosciuti, manifest locale, client e bridge identificati e renderer server corrispondente al manifest. Le modifiche riguardano solo rtx.conf/user.conf e i dati del profilo, con lock per gioco, journal, verifica prima/dopo e ripresa o annullamento. Il gioco deve essere chiuso. L'originale associato non viene modificato. I salvataggi esterni possono restare condivisi, come già nella prova alpha.12.
 
 Per altri giochi la pagina DLSS è aperta in lettura: mostra le librerie rilevate e la disponibilità della gestione. Non sostituisce DLL né aggiunge automaticamente DLSS a giochi non integrati. I contatori con Frame Generation possono includere fotogrammi generati; GamePanel non inventa gli FPS di rendering e non li ricava dividendo il contatore per il moltiplicatore.
 

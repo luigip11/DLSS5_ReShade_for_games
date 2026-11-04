@@ -194,7 +194,7 @@ internal sealed partial class MainWindow
                 if (_report is not null) await RefreshRemixManagedAsync(_report.ExecutablePath);
                 _fxMessage = e is OperationCanceledException ? "Operazione interrotta. Se il journal è aperto, riprendi o annulla il recupero." : e.Message;
                 if (_page == 1) _remixManagedMessage = _fxMessage;
-                if (_page == 6) _screenMessage = _fxMessage;
+                if (_page == 6) { _screenMessage = _fxMessage; _resolutionMessage = _fxMessage; _resolutionPlan = null; }
                 if (_page == 7) { _assetMessage = _fxMessage; _directXMessage = _fxMessage; }
                 _status.Text = "Operazione profilo non completata";
             }
@@ -209,7 +209,7 @@ internal sealed partial class MainWindow
                 if (_page == 2) _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
                 { if (_closing || _page != 2) return; if (_fxPlan is not null) _fxApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
                 if (_page == 6) _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
-                { if (_closing || _page != 6) return; if (_screenPlan is not null) _screenApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
+                { if (_closing || _page != 6) return; if (_resolutionPlan is not null) _resolutionApply?.BringIntoView(); else if (_screenPlan is not null) _screenApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
                 if (_page == 7) _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
                 { if (_closing || _page != 7) return; if (_assetPlan is not null) _assetApplyButton?.BringIntoView(); else _pageScroll.ScrollToTop(); }));
             }

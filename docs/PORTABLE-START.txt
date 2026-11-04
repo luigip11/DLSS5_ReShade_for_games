@@ -1,0 +1,26 @@
+GAMEPANEL @VERSION@ - WINDOWS X64
+
+AVVIO
+1. Estrai tutto lo ZIP in una cartella nuova.
+2. Avvia GamePanel.exe, riconoscibile dall'icona con le due frecce verde e azzurra.
+3. Importa il gioco dalla Libreria.
+
+RISOLUZIONE
+Apri Grafica > Schermo e risoluzione. Scegli monitor, dimensioni e metodo,
+poi prepara l'anteprima e conferma. Il gioco deve supportare il metodo scelto.
+
+CARTELLE
+Docs: guide dei profili e delle procedure di recupero.
+Licenses: licenze dell'app e dei componenti.
+Assets: materiali originali usati dalle funzioni del pannello.
+
+Mantieni insieme tutti i file estratti. Il runtime e' incluso negli eseguibili;
+alcuni piccoli file DLL e JSON restano necessari per gli aggiornamenti.
+GamePanel.Updater.exe viene richiamato dall'app e non va avviato manualmente.
+
+I dati personali sono separati dal pacchetto, in:
+%LOCALAPPDATA%\GamePanel
+Qui restano libreria, profili, backup, impostazioni e cache.
+
+Giochi e pacchetti RTX Remix non sono inclusi.
+Progetto e changelog: https://github.com/luigip11/GamePanel

@@ -11,6 +11,23 @@ internal sealed record DetectedDisplay(string Id, string Device, string Name, bo
 
 internal static class DisplayCatalog
 {
+    internal sealed record ResolutionSize(int Width, int Height)
+    {
+        public override string ToString() => $"{Width} × {Height}";
+    }
+    public static IReadOnlyList<ResolutionSize> Modes(DetectedDisplay display)
+    {
+        var result = new HashSet<ResolutionSize>();
+        for (var i = 0; i < 4096; i++)
+        {
+            var mode = new Mode { Size = (ushort)Marshal.SizeOf<Mode>() };
+            if (!EnumDisplaySettingsW(display.Device, i, ref mode)) break;
+            if (mode.Width is >= 320 and <= 16384 && mode.Height is >= 200 and <= 16384)
+                result.Add(new((int)mode.Width, (int)mode.Height));
+        }
+        result.Add(new(display.Width, display.Height));
+        return result.OrderByDescending(r => (long)r.Width * r.Height).ThenByDescending(r => r.Width).ToArray();
+    }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct Device
     {
         public int Size;

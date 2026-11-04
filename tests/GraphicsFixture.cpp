@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <d3d9.h>
 #include <cstdio>
+#include <cwchar>
 
 LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w, LPARAM l)
 {
@@ -10,6 +11,25 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w, LPARAM l)
 }
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
+    // Broker launch probe: locate the request beside this synthetic executable,
+    // so an incorrect current directory is observable instead of hiding the probe.
+    wchar_t module[MAX_PATH] = {};
+    if (!GetModuleFileNameW(nullptr, module, MAX_PATH)) return 8;
+    wchar_t* separator = wcsrchr(module, L'\\');
+    if (!separator) return 8;
+    *(separator + 1) = L'\0';
+    wchar_t request[MAX_PATH] = {}, probeResultPath[MAX_PATH] = {};
+    if (swprintf_s(request, L"%lsGamePanelExplorerProbe.request", module) < 0
+        || swprintf_s(probeResultPath, L"%lsGamePanelExplorerProbe.result", module) < 0) return 8;
+    if (GetFileAttributesW(request) != INVALID_FILE_ATTRIBUTES)
+    {
+        wchar_t directory[32768] = {}, token[256] = {};
+        if (!GetCurrentDirectoryW(32768, directory)) return 8;
+        GetEnvironmentVariableW(L"GAMEPANEL_EXPLORER_TEST_TOKEN", token, 256);
+        FILE* output = nullptr;
+        if (_wfopen_s(&output, probeResultPath, L"w, ccs=UTF-8") != 0 || !output) return 8;
+        fwprintf(output, L"%ls\n%ls\n", directory, token); fclose(output); return 0;
+    }
     // Launcher testing is independent of graphics/device availability. This flag
     // is created only inside the disposable fixture by check-startup.ps1.
     if (GetFileAttributesW(L"GamePanelLibraryProbe.request") != INVALID_FILE_ATTRIBUTES)

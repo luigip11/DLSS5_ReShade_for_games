@@ -101,8 +101,9 @@ internal sealed partial class MainWindow
             var game = group.Preferred(_library.SelectedId);
             var available = File.Exists(game.ExecutablePath);
             var body = new StackPanel();
-            var art = new Grid { Height = 100, ClipToBounds = true };
+            var art = new Grid { Height = 180, ClipToBounds = true };
             art.Children.Add(DesignSystem.HeroArtwork());
+            AddLibraryCover(art, original);
             var badge = DesignSystem.Chip(available ? "GIOCO IMPORTATO" : "PERCORSO DA VERIFICARE", available ? Accent : DesignSystem.Amber);
             badge.Margin = new Thickness(16); badge.VerticalAlignment = VerticalAlignment.Top; art.Children.Add(badge); body.Children.Add(art);
             var details = new StackPanel { Margin = new Thickness(16) };
@@ -120,12 +121,19 @@ internal sealed partial class MainWindow
                 }
                 selector.SelectedIndex = group.Variants.ToList().FindIndex(g => g.Id == game.Id);
                 System.Windows.Automation.AutomationProperties.SetAutomationId(selector, "LibraryVariant-" + original.Id);
-                selector.SelectionChanged += (_, _) =>
+                selector.SelectionChanged += async (_, _) =>
                 {
                     if (_busy || selector.SelectedItem is not ComboBoxItem { Tag: string id } || id == game.Id) return;
-                    try { _library = _libraryStore.Select(id); _libraryMessage = "Versione selezionata. Gioca avvia il percorso mostrato nella scheda."; }
-                    catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { _libraryMessage = e.Message; }
-                    RenderLibraryCards();
+                    var selected = _library.Games.Single(g => g.Id == id);
+                    try { _library = _libraryStore.Select(id); }
+                    catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+                    { _libraryMessage = e.Message; Render(); return; }
+                    await InspectAsync(selected.ExecutablePath);
+                    if (_closing) return;
+                    _libraryMessage = _report is not null && string.Equals(_report.ExecutablePath, selected.ExecutablePath, StringComparison.OrdinalIgnoreCase)
+                        ? "Versione selezionata e analizzata. Gioco, Grafica e DLSS seguono il percorso mostrato nella scheda."
+                        : "Versione selezionata, ma analisi non completata. Verifica il percorso prima dell'avvio.";
+                    _page = 5; Render();
                 };
                 details.Children.Add(selector);
             }
@@ -143,7 +151,18 @@ internal sealed partial class MainWindow
             var rename = Button("Rinomina", (_, _) => RenameLibraryGame(original)); rename.IsEnabled = !_busy;
             var relink = Button("Ricollega EXE", async (_, _) => await RelinkLibraryGameAsync(game)); relink.IsEnabled = !_busy;
             var remove = Button(group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", (_, _) => EditLibrary(() => _libraryStore.Remove(game.Id), "Voce rimossa. I file del gioco, i backup e i profili sono conservati.")); remove.IsEnabled = !_busy;
-            foreach (var button in new[] { rename, relink, remove }) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; edit.Children.Add(button); }
+            foreach (var button in new[] { rename, relink, remove }) edit.Children.Add(button);
+            if (_library.Variants?.Any(v => v.VariantId == game.Id) == true)
+            {
+                var unlink = Button("Separa variante", (_, _) => EditLibrary(() => _libraryStore.UnlinkRemixVariant(game.Id), "Variante separata. I file e i profili sono conservati."));
+                unlink.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(unlink, "LibraryUnlinkVariant-" + game.Id); edit.Children.Add(unlink);
+            }
+            else if (group.Variants.Count == 1 && _library.Games.Count > 1)
+            {
+                var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); link.IsEnabled = !_busy;
+                System.Windows.Automation.AutomationProperties.SetAutomationId(link, "LibraryLinkVariant-" + game.Id); edit.Children.Add(link);
+            }
+            foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; }
             details.Children.Add(edit); body.Children.Add(details);
             var card = new Border { Width = 313, Background = Surface, BorderBrush = group.Variants.Any(g => g.Id == _library.SelectedId) ? DesignSystem.Color("#526B3B") : DesignSystem.Line,
                 BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Margin = new Thickness(0, 0, 18, 18), Child = body, ClipToBounds = true };
@@ -194,6 +213,37 @@ internal sealed partial class MainWindow
         var cancel = Button("Annulla", (_, _) => window.DialogResult = false); cancel.IsCancel = true; actions.Children.Add(cancel); body.Children.Add(actions);
         window.Loaded += (_, _) => { input.Focus(); input.SelectAll(); };
         if (window.ShowDialog() == true) { _libraryMessage = "Nome aggiornato."; Render(); }
+    }
+    private void LinkLibraryVariant(LibraryGame copy)
+    {
+        if (_busy) return;
+        var groups = ReadLibraryVariantGroups();
+        var parents = groups.Where(g => g.Original.Id != copy.Id && g.Variants.All(v => v.Id != copy.Id)).Select(g => g.Original).ToArray();
+        if (parents.Length == 0) { _libraryMessage = "Importa prima il gioco originale da associare a questa copia."; Render(); return; }
+        var body = new StackPanel { Margin = new Thickness(22) };
+        body.Children.Add(Text("Collega la copia Remix", 22, Ink, FontWeights.SemiBold));
+        body.Children.Add(Text("Scegli l'originale che deve contenere questa variante nella libreria. Il collegamento cambia solo la libreria, senza spostare file o modificare profili.", 12, Muted));
+        var source = Text("Copia: " + copy.ExecutablePath, 12, Ink); source.Margin = new Thickness(0, 12, 0, 12); body.Children.Add(source);
+        var label = Text("GIOCO ORIGINALE", 10, Muted, FontWeights.SemiBold); label.Margin = new Thickness(0, 6, 0, 8); body.Children.Add(label);
+        var picker = new ComboBox { Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 18), MinWidth = 400 };
+        foreach (var parent in parents) picker.Items.Add(new ComboBoxItem { Content = parent.Title + " · " + parent.ExecutablePath, Tag = parent.Id });
+        System.Windows.Automation.AutomationProperties.SetAutomationId(picker, "LibraryVariantParent");
+        body.Children.Add(picker);
+        var window = new Window { Owner = this, Title = "Collega copia Remix", Width = 680, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+            Background = BackgroundBrush, Foreground = Ink, WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = body };
+        window.Resources.Add(typeof(Button), DesignSystem.ButtonStyle());
+        window.Resources.Add(typeof(ComboBox), DesignSystem.ComboBoxStyle());
+        var actions = new WrapPanel(); var save = Button("Conferma collegamento", (_, _) =>
+        {
+            if (picker.SelectedItem is not ComboBoxItem { Tag: string originalId }) return;
+            try { _library = _libraryStore.LinkRemixVariant(originalId, copy.Id); window.DialogResult = true; }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+            { MessageBox.Show(window, e.Message, "Collegamento non salvato", MessageBoxButton.OK, MessageBoxImage.Information); }
+        }); save.IsEnabled = false; save.IsDefault = true;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(save, "ConfirmLibraryVariantLink");
+        picker.SelectionChanged += (_, _) => save.IsEnabled = picker.SelectedItem is ComboBoxItem;
+        actions.Children.Add(save); var cancel = Button("Annulla", (_, _) => window.DialogResult = false); cancel.IsCancel = true; actions.Children.Add(cancel); body.Children.Add(actions);
+        if (window.ShowDialog() == true) { _libraryMessage = "Copia collegata. Scegli Originale o Remix nella scheda del gioco."; Render(); }
     }
     private void EditLibrary(Func<LibrarySnapshot> change, string message)
     {

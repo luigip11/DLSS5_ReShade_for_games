@@ -2,6 +2,7 @@ param([Parameter(Mandatory = $true)][string]$ExecutablePath, [string]$PreviewDir
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName System.Drawing
 if ($PreviewDirectory) {
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($PreviewDirectory)) | Out-Null
     Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
@@ -161,6 +162,8 @@ try {
     }
     if (-not $versionExpanded) { throw 'Executable version section cannot be expanded.' }
     Write-Host 'PASS GUI declared executable version section available'
+    if ($null -eq (Find-Element 'GamePlay') -or $null -eq (Find-Element 'WindowsSystemInfo')) { throw 'Game play/system settings actions missing.' }
+
     if ($PreviewDirectory) {
         Start-Sleep -Milliseconds 800
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '09-game-version.png')))
@@ -173,6 +176,12 @@ try {
     if ((Has-Heading 'Asfalto 2K') -or (Has-Heading 'Correzioni ai modelli auto')) { throw 'UG2-specific content shown for an unrelated game.' }
     Invoke-Button 'DlssPage'
     Wait-Until { $null -ne (Find-Element 'DlssStatus') } 'contextual DLSS page'
+    Wait-Until { $null -ne (Find-Element 'DlssOpenScreen') -and $null -ne (Find-Element 'DlssGpuSettings') } 'DLSS display and GPU action row'
+    $screenBounds = (Find-Element 'DlssOpenScreen').Current.BoundingRectangle
+    $gpuBounds = (Find-Element 'DlssGpuSettings').Current.BoundingRectangle
+    if ([Math]::Abs($screenBounds.Top - $gpuBounds.Top) -gt 3 -or $gpuBounds.Left -le $screenBounds.Left -or $screenBounds.Width -lt 100 -or $gpuBounds.Width -lt 100) { throw 'DLSS screen/GPU buttons are not adjacent and aligned.' }
+    Write-Host 'PASS GUI DLSS hardware illustration and aligned screen/GPU action row'
+
     $dlssNavigation = Find-Element 'DlssPage'
     $dlssParts = $dlssNavigation.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
     $dlssNavigationText = $dlssNavigation.Current.Name + ' ' + (@($dlssParts | ForEach-Object { $_.Current.Name }) -join ' ')
@@ -185,6 +194,44 @@ try {
     }
     if ((Find-Element 'DlssStatus').Current.Name -like '*Underground*') { throw 'Generic DLSS status exposes a game-specific prerequisite.' }
     Write-Host 'PASS GUI contextual graphics: unrelated game has no UG2 tools, DLSS page available without PRESTO badge'
+    Invoke-Button 'AssetsPage'
+    Invoke-Button 'GraphicsOpenScreen'
+    Wait-Until { $null -ne (Find-Element 'GameResolutionMethod') } 'general game resolution controls'
+    $resolutionMethod = Find-Element 'GameResolutionMethod'
+    Write-Host ('Resolution method control: ' + $resolutionMethod.Current.ControlType.ProgrammaticName + '; expand available: ' + $resolutionMethod.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::IsExpandCollapsePatternAvailableProperty))
+    $resolutionMethod.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $unityChoice = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true))
+    function Find-UnityResolutionChoice {
+        $items = [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Descendants, $unityChoice)
+        return @($items | Where-Object { $_.Current.Name -like '*Unity*parametri di avvio*' } | Select-Object -First 1)
+    }
+    Wait-Until { @(Find-UnityResolutionChoice).Count -eq 1 } 'Unity resolution choice'
+    $choice = @(Find-UnityResolutionChoice)[0]
+    $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    Invoke-Button 'PrepareGameResolution'
+    Wait-Until { $null -ne (Find-Element 'ApplyGameResolution') -and (Find-Element 'ApplyGameResolution').Current.IsEnabled } 'resolution no-write preview'
+    if (@(Get-ChildItem -LiteralPath (Join-Path $fixtureData 'Settings/GameResolutions') -Filter state.json -Recurse -ErrorAction SilentlyContinue).Count -ne 0) { throw 'Resolution preview wrote a profile.' }
+    Invoke-Button 'ApplyGameResolution'
+    Wait-Until { (Find-Element 'GameResolutionStatus').Current.Name -like 'Profilo applicato*' } 'resolution profile saved'
+    $resolutionStates = @(Get-ChildItem -LiteralPath (Join-Path $fixtureData 'Settings/GameResolutions') -Filter state.json -Recurse)
+    if ($resolutionStates.Count -ne 1) { throw 'Expected one per-game resolution profile.' }
+    $resolutionState = Get-Content -LiteralPath $resolutionStates[0].FullName -Raw | ConvertFrom-Json
+    if ($resolutionState.Executable -cne $fixtureExe -or $resolutionState.Options.Method -ne 1 -or $resolutionState.Options.Width -lt 320 -or $resolutionState.Options.Height -lt 200 -or @($resolutionState.Files).Count -ne 0) { throw 'Resolution profile identity or launch mode mismatch.' }
+    if ((Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash -ne $originalHash) { throw 'Resolution profile changed the executable.' }
+    if ($PreviewDirectory) {
+        $resolutionScroll = (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+        if ($resolutionScroll.Current.VerticallyScrollable) { $resolutionScroll.SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 45) }
+        Start-Sleep -Milliseconds 300
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '10-game-resolution.png')))
+    }
+    Invoke-Button 'RemoveGameResolution'
+    Wait-Until { $null -ne (Find-Element 'ApplyGameResolution') -and (Find-Element 'ApplyGameResolution').Current.IsEnabled } 'resolution removal preview'
+    Invoke-Button 'ApplyGameResolution'
+    Wait-Until { (Find-Element 'GameResolutionStatus').Current.Name -like 'Profilo rimosso*' } 'resolution profile removal'
+    if (Test-Path -LiteralPath $resolutionStates[0].FullName) { throw 'Resolution profile remains after removal.' }
+    Write-Host 'PASS GUI general resolution profile: monitor modes, no-write preview, apply and removal; fixture EXE never executed'
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
     Invoke-Button 'CreateBackup'
@@ -373,6 +420,20 @@ try {
         $process.CloseMainWindow() | Out-Null
         if (-not $process.WaitForExit(5000)) { Stop-Process -Id $process.Id -Force }
         $process.Dispose()
+        # Original test artwork, generated only for this disposable UI fixture.
+        $coverFolder = Join-Path $fixtureData 'Library/Covers'
+        [IO.Directory]::CreateDirectory($coverFolder) | Out-Null
+        $coverBitmap = [Drawing.Bitmap]::new(480, 270)
+        $coverGraphics = [Drawing.Graphics]::FromImage($coverBitmap)
+        $coverFont = [Drawing.Font]::new('Segoe UI', 26, [Drawing.FontStyle]::Bold)
+        $coverBrush = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(188, 255, 105))
+        try {
+            $coverGraphics.Clear([Drawing.Color]::FromArgb(18, 29, 43))
+            $coverGraphics.DrawString('TEST GAME', $coverFont, $coverBrush, 34, 34)
+            $coverGraphics.FillRectangle($coverBrush, 34, 108, 260, 5)
+            $coverGraphics.DrawString('LOCAL COVER', $coverFont, [Drawing.Brushes]::White, 34, 155)
+            $coverBitmap.Save((Join-Path $coverFolder ($libraryGame[0].Id + '.png')), [Drawing.Imaging.ImageFormat]::Png)
+        } finally { $coverBrush.Dispose(); $coverFont.Dispose(); $coverGraphics.Dispose(); $coverBitmap.Dispose() }
         $process = Start-Process -FilePath $executable -WorkingDirectory (Split-Path -Parent $executable) -PassThru
         Wait-Until { $process.MainWindowHandle -ne [IntPtr]::Zero } 'library restart'
         $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
@@ -402,6 +463,20 @@ try {
         if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw "Library-launched probe failed: $($renderProcess.ExitCode)" }
         if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Selected library executable did not execute our launcher probe.' }
         $renderProcess.Dispose(); $renderProcess = $null
+        $launchReportPath = Join-Path $fixtureData 'Diagnostics/last-launch.json'
+        $launchReport = Get-Content -LiteralPath $launchReportPath -Raw | ConvertFrom-Json
+        if ($launchReport.Executable -cne $profileExe -or $launchReport.WorkingDirectory -cne $fixtureGame -or @($launchReport.Arguments).Count -ne 0 -or $launchReport.Route -ne 'GamePanel' -or $launchReport.Result -ne 'Started') { throw 'Direct-launch diagnostic does not match the real probe.' }
+        Remove-Item -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result')
+        Invoke-Button 'LaunchThroughExplorer'
+        Wait-Until { @(Get-Process -Name speed2 -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $profileExe }).Count -eq 1 -and (Test-Path -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result')) } 'Explorer-launched GUI probe'
+        $renderProcess = @(Get-Process -Name speed2 -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $profileExe })[0]
+        $explorerProbeHandle = $renderProcess.Handle
+        if (-not $renderProcess.WaitForExit(45000) -or $renderProcess.ExitCode -ne 0) { throw 'Explorer GUI probe did not complete.' }
+        $renderProcess.Dispose(); $renderProcess = $null
+        $launchReport = Get-Content -LiteralPath $launchReportPath -Raw | ConvertFrom-Json
+        if ($launchReport.Route -ne 'ExplorerDesktop' -or $launchReport.Result -ne 'Requested' -or $launchReport.Executable -cne $profileExe -or $launchReport.WorkingDirectory -cne $fixtureGame -or @($launchReport.Arguments).Count -ne 0) { throw 'Explorer-launch diagnostic differs from the accepted request.' }
+        if ((Get-Content -LiteralPath (Join-Path $fixtureGame 'GamePanelLibraryProbe.result') -Raw) -ne 'GamePanel-library-launch-ok') { throw 'Explorer GUI probe did not find its game-relative request.' }
+        Write-Host 'PASS GUI Explorer desktop launch and diagnostics: same EXE and working directory, no added arguments'
         Write-Host 'PASS GUI launch directly from saved library card and persisted last-played timestamp'
 
     }
@@ -477,6 +552,59 @@ try {
     }
     Invoke-Button 'LibraryPage'
     $savedBefore = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    $variantCopy = @($savedBefore.Games | Where-Object { $_.ExecutablePath -eq $fixtureExe })[0]
+    $variantParent = @($savedBefore.Games | Where-Object { $_.Id -ne $variantCopy.Id })[0]
+    if ($null -eq $variantCopy -or $null -eq $variantParent) { throw 'Expected two library entries for explicit variant checks.' }
+    Invoke-Button ('LibraryLinkVariant-' + $variantCopy.Id)
+    function Find-VariantDialogControl([string]$Id) {
+        $condition = [Windows.Automation.AndCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $Id))
+        return [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
+    }
+    Wait-Until { $null -ne (Find-VariantDialogControl 'LibraryVariantParent') } 'explicit original-game picker'
+    if ((Find-VariantDialogControl 'ConfirmLibraryVariantLink').Current.IsEnabled) { throw 'Variant parent was selected without user choice.' }
+    (Find-VariantDialogControl 'LibraryVariantParent').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $parentName = $variantParent.Title + ' ' + [char]0x00b7 + ' ' + $variantParent.ExecutablePath
+    $parentCondition = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $parentName))
+    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $parentCondition) } 'variant original choice'
+    $parentChoice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $parentCondition)
+    $parentChoice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    (Find-VariantDialogControl 'ConfirmLibraryVariantLink').GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    Wait-Until { $null -ne (Find-Element ('LibraryVariant-' + $variantParent.Id)) } 'one library card with variant selector'
+    $linked = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    if (@($linked.Variants).Count -ne 1 -or $linked.Variants[0].OriginalId -ne $variantParent.Id -or $linked.Variants[0].VariantId -ne $variantCopy.Id -or @($linked.Games).Count -ne @($savedBefore.Games).Count) { throw 'Explicit variant relationship or library entries mismatch.' }
+    Invoke-Button ('LibraryOpen-' + $variantParent.Id)
+    Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'group original analysis'
+    Invoke-Button 'LibraryPage'
+    $persisted = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+    if (@($persisted.Variants).Count -ne 1) { throw 'Reanalysis dropped explicit variant relationship.' }
+    foreach ($variantStep in @(@{ Label = 'Originale'; Game = $variantParent }, @{ Label = 'Remix'; Game = $variantCopy })) {
+        $variantPicker = Find-Element ('LibraryVariant-' + $variantParent.Id)
+        $variantPicker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+        $variantCondition = [Windows.Automation.AndCondition]::new(
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::IsSelectionItemPatternAvailableProperty, $true),
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $variantStep.Label))
+        Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $variantCondition) } 'library variant choice'
+        $variantChoice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $variantCondition)
+        $variantChoice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+        try { $variantPicker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse() }
+        catch [Windows.Automation.ElementNotAvailableException] { }
+        Wait-Until {
+            $state = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json
+            return $state.SelectedId -eq $variantStep.Game.Id -and $null -ne (Find-Element ('LibraryVariant-' + $variantParent.Id))
+        } 'variant selection and analysis completed'
+        Invoke-Button 'OverviewPage'
+        Wait-Until { (Find-Element 'OperationStatus').Current.Name -like 'Analisi completata*' } 'active variant analysis'
+        if ((Find-Element 'ExecutablePath').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne $variantStep.Game.ExecutablePath) { throw 'Variant selector retained another active executable in the game page.' }
+        Invoke-Button 'LibraryPage'
+    }
+    Write-Host 'PASS GUI variant selection refreshes the analyzed executable and all game-specific pages'
+    Write-Host 'PASS GUI explicit Remix association: user chooses original, one card with variant selector, entries preserved across reanalysis'
     Invoke-Button 'DeselectLibraryGame'
     Wait-Until { (Find-Element 'OperationStatus').Current.Name -eq 'Nessun gioco selezionato' } 'deselect analyzed game'
     $savedAfter = Get-Content -LiteralPath (Join-Path $fixtureData 'Library/library.json') -Raw | ConvertFrom-Json

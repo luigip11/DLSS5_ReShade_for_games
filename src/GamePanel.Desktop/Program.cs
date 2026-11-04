@@ -393,23 +393,39 @@ internal sealed partial class MainWindow : Window
         { MessageBox.Show(this, e.Message, "Esportazione non completata", MessageBoxButton.OK, MessageBoxImage.Information); }
     }
 
-    private void Launch()
+    private void Launch(bool viaExplorer = false)
     {
         if (_busy || _report is null) return;
         try
         {
+            if (_resolutionProfiles.HasPending(_report.ExecutablePath)) throw new InvalidOperationException("Completa o annulla l'operazione risoluzione nella pagina Schermo prima di avviare il gioco.");
             if (_profiles.Status(_report.ExecutablePath).Pending || _widescreen.Status(_report.ExecutablePath).Pending
                 || _remixManaged.HasPendingOperation(_report.ExecutablePath) || _assets.Status(_report.ExecutablePath).Pending)
                 throw new InvalidOperationException("Completa o annulla l'operazione del profilo in HDR / FX prima di avviare il gioco.");
-            var started = Process.Start(new ProcessStartInfo(_report.ExecutablePath)
-            { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = true });
-            if (started is not null)
+            var resolutionArguments = _resolutionProfiles.LaunchArguments(_report);
+            var explorer = viaExplorer || UseExplorerForSelectedGame;
+            if (explorer && resolutionArguments.Count != 0) throw new InvalidOperationException("L'avvio tramite Esplora file conserva il gioco senza parametri aggiuntivi. Per UG1 Remix usa il metodo INI nella pagina Schermo.");
+            var route = explorer ? "ExplorerDesktop" : "GamePanel";
+            RecordLaunch(route, resolutionArguments, "Prepared");
+            if (explorer)
             {
-                started.Dispose();
-                try { _library = _libraryStore.MarkPlayed(_report.ExecutablePath); }
-                catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
-                { _libraryMessage = "Gioco avviato; ultimo accesso non salvato: " + e.Message; }
+                try { ExplorerGameLauncher.Launch(_report.ExecutablePath); RecordLaunch(route, resolutionArguments, "Requested"); }
+                catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
+                { RecordLaunch(route, resolutionArguments, "Failed", error: e.Message); throw; }
+                _status.Text = "Avvio richiesto tramite Esplora file";
             }
+            else
+            {
+                var start = new ProcessStartInfo(_report.ExecutablePath)
+                { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = resolutionArguments.Count == 0 };
+                foreach (var argument in resolutionArguments) start.ArgumentList.Add(argument);
+                using var started = Process.Start(start);
+                if (started is null) throw new InvalidOperationException("Il sistema non ha restituito il processo avviato.");
+                RecordLaunch(route, resolutionArguments, "Started", started.Id);
+            }
+            try { _library = _libraryStore.MarkPlayed(_report.ExecutablePath); }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+            { _libraryMessage = "Avvio richiesto; ultimo accesso non salvato: " + e.Message; }
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         { MessageBox.Show(this, e.Message, "Avvio non completato", MessageBoxButton.OK, MessageBoxImage.Information); }
