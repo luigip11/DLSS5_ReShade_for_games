@@ -32,13 +32,16 @@ La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una ri
 Catture reali dell’interfaccia GamePanel alpha.15 su Windows, con voci NFS Underground 1 e 2 e configurazioni dimostrative isolate. Le copertine sono illustrazioni locali, non artwork ufficiali; GPU e valori DLSS sono esempi, non misurazioni della macchina dell’utente.
 
 ### Libreria e anteprime gioco
+
 ![Libreria di GamePanel con Underground 1 e 2, copertine illustrative e selettore Originale/Remix](docs/images/alpha15-library-nfs.png)
 
 ### Grafica e contenuti · parametri DLSS
+
 I parametri illustrati sono nella pagina **DLSS**, raggiungibile anche da **Grafica → Profilo e DLSS** per le copie Remix compatibili.
 
 ![Parametri DLSS illustrati: Super Resolution, Ray Reconstruction, modello, Frame Generation e Reflex](docs/images/alpha15-dlss-parameters.png)
 
 ### Schermo e risoluzione
+
 ![Profilo di risoluzione per gioco con dimensioni del monitor e metodo di applicazione](docs/images/alpha15-resolution.png)
 

@@ -50,7 +50,8 @@ internal static class DocumentationPreview
                 object Get(string name) => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
                 void Render(int page)
                 {
-                    Set("_page", page); type.GetMethod("Render", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+                    Set("_page", page); type.GetMethod("Render", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly,
+                        binder: null, types: Type.EmptyTypes, modifiers: null)!.Invoke(window, null);
                     ((ScrollViewer)Get("_pageScroll")).ScrollToTop(); Pump(window);
                 }
                 Set("_library", library);
