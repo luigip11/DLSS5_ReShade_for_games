@@ -6,7 +6,7 @@ Il progetto comprende la gestione delle configurazioni DLSS per le copie RTX Rem
 
 ## Download
 
-**[Scarica GamePanel alpha.14 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41512123911/artifacts/13174356555)**
+**[Scarica GamePanel alpha.14 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41721019504/artifacts/13273252324)**
 
 La build alpha.14 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre l’archivio e avviare GamePanel. Giochi, asset e runtime RTX Remix non sono inclusi.
 
