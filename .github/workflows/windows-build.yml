@@ -57,6 +57,11 @@ jobs:
       - name: Check native updater and preservation of user data
         shell: pwsh
         run: ./scripts/check-updater.ps1 -PackageDirectory ./artifacts/GamePanel-win-x64
+      - name: Capture documentation views with isolated NFS demonstration data
+        shell: pwsh
+        run: |
+          dotnet run --project tests/GamePanel.DesktopChecks -c Release --no-restore -- --documentation-preview ./artifacts/ui-preview
+          if ($LASTEXITCODE -ne 0) { throw 'Documentation screenshots failed.' }
       - name: Create non-executable static texture compatibility fixture
         shell: pwsh
         run: dotnet run --project tests/GamePanel.Checks -c Release --no-restore -- --write-asset-fixture ./artifacts/asset-fixture/speed2.exe

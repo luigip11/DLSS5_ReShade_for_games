@@ -1,6 +1,8 @@
-# Candidato alpha.15 — risoluzione per gioco e nuovo EXE UG2
+# Alpha.15 — libreria con copertine, controlli DLSS e avvio Remix
 
 Copertine per scheda, da file locale o ricerca Wikipedia esplicita con anteprima e cache offline. GPU illustrate e azioni Schermo/GPU affiancate nella pagina DLSS; Gioca e Avvia il gioco in verde fluo. La pagina Gioco collega alle informazioni di sistema Windows e chiarisce i metadati versione mancanti negli EXE.
+
+Avvio UG1 Remix tramite il desktop di Esplora file, con directory di lavoro esplicita e diagnostica locale. Il percorso di avvio è stato confermato sul PC dell’utente; il profilo conserva le impostazioni di illuminazione della mod. La guida alle prestazioni distingue i fotogrammi renderizzati da quelli generati e propone confronti ripetibili.
 
 La libreria consente di collegare esplicitamente una copia Remix al gioco originale, mantenendo una sola scheda con selettore Originale/Remix. Il collegamento è reversibile, persistente dopo rianalisi e non richiede modifiche a file o journal del gioco.
 

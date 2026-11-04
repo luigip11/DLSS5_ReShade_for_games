@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Windows.Media.Imaging;
 
 if (args.Length == 2 && args[0] == "--explorer-probe") return ExplorerLaunchChecks.Run(args[1]);
+if (args.Length == 2 && args[0] == "--documentation-preview") return DocumentationPreview.Run(args[1]);
 
 // Independent golden DDS samples exercise the actual WPF preview shipped by GamePanel.
 // No game, ASI, downloaded executable, or native image codec is loaded.

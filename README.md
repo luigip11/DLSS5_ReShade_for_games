@@ -15,13 +15,10 @@ La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla s
 - Copertine locali e ricerca online su Wikipedia, con anteprima, fonte e cache offline. [Guida](docs/LIBRARY-COVERS.md).
 - Schede GPU illustrate, azioni DLSS affiancate, pulsanti Gioca verde fluo e accesso alle informazioni di sistema Windows.
 - Spiegazione dei metadati versione EXE e della differenza rispetto al numero mostrato nel gioco. [Confronto FPS Remix](docs/REMIX-PERFORMANCE.md).
-
 - Avvio UG1 Remix tramite il desktop di Esplora file e report locale del contesto di avvio, conservando la configurazione del gioco.
-
 - Cambio variante sincronizzato con l’analisi attiva nelle pagine Gioco, Grafica e DLSS.
 - Collegamento esplicito delle copie Remix all’originale in libreria, con selettore Originale/Remix e separazione reversibile.
 - UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
-
 - Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
 - Metodo dedicato a Underground 1 con Widescreen Fix verificato; parametri di avvio Unity/Unreal e configurazioni INI/CFG personalizzate.
 - Recupero delle operazioni interrotte e conservazione delle modifiche esterne ai file di configurazione.
@@ -32,13 +29,15 @@ La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una ri
 
 ## Schermate
 
-Schermate reali di GamePanel alpha.15 nell’ambiente di test Windows; le voci dei giochi sono dimostrative.
+Catture reali dell’interfaccia GamePanel alpha.15 su Windows, con voci NFS Underground 1 e 2 e configurazioni dimostrative isolate. Le copertine sono illustrazioni locali, non artwork ufficiali; GPU e valori DLSS sono esempi, non misurazioni della macchina dell’utente.
 
-### Libreria e copertine
-![Libreria di GamePanel con copertina locale dimostrativa e menu Copertina](docs/images/alpha15-library-covers.png)
+### Libreria e anteprime gioco
+![Libreria di GamePanel con Underground 1 e 2, copertine illustrative e selettore Originale/Remix](docs/images/alpha15-library-nfs.png)
 
-### GPU e impostazioni DLSS
-![Scheda GPU illustrata e pulsanti Schermo e risoluzione e Preferenze GPU di Windows affiancati](docs/images/alpha15-dlss-hardware.png)
+### Grafica e contenuti · parametri DLSS
+I parametri illustrati sono nella pagina **DLSS**, raggiungibile anche da **Grafica → Profilo e DLSS** per le copie Remix compatibili.
+
+![Parametri DLSS illustrati: Super Resolution, Ray Reconstruction, modello, Frame Generation e Reflex](docs/images/alpha15-dlss-parameters.png)
 
 ### Schermo e risoluzione
 ![Profilo di risoluzione per gioco con dimensioni del monitor e metodo di applicazione](docs/images/alpha15-resolution.png)
