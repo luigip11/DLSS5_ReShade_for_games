@@ -18,16 +18,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     wchar_t* separator = wcsrchr(module, L'\\');
     if (!separator) return 8;
     *(separator + 1) = L'\0';
-    wchar_t request[MAX_PATH] = {}, result[MAX_PATH] = {};
+    wchar_t request[MAX_PATH] = {}, probeResultPath[MAX_PATH] = {};
     if (swprintf_s(request, L"%lsGamePanelExplorerProbe.request", module) < 0
-        || swprintf_s(result, L"%lsGamePanelExplorerProbe.result", module) < 0) return 8;
+        || swprintf_s(probeResultPath, L"%lsGamePanelExplorerProbe.result", module) < 0) return 8;
     if (GetFileAttributesW(request) != INVALID_FILE_ATTRIBUTES)
     {
         wchar_t directory[32768] = {}, token[256] = {};
         if (!GetCurrentDirectoryW(32768, directory)) return 8;
         GetEnvironmentVariableW(L"GAMEPANEL_EXPLORER_TEST_TOKEN", token, 256);
         FILE* output = nullptr;
-        if (_wfopen_s(&output, result, L"w, ccs=UTF-8") != 0 || !output) return 8;
+        if (_wfopen_s(&output, probeResultPath, L"w, ccs=UTF-8") != 0 || !output) return 8;
         fwprintf(output, L"%ls\n%ls\n", directory, token); fclose(output); return 0;
     }
     // Launcher testing is independent of graphics/device availability. This flag
