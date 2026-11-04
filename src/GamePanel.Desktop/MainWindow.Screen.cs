@@ -15,17 +15,18 @@ internal sealed partial class MainWindow
     private RuntimeEvidence? _runtimeEvidence;
     private Button? _screenApplyButton;
     private void ResetScreen()
-    { _screenState = null; _screenPlan = null; _runtimeEvidence = null; _screenMessage = "Analizza Underground 2 per preparare il Widescreen Fix."; }
+    { _screenState = null; _screenPlan = null; _runtimeEvidence = null; _screenMessage = "Analizza Underground 2 per preparare il Widescreen Fix."; ResetResolution(); }
     private async Task RefreshScreenAsync(string path)
     {
         try { var state = await Task.Run(() => _widescreen.Status(path)); if (!_closing) { _screenState = state; _screenMessage = state.Message; } }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
         { _screenState = null; _screenMessage = e.Message; }
+        await RefreshResolutionAsync(path);
     }
     private void RenderScreen()
     {
         _screenApplyButton = null;
-        Heading("Schermo", "Monitor e risoluzione consigliata per il gioco selezionato.");
+        Heading("Schermo", "Monitor, risoluzione e metodo di applicazione per il gioco selezionato.");
         RenderDisplaySelector();
         var detected = SelectedDisplay(); var target = new StackPanel();
         target.Children.Add(DesignSystem.Chip(detected?.NativeWidth is not null ? "MODALITÀ PREFERITA DELLO SCHERMO" : "RISOLUZIONE WINDOWS ATTUALE", Accent));
@@ -33,11 +34,12 @@ internal sealed partial class MainWindow
         target.Children.Add(Text(detected is null ? "Windows non ha restituito uno schermo attivo. Premi Rileva schermi."
             : detected.Name + $" · attuale {detected.Width} × {detected.Height}" + (detected.NativeWidth is null ? " · modalità nativa non disponibile" : $" · preferita {detected.NativeWidth} × {detected.NativeHeight}"), 13, Muted));
         _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 18), Child = target });
+        RenderResolutionProfile(detected);
         if (!SelectedIsUnderground2 || SelectedIsRemix)
         {
             Card(SelectedIsRemix ? "Risoluzione della variante Remix" : "Risoluzione del gioco", SelectedIsRemix
                 ? "La copia conserva il Widescreen Fix del gioco originale. Scegli la risoluzione nelle opzioni video del gioco; il monitor selezionato resta salvato in GamePanel."
-                : "Scegli nelle opzioni video del gioco la risoluzione del monitor. I fix specifici compaiono solo per i titoli supportati.");
+                : "Il metodo del profilo determina come viene richiesta la risoluzione. I giochi possono ignorare parametri non supportati: verifica sempre il risultato nelle opzioni video.");
             return;
         }
         var status = Text(_screenMessage, 13, Muted); status.Margin = new Thickness(0, 0, 0, 18);
@@ -84,7 +86,7 @@ internal sealed partial class MainWindow
     }
     private async Task PrepareScreenAsync(bool remove)
     {
-        if (_report is null) return; var report = _report; _screenPlan = null;
+        if (_report is null) return; var report = _report; _screenPlan = null; InvalidateResolution();
         await RunFxTaskAsync(async (token, progress) =>
         {
             if (remove) return _widescreen.PrepareRemove(report, token);

@@ -1,3 +1,9 @@
+# Candidato alpha.15 — risoluzione per gioco e nuovo EXE UG2
+
+La pagina Schermo offre risoluzioni del monitor selezionato e profili separati per EXE. Underground 1 può installare il fix ThirteenAG verificato e impostare RES.cfg2; Unity e Unreal usano parametri di avvio, gli altri giochi possono usare un adattatore INI/CFG personalizzato. Anteprima, backup e recupero accompagnano le scritture. Il profilo non cambia la modalità di Windows né misura il rendering effettivo: i giochi devono supportare il metodo scelto. [Guida ai metodi](RESOLUTION-PROFILES.md).
+
+La gestione della configurazione UG2 Remix riconosce anche l’EXE NoCD esaminato. Il cambio dal precedente EXE richiede registrazione esplicita con anteprima degli hash; i percorsi Windows vengono confrontati senza distinguere maiuscole e minuscole. Il riconoscimento del file non certifica la patch 1.2 né il funzionamento del runtime Remix con quel NoCD.
+
 # Candidato alpha.14 — controlli illustrati e deselezione
 
 Chevron vettoriale unico, ruotato fra apertura e chiusura dei menu Avanzate. I parametri DLSS hanno schemi illustrativi verde fluo accanto alle scelte; non rappresentano immagini reali del gioco o misurazioni. In Libreria, Deseleziona gioco libera il contesto analizzato senza rimuovere giochi, file o profili.
@@ -59,3 +65,4 @@ La release non include un pacchetto di geometrie già verificato. RAR/TPF/script
 La build GamePanel rimane senza firma Authenticode e Smart App Control può bloccarla. Hash e audit statici non attestano l'assenza assoluta di malware o la fiducia Windows.
 
 [Guida alpha.8](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/ALPHA8.md) · [Formato asset](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/ASSET-PACKS.md) · [Catalogo e provenienza](https://github.com/luigip11/DLSS5_ReShade_for_games/blob/main/docs/TEXWIZARD-CATALOG.md)
+

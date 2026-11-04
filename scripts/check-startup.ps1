@@ -185,6 +185,39 @@ try {
     }
     if ((Find-Element 'DlssStatus').Current.Name -like '*Underground*') { throw 'Generic DLSS status exposes a game-specific prerequisite.' }
     Write-Host 'PASS GUI contextual graphics: unrelated game has no UG2 tools, DLSS page available without PRESTO badge'
+    Invoke-Button 'AssetsPage'
+    Invoke-Button 'GraphicsOpenScreen'
+    Wait-Until { $null -ne (Find-Element 'GameResolutionMethod') } 'general game resolution controls'
+    $resolutionMethod = Find-Element 'GameResolutionMethod'
+    $resolutionMethod.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $unityChoice = [Windows.Automation.AndCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, ('Unity ' + [char]0x00b7 + ' parametri di avvio')))
+    Wait-Until { $null -ne [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $unityChoice) } 'Unity resolution choice'
+    $choice = [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants, $unityChoice)
+    $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    Invoke-Button 'PrepareGameResolution'
+    Wait-Until { $null -ne (Find-Element 'ApplyGameResolution') -and (Find-Element 'ApplyGameResolution').Current.IsEnabled } 'resolution no-write preview'
+    if (@(Get-ChildItem -LiteralPath (Join-Path $fixtureData 'Settings/GameResolutions') -Filter state.json -Recurse -ErrorAction SilentlyContinue).Count -ne 0) { throw 'Resolution preview wrote a profile.' }
+    Invoke-Button 'ApplyGameResolution'
+    Wait-Until { (Find-Element 'GameResolutionStatus').Current.Name -like 'Profilo applicato*' } 'resolution profile saved'
+    $resolutionStates = @(Get-ChildItem -LiteralPath (Join-Path $fixtureData 'Settings/GameResolutions') -Filter state.json -Recurse)
+    if ($resolutionStates.Count -ne 1) { throw 'Expected one per-game resolution profile.' }
+    $resolutionState = Get-Content -LiteralPath $resolutionStates[0].FullName -Raw | ConvertFrom-Json
+    if ($resolutionState.Executable -cne $fixtureExe -or $resolutionState.Options.Method -ne 1 -or $resolutionState.Options.Width -lt 320 -or $resolutionState.Options.Height -lt 200 -or @($resolutionState.Files).Count -ne 0) { throw 'Resolution profile identity or launch mode mismatch.' }
+    if ((Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash -ne $originalHash) { throw 'Resolution profile changed the executable.' }
+    if ($PreviewDirectory) {
+        $resolutionScroll = (Find-Element 'PageScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+        if ($resolutionScroll.Current.VerticallyScrollable) { $resolutionScroll.SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, 45) }
+        Start-Sleep -Milliseconds 300
+        [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '10-game-resolution.png')))
+    }
+    Invoke-Button 'RemoveGameResolution'
+    Wait-Until { $null -ne (Find-Element 'ApplyGameResolution') -and (Find-Element 'ApplyGameResolution').Current.IsEnabled } 'resolution removal preview'
+    Invoke-Button 'ApplyGameResolution'
+    Wait-Until { (Find-Element 'GameResolutionStatus').Current.Name -like 'Profilo rimosso*' } 'resolution profile removal'
+    if (Test-Path -LiteralPath $resolutionStates[0].FullName) { throw 'Resolution profile remains after removal.' }
+    Write-Host 'PASS GUI general resolution profile: monitor modes, no-write preview, apply and removal; fixture EXE never executed'
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
     Invoke-Button 'CreateBackup'

@@ -398,11 +398,15 @@ internal sealed partial class MainWindow : Window
         if (_busy || _report is null) return;
         try
         {
+            if (_resolutionProfiles.HasPending(_report.ExecutablePath)) throw new InvalidOperationException("Completa o annulla l'operazione risoluzione nella pagina Schermo prima di avviare il gioco.");
             if (_profiles.Status(_report.ExecutablePath).Pending || _widescreen.Status(_report.ExecutablePath).Pending
                 || _remixManaged.HasPendingOperation(_report.ExecutablePath) || _assets.Status(_report.ExecutablePath).Pending)
                 throw new InvalidOperationException("Completa o annulla l'operazione del profilo in HDR / FX prima di avviare il gioco.");
-            var started = Process.Start(new ProcessStartInfo(_report.ExecutablePath)
-            { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = true });
+            var resolutionArguments = _resolutionProfiles.LaunchArguments(_report);
+            var start = new ProcessStartInfo(_report.ExecutablePath)
+            { WorkingDirectory = System.IO.Path.GetDirectoryName(_report.ExecutablePath), UseShellExecute = resolutionArguments.Count == 0 };
+            foreach (var argument in resolutionArguments) start.ArgumentList.Add(argument);
+            var started = Process.Start(start);
             if (started is not null)
             {
                 started.Dispose();
