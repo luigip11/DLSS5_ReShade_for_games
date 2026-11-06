@@ -101,11 +101,13 @@ internal sealed partial class MainWindow
         var choices = new List<ResolutionChoice> { new(null, "Scegli il metodo compatibile") };
         if (_report.Sha256 == Underground1DisplayFix.ExecutableSha256 && !SelectedIsRemix) choices.Add(new(ResolutionMethod.Underground1, "Underground 1 · fix verificato"));
         choices.AddRange([new(ResolutionMethod.Unity, "Unity · parametri di avvio"), new(ResolutionMethod.Unreal, "Unreal · parametri di avvio"), new(ResolutionMethod.Ini, "Configurazione INI/CFG · personalizzata")]);
-        body.Children.Add(Text("METODO DI APPLICAZIONE", 10, Muted, FontWeights.SemiBold));
+        var methodHost = new StackPanel(); methodHost.Children.Add(Text("METODO DI APPLICAZIONE", 10, Muted, FontWeights.SemiBold));
+        var methodRow = new Grid { Margin = new Thickness(0, 16, 0, 0) }; methodRow.ColumnDefinitions.Add(new ColumnDefinition());
+        methodRow.Children.Add(methodHost); body.Children.Add(methodRow);
         var method = new ComboBox { ItemsSource = choices, DisplayMemberPath = nameof(ResolutionChoice.Label), SelectedIndex = Math.Max(0, choices.FindIndex(c => c.Method == _resolutionMethod)), IsEnabled = !_busy, Margin = new Thickness(0, 8, 0, 14) };
         System.Windows.Automation.AutomationProperties.SetAutomationId(method, "GameResolutionMethod");
         method.SelectionChanged += (_, _) => { if (method.SelectedItem is ResolutionChoice value) { _resolutionMethod = value.Method; InvalidateResolution(); Render(); } };
-        body.Children.Add(method);
+        methodHost.Children.Add(method);
         if (SelectedIsUnderground1 && SelectedIsRemix) body.Children.Add(Text("UG1 Remix usa il proprio Widescreen Fix: vengono aggiornate soltanto ResX e ResY nell'INI esistente. Non viene installato il fix del gioco originale. Per conservare una risoluzione già funzionante, non applicare un nuovo profilo.", 12, Muted));
         if (_resolutionMethod == ResolutionMethod.Underground1)
             body.Children.Add(Text("Installa il Widescreen Fix UG1 verificato e salva le dimensioni in RES.cfg2. EXE, ReShade, lingua e salvataggi restano separati. La combinazione sul tuo PC richiede una prova nel gioco.", 12, Muted));
@@ -114,21 +116,27 @@ internal sealed partial class MainWindow
         else if (_resolutionMethod == ResolutionMethod.Ini)
         {
             var advanced = body;
-            advanced.Children.Add(Text("Scegli la configurazione di testo che contiene già le chiavi della risoluzione. I nomi variano tra giochi; GamePanel non li deduce dal solo EXE.", 12, Muted));
-            advanced.Children.Add(Text(_resolutionDraft.ConfigPath ?? "Nessun file selezionato", 12, Muted));
-            advanced.Children.Add(FxButton("Seleziona configurazione", "ChooseResolutionIni", (_, _) =>
+            methodRow.ColumnDefinitions.Add(new ColumnDefinition()); methodHost.Margin = new Thickness(0, 0, 8, 0);
+            var configHost = new StackPanel { Margin = new Thickness(8, 0, 0, 0) }; Grid.SetColumn(configHost, 1); methodRow.Children.Add(configHost);
+            configHost.Children.Add(Text("FILE DI CONFIGURAZIONE", 10, Muted, FontWeights.SemiBold));
+            var chooseConfig = FxButton("Seleziona configurazione", "ChooseResolutionIni", (_, _) =>
             {
                 var picker = new OpenFileDialog { Title = "Configurazione di risoluzione del gioco", Filter = "Configurazioni (*.ini;*.cfg)|*.ini;*.cfg", CheckFileExists = true };
                 if (picker.ShowDialog(this) == true) { _resolutionDraft = _resolutionDraft with { ConfigPath = picker.FileName }; InvalidateResolution(); Render(); }
-            }, !_busy));
+            }, !_busy);
+            SmallAction(chooseConfig, _resolutionDraft.ConfigPath is null ? "Seleziona configurazione" : Path.GetFileName(_resolutionDraft.ConfigPath), "folder");
+            chooseConfig.ToolTip = _resolutionDraft.ConfigPath ?? "Scegli un file INI o CFG già presente"; chooseConfig.Margin = new Thickness(0, 8, 0, 14); configHost.Children.Add(chooseConfig);
+            advanced.Children.Add(Text("Scegli il file che contiene già le chiavi della risoluzione. I nomi variano tra giochi; la sezione può restare vuota per le chiavi senza sezione.", 12, Muted));
+            var fields = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Margin = new Thickness(-6, 8, -6, 0) }; advanced.Children.Add(fields);
             void Field(string caption, string value, string id, Action<string> change)
             {
-                var text = Text(caption, 12, Muted); text.Margin = new Thickness(0, 10, 0, 6); advanced.Children.Add(text);
+                var field = new StackPanel { Margin = new Thickness(6, 0, 6, 0) }; fields.Children.Add(field);
+                var text = Text(caption, 11, Muted); text.Margin = new Thickness(0, 10, 0, 6); field.Children.Add(text);
                 var input = new TextBox { Text = value, Foreground = Ink, CaretBrush = Accent, Background = DesignSystem.Raised, BorderBrush = DesignSystem.Line, IsEnabled = !_busy, Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 6) };
                 System.Windows.Automation.AutomationProperties.SetAutomationId(input, id);
-                input.TextChanged += (_, _) => { change(input.Text.Trim()); InvalidateResolution(); }; advanced.Children.Add(input);
+                input.TextChanged += (_, _) => { change(input.Text.Trim()); InvalidateResolution(); }; field.Children.Add(input);
             }
-            Field("Sezione (vuota per chiavi senza sezione)", _resolutionDraft.Section, "ResolutionIniSection", v => _resolutionDraft = _resolutionDraft with { Section = v });
+            Field("Sezione", _resolutionDraft.Section, "ResolutionIniSection", v => _resolutionDraft = _resolutionDraft with { Section = v });
             Field("Chiave larghezza", _resolutionDraft.WidthKey, "ResolutionIniWidth", v => _resolutionDraft = _resolutionDraft with { WidthKey = v });
             Field("Chiave altezza", _resolutionDraft.HeightKey, "ResolutionIniHeight", v => _resolutionDraft = _resolutionDraft with { HeightKey = v });
         }
@@ -141,7 +149,7 @@ internal sealed partial class MainWindow
         var actions = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
         var prepareLabel = _resolutionMethod == ResolutionMethod.Underground1 ? "Prepara risoluzione e fix UG1" : "Prepara configurazione";
         var prepare = FxButton(prepareLabel, "PrepareGameResolution", async (_, _) => await PrepareResolutionAsync(false), !_busy && !peerPending && _resolutionMethod is not null);
-        SmallAction(prepare, prepareLabel, "settings"); prepare.HorizontalAlignment = HorizontalAlignment.Stretch;
+        SmallAction(prepare, prepareLabel, "settings"); prepare.HorizontalAlignment = HorizontalAlignment.Stretch; prepare.Margin = new Thickness(0);
         actions.Children.Add(prepare);
         if (_resolutionMethod == ResolutionMethod.Underground1)
             actions.Children.Add(FxButton("Scegli ZIP del fix UG1", "ChooseUg1DisplayZip", async (_, _) => await PrepareResolutionAsync(false, true), !_busy && !peerPending));

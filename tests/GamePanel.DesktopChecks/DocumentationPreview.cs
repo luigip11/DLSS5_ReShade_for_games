@@ -123,6 +123,8 @@ internal static class DocumentationPreview
                 if (resolutionChoice.Items.Count > 1) { resolutionChoice.SelectedIndex = resolutionChoice.SelectedIndex == 0 ? 1 : 0; Pump(window); }
                 Require(((TextBlock)Find(window, "DetectedDisplayResolution")!).Text == resolutionChoice.SelectedItem.ToString()!.Split(" · ")[0], "Monitor preview not updated to selected mode.");
                 Require(Find(window, "ScreenAdvancedSettings") is Expander && Find(window, "PrepareGameResolution") is Button { Content: Panel, HorizontalAlignment: HorizontalAlignment.Stretch }, "Screen advanced controls or prepare action missing.");
+                var sectionInput = Find(window, "ResolutionIniSection")!; var widthInput = Find(window, "ResolutionIniWidth")!; var heightInput = Find(window, "ResolutionIniHeight")!;
+                Require(Math.Abs(sectionInput.TranslatePoint(new Point(), window).Y - widthInput.TranslatePoint(new Point(), window).Y) < 1 && Math.Abs(widthInput.TranslatePoint(new Point(), window).Y - heightInput.TranslatePoint(new Point(), window).Y) < 1, "INI inputs not on one row.");
                 Save(window, Path.Combine(output, "alpha16-screen.png"));
                 ((Expander)Find(window, "ScreenAdvancedSettings")!).BringIntoView(); Pump(window); Save(window, Path.Combine(output, "alpha16-screen-advanced.png"));
                 Render(8); Require(Find(window, "HdrDisplayStatus") is not null && Find(window, "WindowsHdrSettings") is not null, "HDR page unavailable.");
