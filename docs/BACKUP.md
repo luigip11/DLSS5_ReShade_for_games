@@ -41,3 +41,7 @@ Collegamenti/junction, percorsi fuori root, nomi dispositivo e metadati malforma
 Questi controlli non proteggono da un attaccante locale privilegiato che altera intenzionalmente filesystem e metadati, e non costituiscono una certificazione contro ogni guasto hardware o perdita di alimentazione. I test simulano annullamenti, perdita dell'ultimo completamento del journal, corruzione e ostacoli filesystem; non riempiono fisicamente il disco del runner.
 
 La lettura per il backup normalmente non richiede elevazione. Il recupero richiede permessi di scrittura sulla cartella del gioco: sotto Program Files Windows può negarli. L'app segnala l'errore e conserva le copie; non cambia ACL, non richiede automaticamente elevazione e non modifica le protezioni di Windows.
+
+## Punti di ripristino ed eliminazione
+
+La pagina mostra un riquadro con il numero dei backup e una riga per ogni punto: data, gioco e percorso, file salvati e dimensione. **Esamina** verifica i file e prepara l'anteprima di recupero. **Elimina** richiede conferma e cancella solo quel punto, senza toccare il gioco o gli altri backup. Un ripristino interrotto deve essere completato prima di eliminare il relativo backup. Collegamenti esterni o metadati non validi bloccano l'eliminazione.

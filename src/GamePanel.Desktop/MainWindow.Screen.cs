@@ -27,13 +27,7 @@ internal sealed partial class MainWindow
     {
         _screenApplyButton = null;
         Heading("Schermo", "Monitor, risoluzione e metodo di applicazione per il gioco selezionato.");
-        RenderDisplaySelector();
-        var detected = SelectedDisplay(); var target = new StackPanel();
-        target.Children.Add(DesignSystem.Chip(detected?.NativeWidth is not null ? "MODALITÀ PREFERITA DELLO SCHERMO" : "RISOLUZIONE WINDOWS ATTUALE", Accent));
-        var resolution = Text(detected is null ? "Da rilevare" : $"{detected.TargetWidth} × {detected.TargetHeight}", 36, Ink, FontWeights.Bold); System.Windows.Automation.AutomationProperties.SetAutomationId(resolution, "DetectedDisplayResolution"); resolution.Margin = new Thickness(0, 12, 0, 6); target.Children.Add(resolution);
-        target.Children.Add(Text(detected is null ? "Windows non ha restituito uno schermo attivo. Premi Rileva schermi."
-            : detected.Name + $" · attuale {detected.Width} × {detected.Height}" + (detected.NativeWidth is null ? " · modalità nativa non disponibile" : $" · preferita {detected.NativeWidth} × {detected.NativeHeight}"), 13, Muted));
-        _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(22), Margin = new Thickness(0, 0, 0, 18), Child = target });
+        var detected = SelectedDisplay(); RenderScreenMonitor(detected);
         RenderResolutionProfile(detected);
         if (!SelectedIsUnderground2 || SelectedIsRemix)
         {

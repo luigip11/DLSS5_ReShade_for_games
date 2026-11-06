@@ -1,47 +1,94 @@
-# GamePanel — DLSS e ReShade per i tuoi giochi
+# GamePanel — giochi, grafica e configurazioni
 
-GamePanel è un’app Windows che riunisce in un’unica interfaccia la libreria dei giochi e la gestione delle configurazioni grafiche. Permette di importare un gioco dal suo eseguibile, analizzarne i componenti e accedere alle funzioni disponibili per quel titolo.
+GamePanel è un’app Windows per importare i giochi dal loro EXE, organizzarli in libreria e gestire le configurazioni grafiche compatibili. Analisi locale, backup, ripristino e varianti Originale/Remix seguono la copia selezionata.
 
-Il progetto comprende la gestione delle configurazioni DLSS per le copie RTX Remix riconosciute, gli strumenti HDR/ReShade e l’importazione di pacchetti grafici compatibili, con backup e ripristino. Le opzioni specifiche compaiono in base al gioco selezionato; gli strumenti tecnici sono raccolti in **Avanzate**. La compatibilità dipende dal gioco e dai componenti installati.
+Le funzioni vengono proposte in base al gioco, al renderer e all'hardware rilevati. GamePanel non aggiunge DLSS o HDR a un titolo che non li supporta.
 
 ## Download
 
-**[Scarica GamePanel alpha.15 per Windows x64 — archivio ZIP](https://github.com/luigip11/GamePanel/actions/runs/41902799353/artifacts/13358743051)**
+**[Scarica GamePanel alpha.16 per Windows x64](https://github.com/luigip11/GamePanel/actions/runs/42228867851/artifacts/13507551076)** · [Build e controlli superati](https://github.com/luigip11/GamePanel/actions/runs/42228867851). Il download degli artifact richiede accesso a GitHub e resta disponibile fino al 4 febbraio 2027.
 
-La build alpha.15 è distribuita come artefatto GitHub Actions: per scaricarla serve accedere a GitHub. Estrarre tutto l’archivio in una cartella nuova e avviare **GamePanel.exe**. Guide, licenze e materiali sono raccolti in **Docs**, **Licenses** e **Assets**. Giochi, asset e runtime RTX Remix non sono inclusi.
+Per usare una build portabile, estrarre tutto lo ZIP in una cartella nuova e aprire **GamePanel.exe**. Runtime dell’app incluso; guide in **Docs**, licenze in **Licenses**, materiali in **Assets**. Giochi e pacchetti Remix non sono inclusi.
 
-## Changelog alpha.15
+## Changelog alpha.16
 
-- Copertine locali e ricerca online su Wikipedia, con anteprima, fonte e cache offline. [Guida](docs/LIBRARY-COVERS.md).
-- Schede GPU illustrate, azioni DLSS affiancate, pulsanti Gioca verde fluo e accesso alle informazioni di sistema Windows.
-- Spiegazione dei metadati versione EXE e della differenza rispetto al numero mostrato nel gioco. [Confronto FPS Remix](docs/REMIX-PERFORMANCE.md).
-- Avvio UG1 Remix tramite il desktop di Esplora file e report locale del contesto di avvio, conservando la configurazione del gioco.
-- Cambio variante sincronizzato con l’analisi attiva nelle pagine Gioco, Grafica e DLSS.
-- Collegamento esplicito delle copie Remix all’originale in libreria, con selettore Originale/Remix e separazione reversibile.
-- UG1 Remix già installato: profilo locale essenziale, risoluzione nell’INI della mod, GPU rilevate e controlli DLSS con backup/ripristino. [Guida UG1](docs/UG1-REMIX.md).
-- Profili di risoluzione per gioco basati sul monitor selezionato, con anteprima, applicazione e ripristino.
-- Metodo dedicato a Underground 1 con Widescreen Fix verificato; parametri di avvio Unity/Unreal e configurazioni INI/CFG personalizzate.
-- Recupero delle operazioni interrotte e conservazione delle modifiche esterne ai file di configurazione.
-- Gestione del nuovo EXE NoCD UG2 identificato, con registrazione esplicita del cambio e confronto corretto dei percorsi Windows.
-- Icona GamePanel incorporata negli EXE; runtime incluso negli eseguibili, guide in **Docs**, licenze in **Licenses** e materiali in **Assets**.
+- UI Windows aggiornata al prototipo approvato: schede libreria adattive, icone informative, ricerca con lente e ordinamento recenti/meno recenti/alfabetico oltre cinque giochi.
+- Avvia/Analizza, tab Grafica e pulsanti backup divisi a metà riga; azioni secondarie separate da un divisore.
+- Copertina selezionata nel riquadro Gioco; informazioni Windows accessibili dal pannello hardware; Gioca e Avvia il gioco a tutta larghezza.
+- Gioca nella pagina DLSS sopra la FAQ; campi di configurazione scuri, hover più visibili, icona aggiornamenti e collegamento al profilo GitHub dell'autore nel footer.
+- Hardware distinto in processore, GPU e RAM installata, con valori rilevati da Windows.
+- Schermo illustrato con risoluzione al centro, monitor e risoluzione affiancati, configurazione avanzata separata.
+- Punti di ripristino con conteggio, gioco/percorso, Esamina ed eliminazione confermata del singolo backup; spaziatura prima delle FAQ.
+- Preparazione locale UG1/UG2 Remix da cartella o ZIP verificato: anteprima, copia separata, annullamento, esportazione locale dei soli file catalogati e collegamento Originale/Remix. [Guida](docs/REMIX-PACKAGES.md).
+- Preparazione degli allegati per GitHub Releases in parti inferiori a 2 GiB, manifest SHA-256 e ricostruzione locale verificata dello ZIP; nessun upload automatico.
+- UG2 conserva FrontB.lzc dell'utente; Smol è un componente separato. Le configurazioni personalizzate vengono segnalate e conservate. Il download pubblico GamePanel resta disabilitato finché i pacchetti distribuibili non sono pubblicati.
+- Preset ReShade generali Originale, Nitido, Bilanciato e Cinema per EXE **x86 Direct3D 9** compatibili, con componente ufficiale verificato, anteprima e ripristino. Nessuna installazione automatica sopra Remix. [Immagine e HDR](docs/IMAGE-AND-HDR.md).
+- Pagina HDR separata: rilevamento Windows in sola lettura del colore avanzato e accesso alle impostazioni HDR, distinguendo HDR nativo, Auto HDR e filtri SDR.
+- Metadati versione EXE conservati nella libreria quando disponibili; nessuna patch dedotta dal nome del file.
 
-La compatibilità dipende dal gioco e dal metodo scelto. Il profilo salva una richiesta di risoluzione: verificarne l’effetto nel gioco. [Guida alla risoluzione](docs/RESOLUTION-PROFILES.md).
+Le copie preparate richiedono una prova nel gioco. Il collaudo di una configurazione su RTX 5080 Laptop non garantisce prestazioni o stabilità su altri PC. Il download pubblico delle mod è distinto dall'importazione locale e richiede pacchetti ospitati, integrità verificata e condizioni di distribuzione rispettate.
 
 ## Schermate
 
-Catture reali dell’interfaccia GamePanel alpha.15 su Windows, con voci NFS Underground 1 e 2 e configurazioni dimostrative isolate. Le copertine sono illustrazioni locali, non artwork ufficiali; GPU e valori DLSS sono esempi, non misurazioni della macchina dell’utente.
+Le anteprime mostrano la UI finale di alpha.16: Libreria, Gioco e hardware, Grafica, DLSS, Schermo, HDR e Backup.
 
-### Libreria e anteprime gioco
+Catture della vera app WPF alpha.16 su Windows, con libreria dimostrativa isolata e copertine illustrative locali. L'hardware mostrato nella pagina Gioco appartiene al runner Windows; non rappresenta il PC dell'utente. Nessun gioco viene eseguito per produrre queste immagini.
 
-![Libreria di GamePanel con Underground 1 e 2, copertine illustrative e selettore Originale/Remix](docs/images/alpha15-library-nfs.png)
+![Libreria GamePanel](docs/images/alpha16-library-nfs.png)
 
-### Grafica e contenuti · parametri DLSS
+<details>
+<summary>Azioni delle schede della libreria</summary>
 
-I parametri illustrati sono nella pagina **DLSS**, raggiungibile anche da **Grafica → Profilo e DLSS** per le copie Remix compatibili.
+![Azioni con icone](docs/images/alpha16-library-actions.png)
 
-![Parametri DLSS illustrati: Super Resolution, Ray Reconstruction, modello, Frame Generation e Reflex](docs/images/alpha15-dlss-parameters.png)
+</details>
 
-### Schermo e risoluzione
+<details>
+<summary>Gioco e specifiche hardware</summary>
 
-![Profilo di risoluzione per gioco con dimensioni del monitor e metodo di applicazione](docs/images/alpha15-resolution.png)
+![Gioco e copertina](docs/images/alpha16-game.png)
 
+![CPU, GPU e RAM rilevate](docs/images/alpha16-hardware.png)
+
+</details>
+
+<details>
+<summary>Grafica del gioco</summary>
+
+![Scorciatoie grafiche e filtri](docs/images/alpha16-graphics.png)
+
+</details>
+
+<details>
+<summary>DLSS: configurazione e parametri</summary>
+
+![Salva e ripristina affiancati](docs/images/alpha16-dlss-profile.png)
+
+![Parametri DLSS](docs/images/alpha16-dlss-parameters.png)
+
+</details>
+
+<details>
+<summary>Schermo e configurazione avanzata</summary>
+
+![Monitor selezionato e risoluzione](docs/images/alpha16-screen.png)
+
+![Configurazione avanzata del gioco](docs/images/alpha16-screen-advanced.png)
+
+</details>
+
+<details>
+<summary>HDR e schermo</summary>
+
+![Stato colore avanzato e impostazioni HDR](docs/images/alpha16-hdr.png)
+
+</details>
+
+<details>
+<summary>Backup e punti di ripristino</summary>
+
+![Backup con Esamina ed Elimina](docs/images/alpha16-backups.png)
+
+</details>
+
+Verifica: **273/273 controlli core Windows superati**, controlli UI, avvio, updater e launcher Explorer riusciti. Le copie Remix generate richiedono un collaudo nel gioco sul PC dell'utente.

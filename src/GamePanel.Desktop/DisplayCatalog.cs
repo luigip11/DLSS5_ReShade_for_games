@@ -97,6 +97,27 @@ internal static class DisplayCatalog
         }
         return result;
     }
+    internal sealed record AdvancedColorState(bool Supported, bool Enabled, uint BitsPerChannel);
+    [StructLayout(LayoutKind.Sequential)] private struct ColorInfo { public Header Header; public uint Flags, Encoding, BitsPerChannel; }
+    [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")] private static extern int ReadColor(ref ColorInfo color);
+    public static AdvancedColorState? AdvancedColor(DetectedDisplay display)
+    {
+        if (Marshal.SizeOf<ColorInfo>() != 32 || GetDisplayConfigBufferSizes(2, out var count, out var modes) != 0 || count is 0 or > 64 || modes > 256) return null;
+        var paths = new DisplayPath[count]; var buffer = Marshal.AllocHGlobal(checked((int)modes * 64));
+        try
+        {
+            if (QueryDisplayConfig(2, ref count, paths, ref modes, buffer, IntPtr.Zero) != 0) return null;
+            foreach (var path in paths.Take((int)count))
+            {
+                var source = new SourceName { Header = new() { Type = 1, Size = (uint)Marshal.SizeOf<SourceName>(), Adapter = path.Source.Adapter, Id = path.Source.Id } };
+                if (Config(ref source) != 0 || !string.Equals(source.Name, display.Device, StringComparison.OrdinalIgnoreCase)) continue;
+                var info = new ColorInfo { Header = new() { Type = 9, Size = (uint)Marshal.SizeOf<ColorInfo>(), Adapter = path.Target.Adapter, Id = path.Target.Id } };
+                if (ReadColor(ref info) == 0) return new((info.Flags & 1) != 0, (info.Flags & 2) != 0, info.BitsPerChannel);
+            }
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+        return null;
+    }
     public static string? WindowDevice(IntPtr window)
     { var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() }; return GetMonitorInfoW(MonitorFromWindow(window, 2), ref info) ? info.Device : null; }
     private static Dictionary<string, (string? Id, string? Name, int? Width, int? Height)> ReadPreferred()

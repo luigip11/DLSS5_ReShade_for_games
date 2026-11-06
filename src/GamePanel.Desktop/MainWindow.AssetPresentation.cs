@@ -33,8 +33,9 @@ internal sealed partial class MainWindow
         };
         System.Windows.Automation.AutomationProperties.SetAutomationId(tabs, "AssetsTabs");
         var layout = new FrameworkElementFactory(typeof(DockPanel));
-        var headers = new FrameworkElementFactory(typeof(TabPanel));
+        var headers = new FrameworkElementFactory(typeof(UniformGrid));
         headers.SetValue(Panel.IsItemsHostProperty, true);
+        headers.SetValue(UniformGrid.ColumnsProperty, 2);
         headers.SetValue(DockPanel.DockProperty, Dock.Top);
         headers.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 0, 18));
         layout.AppendChild(headers);
@@ -53,12 +54,13 @@ internal sealed partial class MainWindow
         border.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
         border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
         border.SetValue(Border.PaddingProperty, new Thickness(20, 13, 20, 13));
-        border.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 10, 0));
+        border.SetValue(FrameworkElement.MarginProperty, new Thickness(3, 0, 3, 0));
         border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
         border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
         var label = new FrameworkElementFactory(typeof(ContentPresenter));
         label.SetValue(ContentPresenter.ContentSourceProperty, "Header");
         label.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
+        label.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
         border.AppendChild(label);
         style.Setters.Add(new Setter(Control.TemplateProperty, new ControlTemplate(typeof(TabItem)) { VisualTree = border }));
         var selected = new Trigger { Property = TabItem.IsSelectedProperty, Value = true };
@@ -69,12 +71,20 @@ internal sealed partial class MainWindow
         var focused = new Trigger { Property = UIElement.IsKeyboardFocusWithinProperty, Value = true };
         focused.Setters.Add(new Setter(Control.BorderBrushProperty, DesignSystem.Blue));
         style.Triggers.Add(focused);
-        tabs.ItemContainerStyle = style;
+        var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hover.Setters.Add(new Setter(Control.BorderBrushProperty, Accent)); hover.Setters.Add(new Setter(Control.BackgroundProperty, DesignSystem.Color("#294331")));
+        style.Triggers.Add(hover); tabs.ItemContainerStyle = style;
 
-        var availableTab = new TabItem { Header = "Configura", Content = available };
-        var installedTab = new TabItem { Header = "I tuoi componenti", Content = installed };
+        object TabLabel(string title, string icon)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal }; var mark = DesignSystem.Icon(icon, Accent, 18); mark.Margin = new Thickness(0, 0, 10, 0); row.Children.Add(mark); row.Children.Add(Text(title, 13, Ink, FontWeights.SemiBold)); return row;
+        }
+        var availableTab = new TabItem { Header = TabLabel("Configura", "settings"), Content = available };
+        var installedTab = new TabItem { Header = TabLabel("I tuoi componenti", "layers"), Content = installed };
         System.Windows.Automation.AutomationProperties.SetAutomationId(availableTab, "AssetsAvailableTab");
+        System.Windows.Automation.AutomationProperties.SetName(availableTab, "Configura");
         System.Windows.Automation.AutomationProperties.SetAutomationId(installedTab, "AssetsInstalledTab");
+        System.Windows.Automation.AutomationProperties.SetName(installedTab, "I tuoi componenti");
         tabs.Items.Add(availableTab);
         tabs.Items.Add(installedTab);
         tabs.SelectedIndex = _assetsTab;

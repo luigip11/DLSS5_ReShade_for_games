@@ -34,6 +34,7 @@ internal sealed partial class MainWindow
         ResetAutomaticAssets();
         ResetDirectXTextures();
         ResetRemixTrial();
+        ResetRemixPackage();
     }
 
     private async Task RefreshAssetsAsync(string executablePath)

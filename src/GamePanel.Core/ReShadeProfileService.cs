@@ -47,10 +47,8 @@ public sealed class ReShadeProfileService
     public static string? Eligibility(GameReport report, bool widescreen = false)
     {
         var file = Path.GetFileName(report.ExecutablePath);
-        if (widescreen ? !file.Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
-            : !new[] { "speed2.exe", "speed.exe", "nfsc.exe", "gta_sa.exe" }.Contains(file, StringComparer.OrdinalIgnoreCase))
-            return widescreen ? "Questo Widescreen Fix è riservato a Underground 2."
-                : "Profilo SDR sperimentale per i classici NFS e San Andreas: seleziona l'EXE reale compatibile.";
+        if (widescreen && !file.Equals("speed2.exe", StringComparison.OrdinalIgnoreCase))
+            return "Questo Widescreen Fix è riservato a Underground 2.";
         if (report.Architecture != "x86 (32 bit)" || !report.GraphicsApis.Contains("Direct3D 9"))
             return "Il profilo richiede un EXE x86 con import Direct3D 9. Nessun wrapper viene installato.";
         if (report.HasAntiCheatIndicators || report.ScanWasLimited)

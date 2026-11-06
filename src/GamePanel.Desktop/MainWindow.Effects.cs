@@ -13,10 +13,10 @@ internal sealed partial class MainWindow
     private ProfileStatus? _fxState;
     private ProfilePlan? _fxPlan;
     private SdrSettings _fxSettings = SdrSettings.Balanced;
-    private string _fxMessage = "Seleziona speed2.exe per preparare il profilo SDR sperimentale.";
+    private string _fxMessage = "Seleziona un gioco x86 Direct3D 9 per preparare un profilo SDR generale.";
     private Button? _fxApplyButton;
     private void ResetEffects()
-    { _fxState = null; _fxPlan = null; _fxSettings = SdrSettings.Balanced; _fxMessage = "Analizza speed2.exe per preparare il profilo SDR sperimentale."; }
+    { _fxState = null; _fxPlan = null; _fxSettings = SdrSettings.Balanced; _fxMessage = "Analizza un gioco x86 Direct3D 9 per preparare il profilo SDR generale."; }
 
     private async Task RefreshEffectsAsync(string path)
     {
@@ -36,7 +36,7 @@ internal sealed partial class MainWindow
         _fxApplyButton = null;
         if (SelectedIsRemix) { Heading("Immagine", "Le regolazioni del renderer selezionato."); Card("Immagine gestita da Remix", "Usa il profilo nella pagina DLSS. ReShade resta disponibile sul percorso originale del gioco."); return; }
         if (_report is not null && !SelectedCapabilities.SupportsReShade) { Heading("Immagine", "Disponibilità per il gioco selezionato."); Card("Profilo immagine non disponibile", "Questo gioco non ha ancora un profilo ReShade gestito e verificato da GamePanel."); return; }
-        Heading("La tua immagine. Il tuo stile.", "ReShade SDR DX9 · classici NFS / San Andreas · sperimentale per ogni build.");
+        Heading("La tua immagine. Il tuo stile.", "ReShade SDR · profili generali per Direct3D 9 x86 · compatibilità da collaudare per gioco.");
         var state = _fxState;
         var stateLabel = Text(_fxMessage, 13, Muted);
         _content.Children.Add(new Border { Background = Surface, BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 16), Child = stateLabel });
@@ -59,7 +59,9 @@ internal sealed partial class MainWindow
         if (_fxSettings == SdrSettings.Original) original.BorderBrush = Accent;
         if (_fxSettings == SdrSettings.Balanced) balanced.BorderBrush = Accent;
         if (_fxSettings == SdrSettings.Cinema) cinema.BorderBrush = Accent;
-        choices.Children.Add(original); choices.Children.Add(balanced); choices.Children.Add(cinema);
+        var sharp = FxButton("Nitido", "SharpProfile", (_, _) => SelectSettings(SdrSettings.Sharp), !_busy);
+        if (_fxSettings == SdrSettings.Sharp) sharp.BorderBrush = Accent;
+        choices.Children.Add(original); choices.Children.Add(sharp); choices.Children.Add(balanced); choices.Children.Add(cinema);
         var enabled = new CheckBox { Content = "Effetti attivi", IsChecked = _fxSettings.Enabled, Foreground = Ink, Margin = new Thickness(12, 12, 0, 10), IsEnabled = !_busy };
         enabled.Checked += (_, _) => { _fxSettings = _fxSettings with { Enabled = true }; InvalidateFxPlan(); };
         enabled.Unchecked += (_, _) => { _fxSettings = _fxSettings with { Enabled = false }; InvalidateFxPlan(); };
@@ -185,7 +187,7 @@ internal sealed partial class MainWindow
         {
             if (!_closing)
             {
-                _fxPlan = null;
+                _fxPlan = null; _packPlan = null; _packMessage = e.Message;
                 if (_report is not null) { await RefreshEffectsAsync(_report.ExecutablePath); await RefreshScreenAsync(_report.ExecutablePath); await RefreshAssetsAsync(_report.ExecutablePath); }
                 _screenPlan = null; _assetPlan = null; _assetPackage = null; _directXPlan = null;
                 ClearAutomaticAssetFeedback();

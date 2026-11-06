@@ -69,7 +69,7 @@ function Find-Element([string]$Id) {
     # Expand only known shell containers requested by a test. Probing for an
     # absent operation (for example after removal) must not change page state.
     $containerId = $null
-    if ($Id -in @('HdrPage', 'ScreenPage', 'BackupsPage', 'DiagnosticsPage')) { $containerId = 'AdvancedNavigation' }
+    if ($Id -in @('HdrPage', 'HdrOptionsPage', 'ScreenPage', 'BackupsPage', 'DiagnosticsPage')) { $containerId = 'AdvancedNavigation' }
     elseif ($Id -in @('ExecutablePath', 'AnalyzePath')) { $containerId = 'GamePathExpander' }
     if ($containerId) {
         $containerCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $containerId)
@@ -235,16 +235,13 @@ try {
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
     Invoke-Button 'CreateBackup'
-    Wait-Until { $null -ne (Find-Element 'BackupSnapshotPicker') } 'backup creation'
+    Wait-Until { $null -ne (Find-Element 'VerifyBackup') -and (Has-Heading 'I tuoi punti di ripristino') } 'backup creation'
     $snapshot = @(Get-ChildItem -LiteralPath $fixtureStore -Directory | Where-Object { $_.Name -match '^[a-fA-F0-9]{32}$' })
     if ($snapshot.Count -ne 1) { throw 'Expected one committed snapshot.' }
     Write-Host 'PASS GUI persistent backup creation'
-    $picker = Find-Element 'BackupSnapshotPicker'
-    $dropdown = $picker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
-    $dropdown.Expand()
-    Wait-Until { $dropdown.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded } 'backup selector open'
-    $dropdown.Collapse()
-    Write-Host 'PASS GUI styled backup selector opens and closes'
+    $deleteBackup = Find-Element ('DeleteBackup-' + $snapshot[0].Name)
+    if ($null -eq $deleteBackup -or -not $deleteBackup.Current.IsEnabled) { throw 'Backup deletion action missing.' }
+    Write-Host 'PASS GUI backup points card with inspect and delete actions'
     if ($PreviewDirectory) {
         Start-Sleep -Milliseconds 300
         [GamePanelCapture]::Save($process.MainWindowHandle, [IO.Path]::GetFullPath((Join-Path $PreviewDirectory '01-backup.png')))

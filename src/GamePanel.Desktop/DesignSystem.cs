@@ -64,6 +64,20 @@ internal static class DesignSystem
     {
         var data = kind switch
         {
+            "link" => "M10,14 L14,10 M8,16 L6,18 A4,4 0 0 1 0,12 L5,7 A4,4 0 0 1 11,7 M13,8 L15,6 A4,4 0 0 1 21,12 L16,17 A4,4 0 0 1 10,17",
+            "search" => "M10,3 A7,7 0 1 1 10,17 A7,7 0 1 1 10,3 M15,15 L22,22",
+            "version" => "M12,2 L22,7 22,17 12,22 2,17 2,7 Z M2,7 L12,13 22,7 M12,13 L12,22",
+            "clock" => "M12,2 A10,10 0 1 1 12,22 A10,10 0 1 1 12,2 M12,6 L12,12 17,15",
+            "backup" => "M3,11 A9,9 0 1 1 5,19 M3,4 L3,11 10,11 M12,6 L12,12 17,15",
+            "unmount" => "M3,15 L12,4 21,15 Z M3,20 L21,20",
+            "edit" => "M4,15 L15,4 20,9 9,20 3,21 Z M13,6 L18,11",
+            "trash" => "M3,6 L21,6 M8,6 L8,3 16,3 16,6 M5,6 L6,21 18,21 19,6 M10,10 L10,17 M14,10 L14,17",
+            "save" => "M3,3 L18,3 21,6 21,21 3,21 Z M7,3 L7,10 16,10 16,3 M7,21 L7,15 17,15 17,21",
+            "refresh" => "M21,10 A9,9 0 0 0 5,6 L2,9 M2,3 L2,9 8,9 M3,14 A9,9 0 0 0 19,18 L22,15 M22,21 L22,15 16,15",
+            "plus" => "M12,3 L12,21 M3,12 L21,12",
+            "git" => "M6,2 A3,3 0 1 1 6,8 A3,3 0 1 1 6,2 M6,16 A3,3 0 1 1 6,22 A3,3 0 1 1 6,16 M19,2 A3,3 0 1 1 19,8 A3,3 0 1 1 19,2 M6,8 L6,16 M19,8 Q19,16 6,16",
+            "settings" => "M2,7 L11,7 M17,7 L22,7 M2,17 L6,17 M12,17 L22,17 M14,4 A3,3 0 1 1 14,10 A3,3 0 1 1 14,4 M9,14 A3,3 0 1 1 9,20 A3,3 0 1 1 9,14",
+            "layers" => "M12,2 L23,8 12,14 1,8 Z M1,12 L12,18 23,12 M1,17 L12,23 23,17",
             "game" => "M5,7 L19,7 22,16 Q23,21 18,19 L15,16 9,16 6,19 Q1,21 2,16 Z M6,10 L6,14 M4,12 L8,12 M16,11 L16,11.2 M19,13 L19,13.2",
             "gpu" => "M2,5 L22,5 22,18 2,18 Z M2,8 L0,8 0,15 2,15 M7,18 L7,21 17,21 17,18 M6,10 A3,3 0 1 1 6,16 A3,3 0 1 1 6,10 M16,10 A3,3 0 1 1 16,16 A3,3 0 1 1 16,10 M6,11 L6,15 M4,13 L8,13 M16,11 L16,15 M14,13 L18,13",
             "play" => "M6,3 L21,12 6,21 Z",
@@ -101,13 +115,16 @@ internal static class DesignSystem
         style.Setters.Add(new Setter(Control.TemplateProperty, XamlReader.Parse("""
             <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="Button">
-              <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                      BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
-                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True" />
-              </Border>
+              <Grid>
+                <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                  <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                </Border>
+                <Border x:Name="HoverSurface" CornerRadius="9" Background="#FFFFFF" Opacity="0" IsHitTestVisible="False" />
+              </Grid>
               <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.84" /></Trigger>
-                <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.65" /></Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#BCFF69" /><Setter TargetName="HoverSurface" Property="Opacity" Value="0.16" /></Trigger>
+                <Trigger Property="IsPressed" Value="True"><Setter TargetName="HoverSurface" Property="Opacity" Value="0.27" /></Trigger>
                 <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#BCFF69" /></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.4" /></Trigger>
               </ControlTemplate.Triggers>

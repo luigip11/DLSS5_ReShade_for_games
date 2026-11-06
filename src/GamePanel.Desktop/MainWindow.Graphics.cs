@@ -30,23 +30,29 @@ internal sealed partial class MainWindow
         body.Children.Add(Text(SelectedIsRemix
             ? "La copia Remix è già presente. Apri Profilo e DLSS per registrarla, conservare le impostazioni riuscite o applicare un profilo con anteprima e ripristino. Non serve estrarre di nuovo l'archivio."
             : "I percorsi disponibili seguono il gioco selezionato. Ogni modifica parte da un'anteprima; i profili restano associati alla sua cartella.", 13, Muted));
-        var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        var profile = FxButton(SelectedIsRemix ? "Profilo e DLSS" : "Verifica DLSS", "GraphicsOpenDlss", (_, _) => OpenGraphicsPage(1), !_busy);
-        if (SelectedIsRemix) { profile.Background = Accent; profile.Foreground = BackgroundBrush; }
-        actions.Children.Add(profile);
-        if (!SelectedIsRemix && ReShadeProfileService.Eligibility(_report) is null)
-            actions.Children.Add(FxButton("Immagine e filtri", "GraphicsOpenEffects", (_, _) => OpenGraphicsPage(2), !_busy));
-        actions.Children.Add(FxButton("Schermo e risoluzione", "GraphicsOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy));
-        actions.Children.Add(FxButton("Gioca", "GraphicsPlay", (_, _) => Launch(), CanPrepareAssets));
+        var profileLabel = SelectedIsRemix ? "Profilo e DLSS" : "Verifica DLSS";
+        var profile = FxButton(profileLabel, "GraphicsOpenDlss", (_, _) => OpenGraphicsPage(1), !_busy);
+        if (SelectedIsRemix) { profile.Background = Accent; profile.Foreground = BackgroundBrush; profile.BorderBrush = Accent; }
+        SmallAction(profile, profileLabel, "settings", primary: SelectedIsRemix);
+        var screen = FxButton("Schermo e risoluzione", "GraphicsOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy);
+        SmallAction(screen, "Schermo e risoluzione", "screen");
+        var actions = EqualActions(profile, screen); actions.Margin = new Thickness(0, 18, 0, 0);
         body.Children.Add(actions);
         _content.Children.Add(AssetPanel(body, 20));
+        if (!SelectedIsRemix) RenderRemixPackage();
+        RenderImageRoutes();
         if (SelectedIsRemix)
         {
             Details("Percorso grafico della copia", "Questa copia usa RTX Remix. Le regolazioni DLSS e il profilo si gestiscono nella pagina dedicata. ReShade, TexWizard, catture DDS e correzioni ai modelli non fanno parte della procedura rapida di questa copia.");
             return;
         }
-        if (SelectedIsUnderground2) RenderRemixTrial();
-        else Card("Strumenti per questo gioco", "GamePanel mostra le funzioni compatibili con il titolo selezionato. I pacchetti specifici di altri giochi, come asfalto o modelli auto, non vengono proposti qui. La sezione DLSS indica i componenti rilevati e l'eventuale percorso di gestione disponibile.");
+        if (SelectedIsUnderground2)
+        {
+            var legacyBody = CaptureAssetContent(RenderRemixTrial);
+            var legacy = new Expander { Header = "Avanzate · archivio autore 0.4 e vecchio EXE CD", Content = legacyBody, Foreground = Muted, Margin = new Thickness(0, 8, 0, 16) };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(legacy, "LegacyRemixTrial"); StyleAdvanced(legacy); _content.Children.Add(legacy);
+        }
+        else if (!SelectedIsUnderground1) Card("Strumenti per questo gioco", "GamePanel mostra le funzioni compatibili con il titolo selezionato. I pacchetti specifici di altri giochi, come asfalto o modelli auto, non vengono proposti qui. La sezione DLSS indica i componenti rilevati e l'eventuale percorso di gestione disponibile.");
     }
 
     private void RenderGraphicsComponentSummary()

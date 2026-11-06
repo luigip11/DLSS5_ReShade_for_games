@@ -36,12 +36,23 @@ internal static class ProfileChecks
             var plan = f.Plan(); File.WriteAllText(f.File("EasyAntiCheat_EOS.dll"), "fixture");
             Refused(() => f.Service.Execute(plan)); Require(!File.Exists(f.File("d3d9.dll")), "Indicatore recente ignorato.");
         });
-        check("Profilo: x64, nomi diversi e Direct3D 11 non ammessi", () =>
+        check("Profilo: x64 e Direct3D 11 non ammessi; DX9 generico supportato", () =>
         {
             using var f = new Fixture(testRoot, makeExe);
             makeExe(f.Exe, true, false, "d3d9.dll"); Refused(() => f.Plan());
             makeExe(f.Exe, false, false, "d3d11.dll"); Refused(() => f.Plan());
-            Require(ReShadeProfileService.Eligibility(f.Report() with { ExecutablePath = f.File("other.exe") }) is not null, "Nome diverso ammesso.");
+            makeExe(f.Exe, false, false, "d3d9.dll");
+            Require(ReShadeProfileService.Eligibility(f.Report() with { ExecutablePath = f.File("other.exe") }) is null, "Profilo DX9 generico rifiutato.");
+            Require(ReShadeProfileService.Eligibility(f.Report() with { HasAntiCheatIndicators = true }) is not null, "Anti-cheat ignorato.");
+        });
+        check("Profilo generale: gioco DX9 con nome generico installa e ripristina senza cambiare EXE", () =>
+        {
+            using var f = new Fixture(testRoot, makeExe); var generic = f.File("my-game.exe"); System.IO.File.Copy(f.Exe, generic);
+            var report = new GameInspector().Inspect(generic); var before = Hash(generic);
+            f.Service.Execute(f.Service.PrepareApply(report, f.Package, SdrSettings.Sharp));
+            Require(File.ReadAllText(f.File(SdrProfile.PresetPath)).Contains("Sharpness=0.4500"), "Preset Nitido non applicato.");
+            f.Service.Execute(f.Service.PrepareRemove(report));
+            Require(Hash(generic) == before && !File.Exists(f.File(SdrProfile.LoaderPath)), "EXE generico modificato o runtime non rimosso.");
         });
         check("Profilo: EXE o destinazione cambiati dopo anteprima bloccano le scritture", () =>
         {

@@ -14,7 +14,8 @@ internal sealed partial class MainWindow
     private string _libraryMessage = "I giochi importati restano salvati su questo account Windows.";
     private string _libraryQuery = "";
     private string? _relinkId;
-    private WrapPanel? _libraryCards;
+    private ResponsiveLibraryPanel? _libraryCards;
+    private int _librarySort;
     private GameReport? _capabilityReport;
     private GameCapabilities _selectedCapabilities = GameCapabilities.From(null);
     private GameCapabilities SelectedCapabilities
@@ -52,7 +53,7 @@ internal sealed partial class MainWindow
         var add = Button("+  Importa gioco", async (_, _) => await SelectAsync()); add.IsEnabled = !_busy;
         add.Background = Accent; add.Foreground = BackgroundBrush; add.Margin = new Thickness(0); add.VerticalAlignment = VerticalAlignment.Center;
         System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); deselect.Content = "Deseleziona gioco";
+        var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); SmallAction(deselect, "Deseleziona gioco", "unmount"); SmallAction(add, "Importa gioco", "plus", primary: true);
         deselect.IsEnabled = !_busy && (_report is not null || _library.SelectedId is not null);
         deselect.Margin = new Thickness(0, 0, 10, 0); deselect.VerticalAlignment = VerticalAlignment.Center;
         System.Windows.Automation.AutomationProperties.SetAutomationId(deselect, "DeselectLibraryGame");
@@ -64,8 +65,23 @@ internal sealed partial class MainWindow
             BorderBrush = DesignSystem.Line, Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 22), IsEnabled = !_busy };
         System.Windows.Automation.AutomationProperties.SetAutomationId(search, "LibrarySearch");
         System.Windows.Automation.AutomationProperties.SetName(search, "Cerca giochi per nome o percorso");
-        search.TextChanged += (_, _) => { _libraryQuery = search.Text; RenderLibraryCards(); }; _content.Children.Add(search);
-        _libraryCards = new WrapPanel { Orientation = Orientation.Horizontal };
+        var searchBox = new Grid(); search.Padding = new Thickness(12, 12, 45, 12); search.Margin = new Thickness(0);
+        searchBox.Children.Add(search);
+        var searchIcon = DesignSystem.Icon("search", Accent, 19); searchIcon.HorizontalAlignment = HorizontalAlignment.Right; searchIcon.VerticalAlignment = VerticalAlignment.Center;
+        searchIcon.Margin = new Thickness(0, 0, 15, 0); searchIcon.IsHitTestVisible = false; searchBox.Children.Add(searchIcon);
+        searchBox.Margin = new Thickness(0, 0, 0, 18);
+        search.TextChanged += (_, _) => { _libraryQuery = search.Text; RenderLibraryCards(); }; _content.Children.Add(searchBox);
+        if (_libraryVariantGroups.Count > 5)
+        {
+            var sortRow = new Grid { Margin = new Thickness(0, 0, 0, 16) };
+            var sort = new ComboBox { MinWidth = 215, MinHeight = 38, FontSize = 11, Foreground = Accent, HorizontalAlignment = HorizontalAlignment.Right,
+                ItemsSource = new[] { "Mostra recenti", "Mostra meno recenti", "Ordine alfabetico" }, SelectedIndex = _librarySort };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(sort, "LibrarySort");
+            System.Windows.Automation.AutomationProperties.SetName(sort, "Ordina i giochi della libreria");
+            sort.SelectionChanged += (_, _) => { if (sort.SelectedIndex >= 0) { _librarySort = sort.SelectedIndex; RenderLibraryCards(); } };
+            sortRow.Children.Add(sort); _content.Children.Add(sortRow);
+        }
+        _libraryCards = new ResponsiveLibraryPanel();
         _content.Children.Add(_libraryCards); RenderLibraryCards();
         if (_library.Games.Count == 0)
         {
@@ -93,8 +109,11 @@ internal sealed partial class MainWindow
         var groups = (_libraryVariantGroups ??= ReadLibraryVariantGroups()).Where(group => string.IsNullOrWhiteSpace(_libraryQuery)
             || group.Variants.Any(g => g.Title.Contains(_libraryQuery.Trim(), StringComparison.OrdinalIgnoreCase)
                 || g.ExecutablePath.Contains(_libraryQuery.Trim(), StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(group => group.Variants.Max(g => g.LastPlayedAt ?? g.LastInspectedAt))
-            .ThenBy(group => group.Original.Title).ToArray();
+            .ToArray();
+        groups = (_librarySort == 2 ? groups.OrderBy(g => g.Original.Title, StringComparer.CurrentCultureIgnoreCase)
+            : _librarySort == 1 ? groups.OrderBy(g => g.Variants.Max(v => v.LastPlayedAt ?? v.LastInspectedAt))
+            : groups.OrderByDescending(g => g.Variants.Max(v => v.LastPlayedAt ?? v.LastInspectedAt)))
+            .ThenBy(g => g.Original.Title, StringComparer.CurrentCultureIgnoreCase).ToArray();
         foreach (var group in groups)
         {
             var original = group.Original;
@@ -137,34 +156,38 @@ internal sealed partial class MainWindow
                 };
                 details.Children.Add(selector);
             }
-            var api = string.Join(" · ", game.GraphicsApis.Take(2));
-            var facts = Text(game.Architecture + (api.Length == 0 ? "" : " · " + api), 11, Muted); facts.Margin = new Thickness(0, 9, 0, 9); details.Children.Add(facts);
-            var path = Text(game.ExecutablePath, 11, Muted); path.TextWrapping = TextWrapping.NoWrap; path.TextTrimming = TextTrimming.CharacterEllipsis; path.ToolTip = game.ExecutablePath; details.Children.Add(path);
-            var recent = Text(game.LastPlayedAt is null ? "Mai avviato da GamePanel" : "Ultimo avvio · " + game.LastPlayedAt.Value.LocalDateTime.ToString("dd MMM · HH:mm"), 11, Muted);
-            recent.Margin = new Thickness(0, 8, 0, 14); details.Children.Add(recent);
-            var actions = new WrapPanel();
-            var play = Button("Avvia  →", async (_, _) => await OpenLibraryGameAsync(game, true)); play.IsEnabled = !_busy && available;
-            play.Background = Accent; play.Foreground = BackgroundBrush; System.Windows.Automation.AutomationProperties.SetAutomationId(play, "LibraryPlay-" + original.Id); actions.Children.Add(play);
+            var version = game.Version?.ProductVersion ?? game.Version?.FileVersion;
+            var versionLabel = version is null ? "Versione EXE · non dichiarata" : "Versione EXE · " + version;
+            details.Children.Add(LibraryFact("version", versionLabel));
+            details.Children.Add(LibraryFact("folder", game.ExecutablePath));
+            details.Children.Add(LibraryFact("clock", game.LastPlayedAt is null ? "Mai avviato da GamePanel" : "Ultimo avvio · " + game.LastPlayedAt.Value.LocalDateTime.ToString("dd MMM · HH:mm")));
+            var play = Button("Avvia", async (_, _) => await OpenLibraryGameAsync(game, true)); play.IsEnabled = !_busy && available;
+            play.Background = Accent; play.Foreground = BackgroundBrush; SmallAction(play, "Avvia", "play", primary: true);
+            System.Windows.Automation.AutomationProperties.SetAutomationId(play, "LibraryPlay-" + original.Id);
             var open = Button("Analizza", async (_, _) => await OpenLibraryGameAsync(game, false)); open.IsEnabled = !_busy;
-            System.Windows.Automation.AutomationProperties.SetAutomationId(open, "LibraryOpen-" + original.Id); actions.Children.Add(open); details.Children.Add(actions);
-            var edit = new WrapPanel();
+            SmallAction(open, "Analizza", "search"); System.Windows.Automation.AutomationProperties.SetAutomationId(open, "LibraryOpen-" + original.Id);
+            var actions = EqualActions(play, open); actions.Margin = new Thickness(0, 7, 0, 0); details.Children.Add(actions);
+            details.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(0, 16, 0, 12) });
+            var edit = new StackPanel();
             var rename = Button("Rinomina", (_, _) => RenameLibraryGame(original)); rename.IsEnabled = !_busy;
             var relink = Button("Ricollega EXE", async (_, _) => await RelinkLibraryGameAsync(game)); relink.IsEnabled = !_busy;
             var remove = Button(group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", (_, _) => EditLibrary(() => _libraryStore.Remove(game.Id), "Voce rimossa. I file del gioco, i backup e i profili sono conservati.")); remove.IsEnabled = !_busy;
-            foreach (var button in new[] { rename, relink, remove }) edit.Children.Add(button);
+            SmallAction(rename, "Rinomina", "edit"); SmallAction(relink, "Ricollega EXE", "link");
+            SmallAction(remove, group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", "trash");
+            var editRow = EqualActions(rename, relink); editRow.Margin = new Thickness(0, 0, 0, 10); edit.Children.Add(editRow); edit.Children.Add(remove);
             if (_library.Variants?.Any(v => v.VariantId == game.Id) == true)
             {
                 var unlink = Button("Separa variante", (_, _) => EditLibrary(() => _libraryStore.UnlinkRemixVariant(game.Id), "Variante separata. I file e i profili sono conservati."));
-                unlink.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(unlink, "LibraryUnlinkVariant-" + game.Id); edit.Children.Add(unlink);
+                SmallAction(unlink, "Separa variante", "unmount"); unlink.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(unlink, "LibraryUnlinkVariant-" + game.Id); edit.Children.Add(unlink);
             }
             else if (group.Variants.Count == 1 && _library.Games.Count > 1)
             {
-                var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); link.IsEnabled = !_busy;
+                var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); SmallAction(link, "Collega come Remix", "link"); link.IsEnabled = !_busy;
                 System.Windows.Automation.AutomationProperties.SetAutomationId(link, "LibraryLinkVariant-" + game.Id); edit.Children.Add(link);
             }
-            foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; }
+            foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; button.Margin = new Thickness(0, 0, 0, 10); }
             details.Children.Add(edit); body.Children.Add(details);
-            var card = new Border { Width = 313, Background = Surface, BorderBrush = group.Variants.Any(g => g.Id == _library.SelectedId) ? DesignSystem.Color("#526B3B") : DesignSystem.Line,
+            var card = new Border { Background = Surface, BorderBrush = group.Variants.Any(g => g.Id == _library.SelectedId) ? DesignSystem.Color("#526B3B") : DesignSystem.Line,
                 BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Margin = new Thickness(0, 0, 18, 18), Child = body, ClipToBounds = true };
             System.Windows.Automation.AutomationProperties.SetAutomationId(card, "LibraryCard-" + original.Id); _libraryCards.Children.Add(card);
         }

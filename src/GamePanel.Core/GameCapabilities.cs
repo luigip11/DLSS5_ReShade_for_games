@@ -62,6 +62,12 @@ public sealed record GameCapabilities(bool IsUnderground2, bool HasRemixRenderer
     }
     private static bool OwnedTrial(string root)
     {
+        var packageMarker = GameFile(root, RemixPackService.Marker);
+        if (File.Exists(packageMarker))
+        {
+            try { return RemixPackService.HasMetadata(root, HashFile(GameFile(root, "speed2.exe"), CancellationToken.None)); }
+            catch (InvalidDataException) { return false; }
+        }
         var marker = GameFile(root, "GamePanel-RemixTrial.json");
         if (AttributesOrMissing(marker) is not FileAttributes a
             || (a & (FileAttributes.Directory | FileAttributes.ReparsePoint | FileAttributes.Device)) != 0) return false;

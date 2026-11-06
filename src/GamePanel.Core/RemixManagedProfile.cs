@@ -244,13 +244,25 @@ public sealed class RemixManagedService
             if (expected is not null && !Same(expected, executableHash)) throw Invalid("EXE UG1 cambiato dall'analisi.");
             var game = PeInspector.Read(executable);
             if (game.IsDll || game.Architecture != "x86 (32 bit)" || !game.Imports.Contains("d3d9.dll", StringComparer.OrdinalIgnoreCase)) throw Invalid("EXE UG1 non compatibile.");
-            return new(executable, executable, executableHash, Underground1RemixInstallation.Fingerprint(root, token));
+            var fingerprint = Underground1RemixInstallation.Fingerprint(root, token);
+            if (File.Exists(GameFile(root, RemixPackService.Marker)))
+            {
+                var origin = RemixPackService.ReadOrigin(root, executableHash) ?? throw Invalid("Origine del pacchetto UG1 assente.");
+                var packageHash = FileHash(GameFile(root, RemixPackService.Marker), 4 * 1024 * 1024, token);
+                return new(executable, origin, executableHash, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint + packageHash))).ToLowerInvariant());
+            }
+            return new(executable, executable, executableHash, fingerprint);
         }
         if (!Path.GetFileName(executable).Equals("speed2.exe", StringComparison.OrdinalIgnoreCase)
             || !KnownUnderground2(executableHash) || expected is not null && !Same(expected, executableHash))
             throw Invalid("EXE Underground 2 non identificato per la gestione della configurazione Remix.");
         var pe = PeInspector.Read(executable);
         if (pe.IsDll || pe.Architecture != "x86 (32 bit)" || !pe.Imports.Contains("d3d9.dll", StringComparer.OrdinalIgnoreCase)) throw Invalid("EXE Remix non compatibile.");
+        if (File.Exists(GameFile(root, RemixPackService.Marker)))
+        {
+            var origin = RemixPackService.ReadOrigin(root, executableHash) ?? throw Invalid("Origine del pacchetto non disponibile.");
+            return new(executable, origin, executableHash, FileHash(GameFile(root, RemixPackService.Marker), 4 * 1024 * 1024, token));
+        }
         var marker = GameFile(root, Marker); var bytes = ReadBytes(marker, 24 * 1024 * 1024);
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 20 }); RejectDuplicates(document.RootElement);
         var m = document.RootElement;

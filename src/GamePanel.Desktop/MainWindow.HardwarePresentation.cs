@@ -20,10 +20,12 @@ internal sealed partial class MainWindow
         {
             button.Background = Accent; button.Foreground = BackgroundBrush; button.BorderBrush = Accent;
             button.Padding = new Thickness(22, 13, 22, 13); button.MinWidth = 230;
-            button.HorizontalAlignment = HorizontalAlignment.Left;
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            button.HorizontalContentAlignment = HorizontalAlignment.Center;
+            button.MinWidth = 0;
         }
     }
-    private void IllustratedHardwareCard(string title, string description)
+    private void IllustratedHardwareCard(string title, string description, bool systemInformation = false)
     {
         var body = new StackPanel();
         var header = new Grid(); header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new ColumnDefinition());
@@ -31,10 +33,33 @@ internal sealed partial class MainWindow
             BorderBrush = DesignSystem.Color("#3B5940"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(12), Margin = new Thickness(0, 0, 16, 0) };
         header.Children.Add(illustration);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; text.Children.Add(Text(title, 20, Ink, FontWeights.SemiBold));
-        var caption = Text("ADATTATORI DEL SISTEMA", 9, Accent, FontWeights.SemiBold); caption.Margin = new Thickness(0, 6, 0, 0); text.Children.Add(caption);
+        var caption = Text(systemInformation ? "IL SISTEMA SU CUI GIOCHI" : "ADATTATORI DEL SISTEMA", 9, Accent, FontWeights.SemiBold); caption.Margin = new Thickness(0, 6, 0, 0); text.Children.Add(caption);
         Grid.SetColumn(text, 1); header.Children.Add(text); body.Children.Add(header);
-        var details = Text(description, 12, Muted); details.Margin = new Thickness(0, 14, 0, 0); body.Children.Add(details);
-        _content.Children.Add(AssetPanel(body, 20));
+        if (systemInformation)
+        {
+            var specs = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3, Margin = new Thickness(0, 22, 0, 0) };
+            void Fact(string label, string value, string id)
+            {
+                var fact = new StackPanel { Margin = new Thickness(0, 0, 14, 0) };
+                fact.Children.Add(Text(label, 10, Muted, FontWeights.SemiBold));
+                var highlight = Text(value, 15, Ink, FontWeights.SemiBold); highlight.Margin = new Thickness(0, 8, 0, 0);
+                System.Windows.Automation.AutomationProperties.SetAutomationId(highlight, id); fact.Children.Add(highlight); specs.Children.Add(fact);
+            }
+            Fact("PROCESSORE", Hardware.Processor(), "HardwareCpu"); Fact("SCHEDA GRAFICA", description, "HardwareGpu"); Fact("MEMORIA RAM INSTALLATA", Hardware.Memory(), "HardwareRam");
+            body.Children.Add(specs);
+        }
+        else { var details = Text(description, 12, Muted); details.Margin = new Thickness(0, 14, 0, 0); body.Children.Add(details); }
+        if (systemInformation)
+        {
+            var bottom = new StackPanel { Margin = new Thickness(0, 18, 0, 0) };
+            bottom.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(0, 0, 0, 14) });
+            var about = Button("Informazioni di sistema Windows", (_, _) => OpenWindowsSettings("ms-settings:about", "Apri Impostazioni → Sistema → Informazioni sul sistema."));
+            SmallAction(about, "Informazioni di sistema Windows", "info"); about.HorizontalAlignment = HorizontalAlignment.Right; about.Margin = new Thickness(0);
+            about.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(about, "WindowsSystemInfo"); bottom.Children.Add(about); body.Children.Add(bottom);
+        }
+        var panel = AssetPanel(body, 20);
+        if (systemInformation) System.Windows.Automation.AutomationProperties.SetAutomationId(panel, "GameHardwareCard");
+        _content.Children.Add(panel);
     }
     private void OpenWindowsSettings(string uri, string fallback)
     {
