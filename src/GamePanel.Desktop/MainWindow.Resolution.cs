@@ -59,8 +59,8 @@ internal sealed partial class MainWindow
             return;
         }
         var body = new StackPanel();
-        body.Children.Add(Text("La risoluzione di questo gioco", 22, Ink, FontWeights.SemiBold));
-        body.Children.Add(Text("Le dimensioni seguono il monitor selezionato. Il metodo applica impostazioni o parametri del gioco; non cambia la risoluzione di Windows e non sposta automaticamente la finestra su un altro monitor.", 12, Muted));
+        body.Children.Add(Text("Metodo di applicazione", 22, Ink, FontWeights.SemiBold));
+        body.Children.Add(Text("Le impostazioni seguono il monitor selezionato. Il metodo applica impostazioni o parametri del gioco; non cambia la risoluzione di Windows e non sposta automaticamente la finestra su un altro monitor.", 12, Muted));
         if (display is null) { body.Children.Add(Text("Rileva prima uno schermo attivo.", 13, Muted)); _content.Children.Add(AssetPanel(body, 20)); return; }
         var modes = DisplayCatalog.Modes(display);
         if (_resolutionGame != _report.ExecutablePath)
@@ -91,11 +91,13 @@ internal sealed partial class MainWindow
         var selected = modes.FirstOrDefault(m => m.Width == _resolutionDraft!.Width && m.Height == _resolutionDraft.Height)
             ?? modes.FirstOrDefault(m => m.Width == display.TargetWidth && m.Height == display.TargetHeight) ?? modes[0];
         _resolutionDraft = _resolutionDraft! with { Width = selected.Width, Height = selected.Height, DisplayId = display.Id };
-        var label = Text("RISOLUZIONI DISPONIBILI SUL MONITOR", 10, Muted, FontWeights.SemiBold); label.Margin = new Thickness(0, 16, 0, 8); body.Children.Add(label);
-        var mode = new ComboBox { ItemsSource = modes, SelectedItem = selected, IsEnabled = !_busy, Margin = new Thickness(0, 0, 0, 14) };
+        _screenResolutionHost!.Children.Clear();
+        _screenResolutionHost.Children.Add(Text("RISOLUZIONE DEL GIOCO", 10, Muted, FontWeights.SemiBold));
+        var mode = new ComboBox { ItemsSource = modes, SelectedItem = selected, IsEnabled = !_busy, Margin = new Thickness(0, 8, 0, 0) };
         System.Windows.Automation.AutomationProperties.SetAutomationId(mode, "GameResolutionSize");
-        mode.SelectionChanged += (_, _) => { if (mode.SelectedItem is DisplayCatalog.ResolutionSize value) { _resolutionDraft = _resolutionDraft! with { Width = value.Width, Height = value.Height }; InvalidateResolution(); } };
-        body.Children.Add(mode);
+        UpdateMonitorResolution(selected.Width, selected.Height);
+        mode.SelectionChanged += (_, _) => { if (mode.SelectedItem is DisplayCatalog.ResolutionSize value) { _resolutionDraft = _resolutionDraft! with { Width = value.Width, Height = value.Height }; UpdateMonitorResolution(value.Width, value.Height); InvalidateResolution(); } };
+        _screenResolutionHost.Children.Add(mode);
         var choices = new List<ResolutionChoice> { new(null, "Scegli il metodo compatibile") };
         if (_report.Sha256 == Underground1DisplayFix.ExecutableSha256 && !SelectedIsRemix) choices.Add(new(ResolutionMethod.Underground1, "Underground 1 · fix verificato"));
         choices.AddRange([new(ResolutionMethod.Unity, "Unity · parametri di avvio"), new(ResolutionMethod.Unreal, "Unreal · parametri di avvio"), new(ResolutionMethod.Ini, "Configurazione INI/CFG · personalizzata")]);
@@ -111,7 +113,7 @@ internal sealed partial class MainWindow
             body.Children.Add(Text("Il motore e il gioco devono accettare questi parametri. La richiesta viene usata solo quando avvii questo EXE da GamePanel; il gioco può ignorarla o limitarla.", 12, Muted));
         else if (_resolutionMethod == ResolutionMethod.Ini)
         {
-            var advanced = new StackPanel();
+            var advanced = body;
             advanced.Children.Add(Text("Scegli la configurazione di testo che contiene già le chiavi della risoluzione. I nomi variano tra giochi; GamePanel non li deduce dal solo EXE.", 12, Muted));
             advanced.Children.Add(Text(_resolutionDraft.ConfigPath ?? "Nessun file selezionato", 12, Muted));
             advanced.Children.Add(FxButton("Seleziona configurazione", "ChooseResolutionIni", (_, _) =>
@@ -129,8 +131,6 @@ internal sealed partial class MainWindow
             Field("Sezione (vuota per chiavi senza sezione)", _resolutionDraft.Section, "ResolutionIniSection", v => _resolutionDraft = _resolutionDraft with { Section = v });
             Field("Chiave larghezza", _resolutionDraft.WidthKey, "ResolutionIniWidth", v => _resolutionDraft = _resolutionDraft with { WidthKey = v });
             Field("Chiave altezza", _resolutionDraft.HeightKey, "ResolutionIniHeight", v => _resolutionDraft = _resolutionDraft with { HeightKey = v });
-            var expander = new Expander { Header = "Avanzate · configurazione del gioco", Content = advanced, IsExpanded = true, Foreground = Ink, Padding = new Thickness(14), Margin = new Thickness(0, 12, 0, 12) };
-            StyleAdvanced(expander); body.Children.Add(expander);
         }
         var status = Text(_resolutionMessage, 12, Muted); status.Margin = new Thickness(0, 12, 0, 12); body.Children.Add(status);
         System.Windows.Automation.AutomationProperties.SetAutomationId(status, "GameResolutionStatus");
@@ -138,12 +138,18 @@ internal sealed partial class MainWindow
             body.Children.Add(Text($"Profilo salvato: {_resolutionState.Options.Width} × {_resolutionState.Options.Height}. È un'impostazione richiesta, non una misura del rendering in esecuzione.", 12, Ink));
         var peerPending = _fxState?.Pending == true || _screenState?.Pending == true || _assetState?.Pending == true;
         if (peerPending) body.Children.Add(Text("Completa o annulla l'operazione grafica precedente prima di applicare la risoluzione.", 12, Muted));
-        var actions = new WrapPanel();
-        actions.Children.Add(FxButton(_resolutionMethod == ResolutionMethod.Underground1 ? "Prepara risoluzione e fix UG1" : "Prepara risoluzione", "PrepareGameResolution", async (_, _) => await PrepareResolutionAsync(false), !_busy && !peerPending && _resolutionMethod is not null));
+        var actions = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        var prepareLabel = _resolutionMethod == ResolutionMethod.Underground1 ? "Prepara risoluzione e fix UG1" : "Prepara configurazione";
+        var prepare = FxButton(prepareLabel, "PrepareGameResolution", async (_, _) => await PrepareResolutionAsync(false), !_busy && !peerPending && _resolutionMethod is not null);
+        SmallAction(prepare, prepareLabel, "settings"); prepare.HorizontalAlignment = HorizontalAlignment.Stretch;
+        actions.Children.Add(prepare);
         if (_resolutionMethod == ResolutionMethod.Underground1)
             actions.Children.Add(FxButton("Scegli ZIP del fix UG1", "ChooseUg1DisplayZip", async (_, _) => await PrepareResolutionAsync(false, true), !_busy && !peerPending));
         if (_resolutionState is not null) actions.Children.Add(FxButton("Prepara rimozione profilo", "RemoveGameResolution", async (_, _) => await PrepareResolutionAsync(true), !_busy && !peerPending));
-        body.Children.Add(actions); _content.Children.Add(AssetPanel(body, 20));
+        body.Children.Add(actions);
+        var advancedPanel = AssetPanel(body, 22); advancedPanel.Margin = new Thickness(0);
+        var advancedSettings = new Expander { Header = "Avanzate · configurazione del gioco", Content = advancedPanel, IsExpanded = true, Foreground = Ink, Margin = new Thickness(0, 0, 0, 22) };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(advancedSettings, "ScreenAdvancedSettings"); StyleAdvanced(advancedSettings, roomy: true); _content.Children.Add(advancedSettings);
         if (_resolutionPlan is { } plan)
         {
             var preview = new StackPanel(); preview.Children.Add(Text(plan.Removing ? "Ripristino della risoluzione" : $"Anteprima · {plan.Options.Width} × {plan.Options.Height}", 20, Ink, FontWeights.SemiBold));

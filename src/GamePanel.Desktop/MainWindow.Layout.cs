@@ -95,10 +95,10 @@ internal sealed partial class MainWindow
         statusRow.Children.Add(_status); footerGrid.Children.Add(statusRow);
         var footerInfo = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
         var version = Text("GAMEPANEL  /  " + AppVersion.Current, 9, Muted); version.VerticalAlignment = VerticalAlignment.Center; version.Margin = new Thickness(0, 0, 14, 0); footerInfo.Children.Add(version);
-        var repository = Button("Luigi · luigip11/GamePanel", (_, _) => OpenProjectRepository());
-        SmallAction(repository, "Luigi · luigip11/GamePanel", "git"); repository.MinHeight = 24; repository.Padding = new Thickness(4, 2, 4, 2); repository.Margin = new Thickness(0);
+        var repository = Button("Luigi · @luigip11", (_, _) => OpenProjectRepository());
+        SmallAction(repository, "Luigi · @luigip11", "git"); repository.MinHeight = 24; repository.Padding = new Thickness(4, 2, 4, 2); repository.Margin = new Thickness(0);
         repository.Background = Brushes.Transparent; repository.BorderBrush = Brushes.Transparent;
-        repository.ToolTip = "Autore: Luigi · Apri il repository GitHub di GamePanel";
+        repository.ToolTip = "Autore: Luigi · Apri il profilo GitHub";
         System.Windows.Automation.AutomationProperties.SetAutomationId(repository, "ProjectRepository"); footerInfo.Children.Add(repository);
         Grid.SetColumn(footerInfo, 1); footerGrid.Children.Add(footerInfo);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");

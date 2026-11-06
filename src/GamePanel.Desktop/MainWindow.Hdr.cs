@@ -10,7 +10,7 @@ internal sealed partial class MainWindow
         if (_report is null) return;
         var rows = new Grid { Margin = new Thickness(0, 0, 0, 18) };
         rows.ColumnDefinitions.Add(new ColumnDefinition()); rows.ColumnDefinitions.Add(new ColumnDefinition());
-        var sdr = new StackPanel(); sdr.Children.Add(DesignSystem.Icon("settings", Accent, 27));
+        var sdr = new StackPanel(); var sdrIcon = DesignSystem.Icon("settings", Accent, 27); sdrIcon.HorizontalAlignment = HorizontalAlignment.Left; sdr.Children.Add(sdrIcon);
         var title = Text("ReShade e filtri SDR", 18, Ink, FontWeights.SemiBold); title.Margin = new Thickness(0, 12, 0, 8); sdr.Children.Add(title);
         sdr.Children.Add(Text(SelectedIsRemix ? "Usa il percorso della copia originale. ReShade non viene aggiunto automaticamente al renderer Remix."
             : SelectedCapabilities.SupportsReShade ? "Preset generali per nitidezza, colore e contrasto. Download verificato del componente ufficiale, anteprima e ripristino."
@@ -18,7 +18,7 @@ internal sealed partial class MainWindow
         var configure = FxButton("Configura ReShade", "GraphicsReShade", (_, _) => OpenGraphicsPage(2), !_busy && SelectedCapabilities.SupportsReShade && !SelectedIsRemix);
         SmallAction(configure, "Configura ReShade", "settings"); sdr.Children.Add(configure);
         var sdrCard = AssetPanel(sdr, 20); sdrCard.Margin = new Thickness(0, 0, 7, 0); rows.Children.Add(sdrCard);
-        var hdr = new StackPanel(); hdr.Children.Add(DesignSystem.Icon("sun", Accent, 27));
+        var hdr = new StackPanel(); var hdrIcon = DesignSystem.Icon("sun", Accent, 27); hdrIcon.HorizontalAlignment = HorizontalAlignment.Left; hdr.Children.Add(hdrIcon);
         var hdrTitle = Text("HDR e schermo", 18, Ink, FontWeights.SemiBold); hdrTitle.Margin = new Thickness(0, 12, 0, 8); hdr.Children.Add(hdrTitle);
         hdr.Children.Add(Text("HDR nativo, Auto HDR e filtri SDR sono percorsi distinti. Verifica il monitor selezionato e le opzioni disponibili in Windows e nel gioco.", 12, Muted));
         var open = FxButton("Verifica HDR e schermo", "GraphicsHdr", (_, _) => OpenGraphicsPage(8), !_busy); SmallAction(open, "Verifica HDR e schermo", "sun"); hdr.Children.Add(open);

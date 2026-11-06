@@ -48,9 +48,9 @@ internal sealed partial class MainWindow
     }
     private static void OpenProjectRepository()
     {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/luigip11/GamePanel") { UseShellExecute = true }); }
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/luigip11") { UseShellExecute = true }); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-        { MessageBox.Show(e.Message, "Repository GamePanel"); }
+        { MessageBox.Show(e.Message, "Profilo GitHub"); }
     }
 }
 

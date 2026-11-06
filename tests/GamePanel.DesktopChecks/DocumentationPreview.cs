@@ -75,12 +75,17 @@ internal static class DocumentationPreview
                     foreach (FrameworkElement card in cards.Children) Require(card.TranslatePoint(new Point(card.ActualWidth, 0), cards).X <= cards.ActualWidth + 1, "Library card overflows.");
                 }
                 Save(window, Path.Combine(output, "alpha16-library-nfs.png"));
+                var deselect = (Button)Find(window, "DeselectLibraryGame")!;
+                Require(deselect.Content is Panel, "Deselect icon missing.");
+                ((ScrollViewer)Get("_pageScroll")).ScrollToVerticalOffset(260); Pump(window);
+                Save(window, Path.Combine(output, "alpha16-library-actions.png"));
                 Console.WriteLine("PASS UX library: conditional sorting, real selection order, equal action widths and responsive cards.");
 
                 var report = new GameReport(1, now, remix.ExecutablePath, remix.Sha256, remix.Architecture,
                     remix.GraphicsApis, [new(".trex/d3d9.dll", "RTX Remix", "Demo")], [], false, false);
                 var settings = new RemixDlssSettings(1, 4, true, true, true, 3, 1);
                 Set("_report", report); Set("_dlssSettings", settings);
+                Set("_assetMessage", "Anteprima dimostrativa dei percorsi per la copia selezionata.");
                 Set("_graphicsAdapters", "NVIDIA GeForce RTX 5080 Laptop GPU · esempio dimostrativo");
                 Set("_remixManagedStatus", new RemixManagedStatus(true, true, false, false,
                     "Anteprima dimostrativa dei controlli · nessuna configurazione reale modificata.", ug2.ExecutablePath, settings));
@@ -92,16 +97,40 @@ internal static class DocumentationPreview
                 Require(Find(hardware, "WindowsSystemInfo") is not null, "System information outside hardware card.");
                 var gamePlay = Find(window, "GamePlay")!; Require(gamePlay.HorizontalAlignment == HorizontalAlignment.Stretch, "Game play not stretched.");
                 Save(window, Path.Combine(output, "alpha16-game.png"));
+                Require(Find(hardware, "HardwareCpu") is TextBlock { Text.Length: > 0 } && Find(hardware, "HardwareRam") is TextBlock { Text.Length: > 0 }, "CPU/RAM specification cards missing.");
+                hardware.BringIntoView(); Pump(window); Save(window, Path.Combine(output, "alpha16-hardware.png"));
                 Render(7); var tabs = (TabControl)Find(window, "AssetsTabs")!;
                 var first = (TabItem)tabs.Items[0]; var second = (TabItem)tabs.Items[1];
                 Require(first.ActualWidth > 200 && Math.Abs(first.ActualWidth - second.ActualWidth) < 1, "Graphics tabs not equal-width.");
+                var dlssLink = (Button)Find(window, "GraphicsOpenDlss")!; var screenLink = (Button)Find(window, "GraphicsOpenScreen")!;
+                Require(dlssLink.Content is Panel && screenLink.Content is Panel && Math.Abs(dlssLink.ActualWidth - screenLink.ActualWidth) < 1 && dlssLink.ActualWidth > 200, "Graphics shortcut icons or expanded widths missing.");
+                Require(Find(window, "GraphicsPlay") is null, "Graphics play should be removed.");
                 Save(window, Path.Combine(output, "alpha16-graphics.png"));
+                var backups = (BackupService)Get("_backups");
+                var backupReport = report with { Sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(report.ExecutablePath))).ToLowerInvariant(), Components = [] };
+                var snapshot = backups.Create(backupReport);
+                Set("_snapshots", backups.List(report.ExecutablePath)); Set("_selectedBackup", snapshot.Id); Set("_backupForPath", report.ExecutablePath);
                 Render(3); var create = Find(window, "CreateBackup")!; var load = Find(window, "LoadBackups")!;
                 Require(Math.Abs(create.ActualWidth - load.ActualWidth) < 1 && create.ActualWidth > 200, "Backup actions not equal-width.");
+                Require(Find(window, "BackupPoints") is not null && Find(window, "VerifyBackup") is Button { Content: Panel } && Find(window, "DeleteBackup-" + snapshot.Id) is Button { Content: Panel }, "Backup point, inspect or delete missing.");
+                var faqBackup = ((StackPanel)Get("_content")).Children.OfType<Expander>().First();
+                Require(Find(window, "BackupPoints")!.TranslatePoint(new Point(0, Find(window, "BackupPoints")!.ActualHeight), window).Y + 20 <= faqBackup.TranslatePoint(new Point(), window).Y, "Backup FAQ spacing too small.");
                 Save(window, Path.Combine(output, "alpha16-backups.png"));
+                Render(6); Set("_resolutionMethod", ResolutionMethod.Ini); Render(6);
+                var monitorPreview = Find(window, "SelectedMonitorPreview") ?? throw new InvalidOperationException("Monitor illustration missing.");
+                var monitorChoice = Find(window, "TargetDisplay")!; var resolutionChoice = (ComboBox)Find(window, "GameResolutionSize")!;
+                Require(Math.Abs(monitorChoice.TranslatePoint(new Point(), window).Y - resolutionChoice.TranslatePoint(new Point(), window).Y) < 1, "Monitor and resolution selectors not on same row.");
+                if (resolutionChoice.Items.Count > 1) { resolutionChoice.SelectedIndex = resolutionChoice.SelectedIndex == 0 ? 1 : 0; Pump(window); }
+                Require(((TextBlock)Find(window, "DetectedDisplayResolution")!).Text == resolutionChoice.SelectedItem.ToString()!.Split(" · ")[0], "Monitor preview not updated to selected mode.");
+                Require(Find(window, "ScreenAdvancedSettings") is Expander && Find(window, "PrepareGameResolution") is Button { Content: Panel, HorizontalAlignment: HorizontalAlignment.Stretch }, "Screen advanced controls or prepare action missing.");
+                Save(window, Path.Combine(output, "alpha16-screen.png"));
+                ((Expander)Find(window, "ScreenAdvancedSettings")!).BringIntoView(); Pump(window); Save(window, Path.Combine(output, "alpha16-screen-advanced.png"));
                 Render(8); Require(Find(window, "HdrDisplayStatus") is not null && Find(window, "WindowsHdrSettings") is not null, "HDR page unavailable.");
                 Save(window, Path.Combine(output, "alpha16-hdr.png"));
                 Render(1);
+                var capture = (Button)Find(window, "CaptureRemixProfile")!; var restoreProfile = (Button)Find(window, "RestoreRemixProfile")!;
+                Require(capture.Content is Panel && restoreProfile.Content is Panel && Math.Abs(capture.ActualWidth - restoreProfile.ActualWidth) < 1 && ReferenceEquals(capture.Parent, restoreProfile.Parent), "DLSS save/restore not equal-width icon actions on one row.");
+                ((FrameworkElement)capture.Parent).BringIntoView(); Pump(window); Save(window, Path.Combine(output, "alpha16-dlss-profile.png"));
                 var content = (StackPanel)Get("_content");
                 var advanced = content.Children.OfType<Expander>().Single(e => AutomationProperties.GetAutomationId(e) == "DlssAdvancedSettings");
                 advanced.BringIntoView(); Pump(window);

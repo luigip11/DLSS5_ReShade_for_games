@@ -30,14 +30,13 @@ internal sealed partial class MainWindow
         body.Children.Add(Text(SelectedIsRemix
             ? "La copia Remix è già presente. Apri Profilo e DLSS per registrarla, conservare le impostazioni riuscite o applicare un profilo con anteprima e ripristino. Non serve estrarre di nuovo l'archivio."
             : "I percorsi disponibili seguono il gioco selezionato. Ogni modifica parte da un'anteprima; i profili restano associati alla sua cartella.", 13, Muted));
-        var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        var profile = FxButton(SelectedIsRemix ? "Profilo e DLSS" : "Verifica DLSS", "GraphicsOpenDlss", (_, _) => OpenGraphicsPage(1), !_busy);
-        if (SelectedIsRemix) { profile.Background = Accent; profile.Foreground = BackgroundBrush; }
-        actions.Children.Add(profile);
-        if (!SelectedIsRemix && ReShadeProfileService.Eligibility(_report) is null)
-            actions.Children.Add(FxButton("Immagine e filtri", "GraphicsOpenEffects", (_, _) => OpenGraphicsPage(2), !_busy));
-        actions.Children.Add(FxButton("Schermo e risoluzione", "GraphicsOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy));
-        actions.Children.Add(FxButton("Gioca", "GraphicsPlay", (_, _) => Launch(), CanPrepareAssets));
+        var profileLabel = SelectedIsRemix ? "Profilo e DLSS" : "Verifica DLSS";
+        var profile = FxButton(profileLabel, "GraphicsOpenDlss", (_, _) => OpenGraphicsPage(1), !_busy);
+        if (SelectedIsRemix) { profile.Background = Accent; profile.Foreground = BackgroundBrush; profile.BorderBrush = Accent; }
+        SmallAction(profile, profileLabel, "settings", primary: SelectedIsRemix);
+        var screen = FxButton("Schermo e risoluzione", "GraphicsOpenScreen", (_, _) => OpenGraphicsPage(6), !_busy);
+        SmallAction(screen, "Schermo e risoluzione", "screen");
+        var actions = EqualActions(profile, screen); actions.Margin = new Thickness(0, 18, 0, 0);
         body.Children.Add(actions);
         _content.Children.Add(AssetPanel(body, 20));
         if (!SelectedIsRemix) RenderRemixPackage();

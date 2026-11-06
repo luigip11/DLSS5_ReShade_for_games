@@ -85,8 +85,10 @@ internal sealed partial class MainWindow
             var profile = new StackPanel(); profile.Children.Add(DesignSystem.Chip("CONFIGURAZIONE GESTITA", Accent));
             profile.Children.Add(Text("Configurazione salvata", 22, Ink, FontWeights.SemiBold));
             profile.Children.Add(Text("Salva le regolazioni effettuate nel gioco per conservarle come punto di ripristino. Il salvataggio acquisisce i file presenti, senza riscriverli.", 13, Muted));
-            profile.Children.Add(FxButton("Salva configurazione attuale", "CaptureRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Capture"), !_busy));
-            profile.Children.Add(FxButton("Ripristina configurazione salvata", "RestoreRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Restore"), !_busy && !status.Changed));
+            var capture = FxButton("Salva configurazione attuale", "CaptureRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Capture"), !_busy);
+            var restore = FxButton("Ripristina configurazione salvata", "RestoreRemixProfile", async (_, _) => await PrepareRemixManagedAsync("Restore"), !_busy && !status.Changed);
+            SmallAction(capture, "Salva configurazione attuale", "save"); SmallAction(restore, "Ripristina configurazione salvata", "refresh");
+            profile.Children.Add(EqualActions(capture, restore));
             SpaceDlssPanel(profile);
             _content.Children.Add(AssetPanel(profile, 20));
             if (status.Changed) Card("Modifiche da registrare", "Salva la configurazione attuale per registrare le impostazioni presenti e un eventuale cambio a un EXE identificato. Questa scelta aggiorna il punto di ripristino, senza riscrivere i file del gioco.");

@@ -8,7 +8,7 @@ namespace GamePanel.Desktop;
 
 internal sealed partial class MainWindow
 {
-    private static void StyleAdvanced(Expander expander)
+    private static void StyleAdvanced(Expander expander, bool roomy = false)
     {
         var template = new ControlTemplate(typeof(Expander));
         var stack = new FrameworkElementFactory(typeof(StackPanel));
@@ -17,11 +17,11 @@ internal sealed partial class MainWindow
         toggle.SetValue(ContentControl.ContentProperty, new Binding("Header") { RelativeSource = RelativeSource.TemplatedParent });
         toggle.SetValue(Control.ForegroundProperty, DesignSystem.Blue);
         toggle.SetValue(Control.FontSizeProperty, 13d); toggle.SetValue(Control.FontWeightProperty, FontWeights.SemiBold);
-        toggle.SetValue(Control.BackgroundProperty, Surface);
-        toggle.SetValue(Control.BorderBrushProperty, DesignSystem.Line);
+        toggle.SetValue(Control.BackgroundProperty, roomy ? DesignSystem.Color("#142330") : Surface);
+        toggle.SetValue(Control.BorderBrushProperty, roomy ? DesignSystem.Color("#2F4659") : DesignSystem.Line);
         var buttonTemplate = new ControlTemplate(typeof(ToggleButton));
         var border = new FrameworkElementFactory(typeof(Border)); border.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
-        border.SetValue(Border.BorderThicknessProperty, new Thickness(1)); border.SetValue(Border.PaddingProperty, new Thickness(12, 12, 12, 12));
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1)); border.SetValue(Border.PaddingProperty, roomy ? new Thickness(17, 15, 17, 15) : new Thickness(12, 12, 12, 12));
         border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
         border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
         var row = new FrameworkElementFactory(typeof(DockPanel));
@@ -45,7 +45,7 @@ internal sealed partial class MainWindow
         var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true }; hover.Setters.Add(new Setter(Control.BorderBrushProperty, Accent)); buttonTemplate.Triggers.Add(hover);
         toggle.SetValue(Control.TemplateProperty, buttonTemplate); stack.AppendChild(toggle);
         var content = new FrameworkElementFactory(typeof(ContentPresenter)); content.SetValue(ContentPresenter.ContentSourceProperty, "Content");
-        content.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 10, 0, 4));
+        content.SetValue(FrameworkElement.MarginProperty, new Thickness(0, roomy ? 21 : 10, 0, 4));
         content.SetValue(UIElement.VisibilityProperty, new Binding("IsExpanded") { RelativeSource = RelativeSource.TemplatedParent, Converter = new BooleanToVisibilityConverter() });
         stack.AppendChild(content); template.VisualTree = stack; expander.Template = template;
     }

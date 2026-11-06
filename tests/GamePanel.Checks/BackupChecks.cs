@@ -7,6 +7,29 @@ internal static class BackupChecks
 {
     public static void Register(Action<string, Action> check, string testRoot)
     {
+        check("Backup: elimina solo il punto selezionato e conserva gioco e altri backup", () =>
+        {
+            using var f = new Fixture(testRoot); var before = f.GameHashes(); var first = f.Create(); var keep = f.Create(); var removedFolder = f.Snapshot(first.Id);
+            f.Service.Delete(f.Exe, first.Id);
+            Require(!Directory.Exists(removedFolder) && f.Service.List(f.Exe).Single().Id == keep.Id, "Eliminato il backup sbagliato.");
+            Require(before.All(p => f.GameHashes()[p.Key] == p.Value), "Eliminazione ha toccato il gioco.");
+            Refused(() => f.Service.Delete(f.Exe, "../escape"));
+            Refused(() => f.Service.Delete(Path.Combine(f.Game, "other.exe"), keep.Id));
+            Require(f.Service.List(f.Exe).Count == 1, "Alterato un backup di un altro percorso.");
+        });
+        check("Backup: eliminazione rifiutata per ripristino pendente o link esterni", () =>
+        {
+            using var f = new Fixture(testRoot); var s = f.Create();
+            var journal = Path.Combine(f.Snapshot(s.Id), "repair.json");
+            File.WriteAllText(journal, JsonSerializer.Serialize(new { SchemaVersion = 1, SnapshotId = s.Id, OperationId = new string('a', 32), State = "Pending", CompletedFiles = Array.Empty<string>() }));
+            Refused(() => f.Service.Delete(f.Exe, s.Id)); Require(Directory.Exists(f.Snapshot(s.Id)), "Eliminato backup con ripristino pendente.");
+            File.Delete(journal); var outside = Path.Combine(f.Root, "outside.txt"); File.WriteAllText(outside, "keep");
+            var link = Path.Combine(f.Snapshot(s.Id), "outside-link");
+            try { File.CreateSymbolicLink(link, outside); }
+            catch (Exception e) when (OperatingSystem.IsWindows() && e is IOException or UnauthorizedAccessException) { throw new SkipCheckException("Symlink non disponibili per questo utente."); }
+            Refused(() => f.Service.Delete(f.Exe, s.Id));
+            Require(File.ReadAllText(outside) == "keep" && Directory.Exists(f.Snapshot(s.Id)), "Link seguito durante eliminazione."); File.Delete(link);
+        });
         check("Backup: copie persistenti senza modificare il gioco", () =>
         {
             using var f = new Fixture(testRoot); var before = f.GameHashes();

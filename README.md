@@ -15,7 +15,10 @@ Per usare una build portabile, estrarre tutto lo ZIP in una cartella nuova e apr
 - UI Windows aggiornata al prototipo approvato: schede libreria adattive, icone informative, ricerca con lente e ordinamento recenti/meno recenti/alfabetico oltre cinque giochi.
 - Avvia/Analizza, tab Grafica e pulsanti backup divisi a meta riga; azioni secondarie separate da un divisore.
 - Copertina selezionata nel riquadro Gioco; informazioni Windows accessibili dal pannello hardware; Gioca e Avvia il gioco a tutta larghezza.
-- Gioca nella pagina DLSS sopra la FAQ; campi di configurazione scuri, hover piu visibili, icona aggiornamenti e collegamento al repository dell'autore nel footer.
+- Gioca nella pagina DLSS sopra la FAQ; campi di configurazione scuri, hover piu visibili, icona aggiornamenti e collegamento al profilo GitHub dell'autore nel footer.
+- Hardware distinto in processore, GPU e RAM installata, con valori rilevati da Windows.
+- Schermo illustrato con risoluzione al centro, monitor e risoluzione affiancati, configurazione avanzata separata.
+- Punti di ripristino con conteggio, gioco/percorso, Esamina ed eliminazione confermata del singolo backup; spaziatura prima delle FAQ.
 - Preparazione locale UG1/UG2 Remix da cartella o ZIP verificato: anteprima, copia separata, annullamento, esportazione locale dei soli file catalogati e collegamento Originale/Remix. [Guida](docs/REMIX-PACKAGES.md).
 - Preparazione degli allegati per GitHub Releases in parti inferiori a 2 GiB, manifest SHA-256 e ricostruzione locale verificata dello ZIP; nessun upload automatico.
 - UG2 conserva FrontB.lzc dell'utente; Smol e un componente separato. Le configurazioni personalizzate vengono segnalate e conservate. Il download pubblico GamePanel resta disabilitato finche i pacchetti distribuibili non sono pubblicati.

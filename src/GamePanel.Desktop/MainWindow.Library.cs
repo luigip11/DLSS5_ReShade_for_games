@@ -53,7 +53,7 @@ internal sealed partial class MainWindow
         var add = Button("+  Importa gioco", async (_, _) => await SelectAsync()); add.IsEnabled = !_busy;
         add.Background = Accent; add.Foreground = BackgroundBrush; add.Margin = new Thickness(0); add.VerticalAlignment = VerticalAlignment.Center;
         System.Windows.Automation.AutomationProperties.SetAutomationId(add, "ImportLibraryGame"); var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); deselect.Content = "Deseleziona gioco";
+        var deselect = Button("Deseleziona gioco", (_, _) => DeselectLibraryGame()); SmallAction(deselect, "Deseleziona gioco", "unmount"); SmallAction(add, "Importa gioco", "plus", primary: true);
         deselect.IsEnabled = !_busy && (_report is not null || _library.SelectedId is not null);
         deselect.Margin = new Thickness(0, 0, 10, 0); deselect.VerticalAlignment = VerticalAlignment.Center;
         System.Windows.Automation.AutomationProperties.SetAutomationId(deselect, "DeselectLibraryGame");
@@ -168,19 +168,21 @@ internal sealed partial class MainWindow
             SmallAction(open, "Analizza", "search"); System.Windows.Automation.AutomationProperties.SetAutomationId(open, "LibraryOpen-" + original.Id);
             var actions = EqualActions(play, open); actions.Margin = new Thickness(0, 7, 0, 0); details.Children.Add(actions);
             details.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(0, 16, 0, 12) });
-            var edit = new WrapPanel();
+            var edit = new StackPanel();
             var rename = Button("Rinomina", (_, _) => RenameLibraryGame(original)); rename.IsEnabled = !_busy;
             var relink = Button("Ricollega EXE", async (_, _) => await RelinkLibraryGameAsync(game)); relink.IsEnabled = !_busy;
             var remove = Button(group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", (_, _) => EditLibrary(() => _libraryStore.Remove(game.Id), "Voce rimossa. I file del gioco, i backup e i profili sono conservati.")); remove.IsEnabled = !_busy;
-            foreach (var button in new[] { rename, relink, remove }) edit.Children.Add(button);
+            SmallAction(rename, "Rinomina", "edit"); SmallAction(relink, "Ricollega EXE", "link");
+            SmallAction(remove, group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", "trash");
+            edit.Children.Add(EqualActions(rename, relink)); edit.Children.Add(remove);
             if (_library.Variants?.Any(v => v.VariantId == game.Id) == true)
             {
                 var unlink = Button("Separa variante", (_, _) => EditLibrary(() => _libraryStore.UnlinkRemixVariant(game.Id), "Variante separata. I file e i profili sono conservati."));
-                unlink.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(unlink, "LibraryUnlinkVariant-" + game.Id); edit.Children.Add(unlink);
+                SmallAction(unlink, "Separa variante", "unmount"); unlink.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(unlink, "LibraryUnlinkVariant-" + game.Id); edit.Children.Add(unlink);
             }
             else if (group.Variants.Count == 1 && _library.Games.Count > 1)
             {
-                var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); link.IsEnabled = !_busy;
+                var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); SmallAction(link, "Collega come Remix", "link"); link.IsEnabled = !_busy;
                 System.Windows.Automation.AutomationProperties.SetAutomationId(link, "LibraryLinkVariant-" + game.Id); edit.Children.Add(link);
             }
             foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; }

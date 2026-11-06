@@ -127,6 +127,29 @@ public sealed class BackupService
         return summaries.OrderByDescending(s => s.CreatedAt).ToArray();
     }
 
+    public void Delete(string executablePath, string snapshotId)
+    {
+        var executable = FullExecutable(executablePath); EnsureStopped(executable);
+        _ = Load(executable, snapshotId);
+        using var operationLock = Lock(GameStore(executable));
+        _ = Load(executable, snapshotId);
+        var folder = SnapshotFolder(executable, snapshotId);
+        var journal = ReadJournal(Path.Combine(folder, "repair.json"), snapshotId);
+        if (journal?.State == "Pending") throw new InvalidDataException("Completa il ripristino interrotto prima di eliminare questo backup.");
+        // Validate the entire owned snapshot before deleting anything; never follow links.
+        var pending = new Stack<string>(); pending.Push(folder); var seen = 0;
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop(); GuardPath(directory);
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                if (++seen > MaximumFiles * 4 + 32) throw new InvalidDataException("Contenuto inatteso nel backup: eliminazione annullata.");
+                GuardPath(entry); if (Directory.Exists(entry)) pending.Push(entry);
+            }
+        }
+        Directory.Delete(folder, recursive: true);
+    }
+
     public RestorePlan Preview(string executablePath, string snapshotId, CancellationToken token = default)
     {
         var executable = FullExecutable(executablePath);

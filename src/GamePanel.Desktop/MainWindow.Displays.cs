@@ -35,6 +35,12 @@ internal sealed partial class MainWindow
     private void RenderDisplaySelector()
     {
         var label = Text("SCHERMO DI DESTINAZIONE", 10, Muted, FontWeights.SemiBold); label.Margin = new Thickness(0, 0, 0, 8); _content.Children.Add(label);
+        _content.Children.Add(CreateDisplaySelector());
+        var refresh = FxButton("Rileva schermi", "RefreshDisplays", (_, _) => RefreshDisplays(), !_busy); SmallAction(refresh, "Rileva schermi", "refresh"); _content.Children.Add(refresh);
+        AddDisplayMessages(_content);
+    }
+    private ComboBox CreateDisplaySelector()
+    {
         var choices = new List<DisplayChoice> { new(null, "Automatico · schermo di GamePanel") };
         choices.AddRange(_displays.Select(d => new DisplayChoice(d.Id, d.Label)));
         var selected = choices.FindIndex(d => d.Id == _preferredDisplay);
@@ -48,9 +54,11 @@ internal sealed partial class MainWindow
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { _displayError = e.Message; }
             Render();
         };
-        _content.Children.Add(combo);
-        var refresh = FxButton("Rileva schermi", "RefreshDisplays", (_, _) => RefreshDisplays(), !_busy); _content.Children.Add(refresh);
-        if (_displayError is not null) Card("Preferenza schermo", _displayError);
-        if (_preferredDisplay is not null && !_displays.Any(d => d.Id == _preferredDisplay)) Card("Schermo non collegato", "Lo schermo salvato non è disponibile. Per questa sessione uso quello di GamePanel; puoi scegliere un altro schermo.");
+        return combo;
+    }
+    private void AddDisplayMessages(Panel target)
+    {
+        if (_displayError is not null) target.Children.Add(Text("Preferenza schermo · " + _displayError, 12, Muted));
+        if (_preferredDisplay is not null && !_displays.Any(d => d.Id == _preferredDisplay)) target.Children.Add(Text("Lo schermo salvato non è collegato. Per questa sessione uso quello di GamePanel.", 12, Muted));
     }
 }
