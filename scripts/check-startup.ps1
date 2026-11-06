@@ -235,7 +235,7 @@ try {
     Invoke-Button 'BackupsPage'
     Wait-Until { $null -ne (Find-Element 'CreateBackup') } 'backup page'
     Invoke-Button 'CreateBackup'
-    Wait-Until { $null -ne (Find-Element 'VerifyBackup') -and $null -ne (Find-Element 'BackupPoints') } 'backup creation'
+    Wait-Until { $null -ne (Find-Element 'VerifyBackup') -and (Has-Heading 'I tuoi punti di ripristino') } 'backup creation'
     $snapshot = @(Get-ChildItem -LiteralPath $fixtureStore -Directory | Where-Object { $_.Name -match '^[a-fA-F0-9]{32}$' })
     if ($snapshot.Count -ne 1) { throw 'Expected one committed snapshot.' }
     Write-Host 'PASS GUI persistent backup creation'
