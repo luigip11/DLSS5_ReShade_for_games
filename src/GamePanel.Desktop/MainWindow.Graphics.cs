@@ -40,13 +40,20 @@ internal sealed partial class MainWindow
         actions.Children.Add(FxButton("Gioca", "GraphicsPlay", (_, _) => Launch(), CanPrepareAssets));
         body.Children.Add(actions);
         _content.Children.Add(AssetPanel(body, 20));
+        if (!SelectedIsRemix) RenderRemixPackage();
+        RenderImageRoutes();
         if (SelectedIsRemix)
         {
             Details("Percorso grafico della copia", "Questa copia usa RTX Remix. Le regolazioni DLSS e il profilo si gestiscono nella pagina dedicata. ReShade, TexWizard, catture DDS e correzioni ai modelli non fanno parte della procedura rapida di questa copia.");
             return;
         }
-        if (SelectedIsUnderground2) RenderRemixTrial();
-        else Card("Strumenti per questo gioco", "GamePanel mostra le funzioni compatibili con il titolo selezionato. I pacchetti specifici di altri giochi, come asfalto o modelli auto, non vengono proposti qui. La sezione DLSS indica i componenti rilevati e l'eventuale percorso di gestione disponibile.");
+        if (SelectedIsUnderground2)
+        {
+            var legacyBody = CaptureAssetContent(RenderRemixTrial);
+            var legacy = new Expander { Header = "Avanzate · archivio autore 0.4 e vecchio EXE CD", Content = legacyBody, Foreground = Muted, Margin = new Thickness(0, 8, 0, 16) };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(legacy, "LegacyRemixTrial"); StyleAdvanced(legacy); _content.Children.Add(legacy);
+        }
+        else if (!SelectedIsUnderground1) Card("Strumenti per questo gioco", "GamePanel mostra le funzioni compatibili con il titolo selezionato. I pacchetti specifici di altri giochi, come asfalto o modelli auto, non vengono proposti qui. La sezione DLSS indica i componenti rilevati e l'eventuale percorso di gestione disponibile.");
     }
 
     private void RenderGraphicsComponentSummary()

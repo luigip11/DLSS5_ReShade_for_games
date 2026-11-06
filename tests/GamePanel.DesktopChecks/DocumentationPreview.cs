@@ -45,7 +45,7 @@ internal static class DocumentationPreview
                 }
                 window = (Window)Activator.CreateInstance(type, nonPublic: true)!;
                 window.Width = 1280; window.Height = 960; window.MinWidth = 1000;
-                window.Title = "GamePanel alpha.15 · anteprima dimostrativa";
+                window.Title = "GamePanel alpha.16 · anteprima dimostrativa";
                 void Set(string name, object value) => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, value);
                 object Get(string name) => type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
                 void Render(int page)
@@ -57,7 +57,25 @@ internal static class DocumentationPreview
                 Set("_library", library);
                 Set("_libraryMessage", "Anteprima dimostrativa · copertine illustrative locali · Originale e Remix nella stessa scheda.");
                 window.Show(); Pump(window); Render(5);
-                Save(window, Path.Combine(output, "alpha15-library-nfs.png"));
+                Require(Find(window, "LibrarySort") is null, "Sort shown for two library games.");
+                var names = new[] { "Need for Speed Most Wanted", "Half-Life 2", "Grand Theft Auto San Andreas", "Need for Speed Carbon", "Portal", "Max Payne 2" };
+                var extra = names.Select((name, i) => Game((i + 4).ToString("x32"), name, "Demo-" + i, "game.exe") with { LastInspectedAt = now.AddDays(-i - 1) }).ToArray();
+                Set("_library", library with { Games = library.Games.Concat(extra).ToArray() }); Render(5);
+                var sort = Find(window, "LibrarySort") as ComboBox ?? throw new InvalidOperationException("Sort missing for eight games.");
+                Require(sort.Items.Count == 3, "Sort options missing."); sort.SelectedIndex = 2; Pump(window);
+                var cards = (Panel)Get("_libraryCards");
+                Require(AutomationProperties.GetAutomationId(cards.Children[0]) == "LibraryCard-" + extra[2].Id, "Alphabetical sort incorrect.");
+                sort.SelectedIndex = 1; Pump(window); Require(AutomationProperties.GetAutomationId(cards.Children[0]) == "LibraryCard-" + extra[^1].Id, "Oldest sort incorrect.");
+                sort.SelectedIndex = 0; Pump(window);
+                foreach (var width in new[] { 1000d, 1280d })
+                {
+                    window.Width = width; Pump(window);
+                    var play = Find(window, "LibraryPlay-" + ug2.Id)!; var analyze = Find(window, "LibraryOpen-" + ug2.Id)!;
+                    Require(play.ActualWidth > 90 && Math.Abs(play.ActualWidth - analyze.ActualWidth) < 1, "Library action widths differ.");
+                    foreach (FrameworkElement card in cards.Children) Require(card.TranslatePoint(new Point(card.ActualWidth, 0), cards).X <= cards.ActualWidth + 1, "Library card overflows.");
+                }
+                Save(window, Path.Combine(output, "alpha16-library-nfs.png"));
+                Console.WriteLine("PASS UX library: conditional sorting, real selection order, equal action widths and responsive cards.");
 
                 var report = new GameReport(1, now, remix.ExecutablePath, remix.Sha256, remix.Architecture,
                     remix.GraphicsApis, [new(".trex/d3d9.dll", "RTX Remix", "Demo")], [], false, false);
@@ -67,11 +85,33 @@ internal static class DocumentationPreview
                 Set("_remixManagedStatus", new RemixManagedStatus(true, true, false, false,
                     "Anteprima dimostrativa dei controlli · nessuna configurazione reale modificata.", ug2.ExecutablePath, settings));
                 Set("_remixManagedMessage", "Anteprima dimostrativa · valori di esempio, nessuna misurazione del gioco.");
+                Set("_capabilityReport", report); Set("_selectedCapabilities", new GameCapabilities(true, true, true, false, false, false, false, "Need for Speed Underground 2", "Documentation fixture"));
+                Render(0);
+                Require(Find(window, "GameSelectedCover") is not null, "Selected cover missing on Game.");
+                var hardware = Find(window, "GameHardwareCard")!;
+                Require(Find(hardware, "WindowsSystemInfo") is not null, "System information outside hardware card.");
+                var gamePlay = Find(window, "GamePlay")!; Require(gamePlay.HorizontalAlignment == HorizontalAlignment.Stretch, "Game play not stretched.");
+                Save(window, Path.Combine(output, "alpha16-game.png"));
+                Render(7); var tabs = (TabControl)Find(window, "AssetsTabs")!;
+                var first = (TabItem)tabs.Items[0]; var second = (TabItem)tabs.Items[1];
+                Require(first.ActualWidth > 200 && Math.Abs(first.ActualWidth - second.ActualWidth) < 1, "Graphics tabs not equal-width.");
+                Save(window, Path.Combine(output, "alpha16-graphics.png"));
+                Render(3); var create = Find(window, "CreateBackup")!; var load = Find(window, "LoadBackups")!;
+                Require(Math.Abs(create.ActualWidth - load.ActualWidth) < 1 && create.ActualWidth > 200, "Backup actions not equal-width.");
+                Save(window, Path.Combine(output, "alpha16-backups.png"));
+                Render(8); Require(Find(window, "HdrDisplayStatus") is not null && Find(window, "WindowsHdrSettings") is not null, "HDR page unavailable.");
+                Save(window, Path.Combine(output, "alpha16-hdr.png"));
                 Render(1);
                 var content = (StackPanel)Get("_content");
                 var advanced = content.Children.OfType<Expander>().Single(e => AutomationProperties.GetAutomationId(e) == "DlssAdvancedSettings");
                 advanced.BringIntoView(); Pump(window);
-                Save(window, Path.Combine(output, "alpha15-dlss-parameters.png"));
+                Save(window, Path.Combine(output, "alpha16-dlss-parameters.png"));
+                var playDlss = Find(window, "RemixProfilePlay")!;
+                Require(playDlss.HorizontalAlignment == HorizontalAlignment.Stretch, "DLSS play not stretched.");
+                var faq = content.Children.OfType<Expander>().Single(e => e.Header is string text && text == "Fluidità e prestazioni");
+                Require(content.Children.IndexOf(playDlss) < content.Children.IndexOf(faq), "DLSS play below FAQ.");
+                Require(Find(window, "ProjectRepository") is not null, "Author repository action missing.");
+                Console.WriteLine("PASS UX game, graphics, backups, HDR, DLSS action order and repository attribution.");
                 Console.WriteLine("PASS documentation screenshots: production WPF library and DLSS controls, isolated demonstration data only.");
             }
             catch (Exception e) { failure = e; }
@@ -85,6 +125,14 @@ internal static class DocumentationPreview
         if (failure is not null) throw new InvalidOperationException("Documentation preview failed.", failure);
         return 0;
     }
+    private static FrameworkElement? Find(DependencyObject root, string id)
+    {
+        if (root is FrameworkElement self && AutomationProperties.GetAutomationId(self) == id) return self;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        { var found = Find(VisualTreeHelper.GetChild(root, i), id); if (found is not null) return found; }
+        return null;
+    }
+    private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
     private static void Pump(Window window)
     {
         window.UpdateLayout();

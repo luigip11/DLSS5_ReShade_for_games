@@ -17,8 +17,8 @@ internal sealed partial class MainWindow
     private StackPanel _importFields = null!;
     private Expander _gamePathExpander = null!;
     private bool _hadAnalyzedGame;
-    private static readonly string[] PageTitles = ["Gioco", "DLSS", "HDR / FX", "Ripristino", "Diagnosi", "Libreria", "Schermo", "Grafica"];
-    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen", "texture"];
+    private static readonly string[] PageTitles = ["Gioco", "DLSS", "ReShade / SDR", "Ripristino", "Diagnosi", "Libreria", "Schermo", "Grafica", "HDR e schermo"];
+    private static readonly string[] PageIcons = ["game", "chip", "sun", "shield", "scan", "folder", "screen", "texture", "sun"];
 
     private void BuildShell()
     {
@@ -44,6 +44,7 @@ internal sealed partial class MainWindow
         var bottom = new StackPanel { Margin = new Thickness(20, 12, 20, 22) };
         bottom.Children.Add(DesignSystem.Chip(AppVersion.Current.PreRelease?.Replace('.', ' ').ToUpperInvariant() ?? "STABILE", Accent));
         _updatesButton = Button("Controlla aggiornamenti", async (_, _) => await CheckSoftwareUpdatesAsync());
+        SmallAction(_updatesButton, "Controlla aggiornamenti", "refresh");
         _updatesButton.FontSize = 11; _updatesButton.Padding = new Thickness(9, 9, 9, 9); _updatesButton.Margin = new Thickness(0, 10, 0, 0);
         _updatesButton.ToolTip = "Controlla le release GitHub di GamePanel. Scarica e sostituisce l'app solo dopo la tua conferma.";
         System.Windows.Automation.AutomationProperties.SetAutomationId(_updatesButton, "CheckSoftwareUpdates"); bottom.Children.Add(_updatesButton);
@@ -59,7 +60,7 @@ internal sealed partial class MainWindow
         var advancedMenu = new StackPanel();
         var advancedNav = new Expander { Header = "Avanzate", Foreground = Muted, Content = advancedMenu, Margin = new Thickness(0, 10, 0, 0) };
         System.Windows.Automation.AutomationProperties.SetAutomationId(advancedNav, "AdvancedNavigation");
-        foreach (var i in new[] { 5, 0, 7, 1, 2, 6, 3, 4 })
+        foreach (var i in new[] { 5, 0, 7, 1, 2, 8, 6, 3, 4 })
         {
             var page = i;
             var nav = Button("", (_, _) => { _page = page; Render(); _pageScroll.ScrollToTop(); });
@@ -73,6 +74,7 @@ internal sealed partial class MainWindow
             if (i == 5) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "LibraryPage");
             if (i == 6) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "ScreenPage");
             if (i == 7) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "AssetsPage");
+            if (i == 8) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "HdrOptionsPage");
             if (i == 4) System.Windows.Automation.AutomationProperties.SetAutomationId(nav, "DiagnosticsPage");
             _navigation.Add(i, nav);
             if (i is 5 or 0 or 7 or 1) menu.Children.Add(nav); else advancedMenu.Children.Add(nav);
@@ -91,7 +93,14 @@ internal sealed partial class MainWindow
         _status.FontSize = 11; _status.TextWrapping = TextWrapping.NoWrap; _status.TextTrimming = TextTrimming.CharacterEllipsis;
         _status.SetBinding(ToolTipProperty, new System.Windows.Data.Binding(nameof(TextBlock.Text)) { Source = _status });
         statusRow.Children.Add(_status); footerGrid.Children.Add(statusRow);
-        var version = Text("GAMEPANEL  /  " + AppVersion.Current, 10, Muted); Grid.SetColumn(version, 1); footerGrid.Children.Add(version);
+        var footerInfo = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        var version = Text("GAMEPANEL  /  " + AppVersion.Current, 9, Muted); version.VerticalAlignment = VerticalAlignment.Center; version.Margin = new Thickness(0, 0, 14, 0); footerInfo.Children.Add(version);
+        var repository = Button("Luigi · luigip11/GamePanel", (_, _) => OpenProjectRepository());
+        SmallAction(repository, "Luigi · luigip11/GamePanel", "git"); repository.MinHeight = 24; repository.Padding = new Thickness(4, 2, 4, 2); repository.Margin = new Thickness(0);
+        repository.Background = Brushes.Transparent; repository.BorderBrush = Brushes.Transparent;
+        repository.ToolTip = "Autore: Luigi · Apri il repository GitHub di GamePanel";
+        System.Windows.Automation.AutomationProperties.SetAutomationId(repository, "ProjectRepository"); footerInfo.Children.Add(repository);
+        Grid.SetColumn(footerInfo, 1); footerGrid.Children.Add(footerInfo);
         System.Windows.Automation.AutomationProperties.SetAutomationId(_status, "OperationStatus");
         var footer = new Border { BorderBrush = DesignSystem.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(30, 14, 30, 14), Child = footerGrid };
         DockPanel.SetDock(footer, Dock.Bottom); main.Children.Add(footer);
@@ -147,7 +156,7 @@ internal sealed partial class MainWindow
     {
         var row = new Grid(); row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); row.ColumnDefinitions.Add(new ColumnDefinition()); row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.Children.Add(DesignSystem.Icon(PageIcons[page], active ? Accent : Muted, 19));
-        var label = Text(page == 2 ? "HDR / FX" : page == 6 ? "Schermo" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
+        var label = Text(page == 2 ? "ReShade / SDR" : page == 6 ? "Schermo" : PageTitles[page], 13, active ? Ink : Muted, active ? FontWeights.SemiBold : FontWeights.Normal); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
 
         return row;
     }
@@ -176,6 +185,7 @@ internal sealed partial class MainWindow
         var description = Text(_report is null ? "Seleziona un EXE per riconoscere i componenti e preparare un backup verificato."
             : "La tua copia è stata letta. Controlla i componenti rilevati e salva uno stato di riferimento.", 13, Muted); description.LineHeight = 21; heroBody.Children.Add(description);
         hero.Children.Add(heroBody);
+        AddSelectedGameCover(hero, heroBody);
         _content.Children.Add(new Border
         {
             Background = new LinearGradientBrush(DesignSystem.Color("#1B2D48").Color, DesignSystem.Color("#101B2B").Color, 20),
@@ -237,10 +247,8 @@ internal sealed partial class MainWindow
             screen.IsEnabled = !_busy; _content.Children.Add(screen);
         }
         var gpu = Hardware.DisplayDevices();
-        IllustratedHardwareCard("Il tuo hardware", gpu);
-        var about = Button("Informazioni sul sistema", (_, _) => OpenWindowsSettings("ms-settings:about", "Apri Impostazioni → Sistema → Informazioni sul sistema."));
-        DecorateAction(about, "Informazioni sul sistema", "info"); about.IsEnabled = !_busy;
-        System.Windows.Automation.AutomationProperties.SetAutomationId(about, "WindowsSystemInfo"); _content.Children.Add(about);
+        IllustratedHardwareCard("Il tuo hardware", gpu, systemInformation: true);
+
     }
 
     private static Border ActionTile(string icon, string title, string description, string action, RoutedEventHandler click, Brush color)

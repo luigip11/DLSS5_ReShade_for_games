@@ -69,7 +69,7 @@ function Find-Element([string]$Id) {
     # Expand only known shell containers requested by a test. Probing for an
     # absent operation (for example after removal) must not change page state.
     $containerId = $null
-    if ($Id -in @('HdrPage', 'ScreenPage', 'BackupsPage', 'DiagnosticsPage')) { $containerId = 'AdvancedNavigation' }
+    if ($Id -in @('HdrPage', 'HdrOptionsPage', 'ScreenPage', 'BackupsPage', 'DiagnosticsPage')) { $containerId = 'AdvancedNavigation' }
     elseif ($Id -in @('ExecutablePath', 'AnalyzePath')) { $containerId = 'GamePathExpander' }
     if ($containerId) {
         $containerCondition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $containerId)

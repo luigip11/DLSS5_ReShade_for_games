@@ -20,10 +20,12 @@ internal sealed partial class MainWindow
         {
             button.Background = Accent; button.Foreground = BackgroundBrush; button.BorderBrush = Accent;
             button.Padding = new Thickness(22, 13, 22, 13); button.MinWidth = 230;
-            button.HorizontalAlignment = HorizontalAlignment.Left;
+            button.HorizontalAlignment = HorizontalAlignment.Stretch;
+            button.HorizontalContentAlignment = HorizontalAlignment.Center;
+            button.MinWidth = 0;
         }
     }
-    private void IllustratedHardwareCard(string title, string description)
+    private void IllustratedHardwareCard(string title, string description, bool systemInformation = false)
     {
         var body = new StackPanel();
         var header = new Grid(); header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); header.ColumnDefinitions.Add(new ColumnDefinition());
@@ -34,7 +36,17 @@ internal sealed partial class MainWindow
         var caption = Text("ADATTATORI DEL SISTEMA", 9, Accent, FontWeights.SemiBold); caption.Margin = new Thickness(0, 6, 0, 0); text.Children.Add(caption);
         Grid.SetColumn(text, 1); header.Children.Add(text); body.Children.Add(header);
         var details = Text(description, 12, Muted); details.Margin = new Thickness(0, 14, 0, 0); body.Children.Add(details);
-        _content.Children.Add(AssetPanel(body, 20));
+        if (systemInformation)
+        {
+            var bottom = new StackPanel { Margin = new Thickness(0, 18, 0, 0) };
+            bottom.Children.Add(new Border { Height = 1, Background = DesignSystem.Line, Margin = new Thickness(0, 0, 0, 14) });
+            var about = Button("Informazioni di sistema Windows", (_, _) => OpenWindowsSettings("ms-settings:about", "Apri Impostazioni → Sistema → Informazioni sul sistema."));
+            SmallAction(about, "Informazioni di sistema Windows", "info"); about.HorizontalAlignment = HorizontalAlignment.Right; about.Margin = new Thickness(0);
+            about.IsEnabled = !_busy; System.Windows.Automation.AutomationProperties.SetAutomationId(about, "WindowsSystemInfo"); bottom.Children.Add(about); body.Children.Add(bottom);
+        }
+        var panel = AssetPanel(body, 20);
+        if (systemInformation) System.Windows.Automation.AutomationProperties.SetAutomationId(panel, "GameHardwareCard");
+        _content.Children.Add(panel);
     }
     private void OpenWindowsSettings(string uri, string fallback)
     {

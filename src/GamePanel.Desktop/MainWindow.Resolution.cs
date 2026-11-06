@@ -122,7 +122,7 @@ internal sealed partial class MainWindow
             void Field(string caption, string value, string id, Action<string> change)
             {
                 var text = Text(caption, 12, Muted); text.Margin = new Thickness(0, 10, 0, 6); advanced.Children.Add(text);
-                var input = new TextBox { Text = value, IsEnabled = !_busy, Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 6) };
+                var input = new TextBox { Text = value, Foreground = Ink, CaretBrush = Accent, Background = DesignSystem.Raised, BorderBrush = DesignSystem.Line, IsEnabled = !_busy, Padding = new Thickness(10), Margin = new Thickness(0, 0, 0, 6) };
                 System.Windows.Automation.AutomationProperties.SetAutomationId(input, id);
                 input.TextChanged += (_, _) => { change(input.Text.Trim()); InvalidateResolution(); }; advanced.Children.Add(input);
             }

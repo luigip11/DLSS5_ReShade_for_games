@@ -5,7 +5,7 @@ namespace GamePanel.Core;
 
 public sealed record LibraryGame(string Id, string Title, string ExecutablePath, string Sha256,
     string Architecture, IReadOnlyList<string> GraphicsApis, DateTimeOffset AddedAt,
-    DateTimeOffset LastInspectedAt, DateTimeOffset? LastPlayedAt, bool CustomTitle = false);
+    DateTimeOffset LastInspectedAt, DateTimeOffset? LastPlayedAt, bool CustomTitle = false, ExecutableVersion? Version = null);
 public sealed record LibraryVariantLink(string OriginalId, string VariantId);
 public sealed record LibrarySnapshot(int SchemaVersion, string? SelectedId, IReadOnlyList<LibraryGame> Games,
     IReadOnlyList<LibraryVariantLink>? Variants = null);
@@ -43,7 +43,7 @@ public sealed class GameLibrary
             var title = existing?.CustomTitle == true ? existing.Title : SuggestedTitle(path);
             var game = new LibraryGame(existing?.Id ?? Guid.NewGuid().ToString("N"), title, path, report.Sha256,
                 report.Architecture, report.GraphicsApis.ToArray(), existing?.AddedAt ?? DateTimeOffset.UtcNow,
-                report.InspectedAt, existing?.LastPlayedAt, existing?.CustomTitle ?? false);
+                report.InspectedAt, existing?.LastPlayedAt, existing?.CustomTitle ?? false, report.Version);
             return snapshot with { SelectedId = game.Id, Games = snapshot.Games.Where(g => g.Id != game.Id).Append(game).ToArray() };
         });
     }

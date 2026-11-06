@@ -58,6 +58,8 @@ try {
     Copy-Item docs/RESOLUTION-PROFILES.md (Join-Path $portable 'RESOLUTION-PROFILES.md')
     Copy-Item docs/UG1-REMIX.md (Join-Path $portable 'UG1-REMIX.md')
     Copy-Item docs/LIBRARY-COVERS.md (Join-Path $portable 'LIBRARY-COVERS.md')
+    Copy-Item docs/REMIX-PACKAGES.md (Join-Path $portable 'REMIX-PACKAGES.md')
+    Copy-Item docs/IMAGE-AND-HDR.md (Join-Path $portable 'IMAGE-AND-HDR.md')
     Copy-Item docs/REMIX-PERFORMANCE.md (Join-Path $portable 'REMIX-PERFORMANCE.md')
     Copy-Item docs/REMIX-TRIAL.md (Join-Path $portable 'REMIX-TRIAL.md')
     Copy-Item docs/REMIX-COMPONENT-REVIEW.md (Join-Path $portable 'REMIX-COMPONENT-REVIEW.md')

@@ -7,6 +7,7 @@ public sealed record SdrSettings(bool Enabled, int Sharpness, int Color, int Int
     int Contrast = 0, int Bloom = 0, int Vignette = 0)
 {
     public static SdrSettings Balanced => new(true, 35, 58, 70);
+    public static SdrSettings Sharp => new(true, 45, 50, 65);
     public static SdrSettings Original => new(false, 0, 50, 0);
     public static SdrSettings Cinema => new(true, 45, 62, 90, 35, 30, 18);
     public void Validate()

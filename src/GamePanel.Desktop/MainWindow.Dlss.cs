@@ -134,7 +134,7 @@ internal sealed partial class MainWindow
             advanced.IsExpanded = true; StyleAdvanced(advanced);
             System.Windows.Automation.AutomationProperties.SetAutomationId(advanced, "DlssAdvancedSettings");
             _content.Children.Add(advanced);
-            Details("Fluidità e prestazioni", "Frame Generation aggiunge fotogrammi generati. Un contatore che li include non misura gli FPS di rendering. GamePanel non ricava un valore dividendo per il moltiplicatore e non promette lo stesso risultato su altri PC.");
+
         }
         if (_remixManagedPlan is { } plan)
         {
@@ -159,6 +159,7 @@ internal sealed partial class MainWindow
         }
         var play = FxButton("Gioca", "RemixProfilePlay", (_, _) => Launch(), !_busy);
         DecorateAction(play, "Gioca", "play", primary: true); _content.Children.Add(play);
+        if (status.Adopted) Details("Fluidità e prestazioni", "Frame Generation aggiunge fotogrammi generati. Un contatore che li include non misura gli FPS di rendering. GamePanel non ricava un valore dividendo per il moltiplicatore e non promette lo stesso risultato su altri PC.");
     }
     private static string RemixActionTitle(string action) => action switch { "Adopt" => "Registrazione", "Capture" => "Salvataggio", "Restore" => "Ripristino", _ => "Applicazione" };
     private FrameworkElement DlssChoice(string label, string id, int? value, (int? Value, string Label)[] choices, Action<int?> change)

@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Catalogs/*.json" />
     <PackageReference Include="SharpCompress" Version="0.50.7" />
   </ItemGroup>
 </Project>

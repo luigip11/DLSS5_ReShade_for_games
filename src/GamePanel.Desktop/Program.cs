@@ -188,6 +188,7 @@ internal sealed partial class MainWindow : Window
             case 5: RenderLibrary(); break;
             case 6: RenderScreen(); break;
             case 7: RenderAssets(); break;
+            case 8: RenderHdrOptions(); break;
         }
         DesignSystem.SpaceActions(_content);
     }
@@ -222,14 +223,15 @@ internal sealed partial class MainWindow : Window
         Card("La tua copia di riferimento", _backupMessage);
         var scope = Text("Salva l'EXE e i componenti riconosciuti. Salvataggi e asset del gioco sono esclusi.", 12, Muted);
         scope.Margin = new Thickness(0, 0, 0, 14); _content.Children.Add(scope);
-        var actions = new WrapPanel();
         var create = Button("Crea backup", async (_, _) => await CreateBackupAsync());
         System.Windows.Automation.AutomationProperties.SetAutomationId(create, "CreateBackup");
         create.IsEnabled = !_busy && _report is not null;
         create.Background = Accent; create.Foreground = BackgroundBrush; create.BorderBrush = Accent;
         var load = Button("Carica backup del percorso", async (_, _) => await LoadBackupsAsync());
         load.IsEnabled = !_busy && !string.IsNullOrWhiteSpace(_path.Text);
-        actions.Children.Add(create); actions.Children.Add(load); _content.Children.Add(actions);
+        SmallAction(create, "Crea backup", "plus", primary: true); SmallAction(load, "Carica backup del percorso", "folder");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(load, "LoadBackups");
+        _content.Children.Add(EqualActions(create, load));
         if (_snapshots.Count > 0)
         {
             var chooser = new ComboBox

@@ -1,3 +1,13 @@
+# Alpha.16 — nuova UI e percorsi grafici guidati
+
+Il design approvato nel prototipo web entra nell'app WPF: libreria adattiva con ordinamento condizionale, azioni a meta riga, copertina nella pagina Gioco, pulsanti principali estesi, informazioni Windows nel riquadro hardware, tab illustrati, campi scuri, hover e attribuzione al repository.
+
+La preparazione locale Remix usa cataloghi di impronte dei file UG1 e UG2 esaminati. Cartella o ZIP locale, anteprima senza scritture, nuova copia in staging e pubblicazione solo dopo verifica. Gli EXE provengono dalla copia compatibile dell'utente. UG2 conserva il proprio FrontB.lzc e Smol e separato; i dati uguali della copia originale vengono riutilizzati. Lo ZIP esportato contiene solo componenti selezionati e non viene pubblicato automaticamente. Download GamePanel indisponibile finche non esistono pacchetti ospitati e distribuibili verificati.
+
+ReShade offre preset SDR generali per DX9 x86, senza liste basate solo sul nome del gioco. I vincoli su API, architettura, anti-cheat, DLL esistenti, anteprima e recupero restano attivi. La pagina HDR legge il colore avanzato di Windows e apre le sue impostazioni; non forza HDR nel gioco e non attribuisce supporto nativo dall'EXE.
+
+[Pacchetti Remix](REMIX-PACKAGES.md) · [ReShade e HDR](IMAGE-AND-HDR.md)
+
 # Alpha.15 — libreria con copertine, controlli DLSS e avvio Remix
 
 Copertine per scheda, da file locale o ricerca Wikipedia esplicita con anteprima e cache offline. GPU illustrate e azioni Schermo/GPU affiancate nella pagina DLSS; Gioca e Avvia il gioco in verde fluo. La pagina Gioco collega alle informazioni di sistema Windows e chiarisce i metadati versione mancanti negli EXE.
