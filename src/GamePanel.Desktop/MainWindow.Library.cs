@@ -174,7 +174,7 @@ internal sealed partial class MainWindow
             var remove = Button(group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", (_, _) => EditLibrary(() => _libraryStore.Remove(game.Id), "Voce rimossa. I file del gioco, i backup e i profili sono conservati.")); remove.IsEnabled = !_busy;
             SmallAction(rename, "Rinomina", "edit"); SmallAction(relink, "Ricollega EXE", "link");
             SmallAction(remove, group.Variants.Count > 1 ? "Rimuovi versione selezionata" : "Rimuovi dalla libreria", "trash");
-            edit.Children.Add(EqualActions(rename, relink)); edit.Children.Add(remove);
+            var editRow = EqualActions(rename, relink); editRow.Margin = new Thickness(0, 0, 0, 10); edit.Children.Add(editRow); edit.Children.Add(remove);
             if (_library.Variants?.Any(v => v.VariantId == game.Id) == true)
             {
                 var unlink = Button("Separa variante", (_, _) => EditLibrary(() => _libraryStore.UnlinkRemixVariant(game.Id), "Variante separata. I file e i profili sono conservati."));
@@ -185,7 +185,7 @@ internal sealed partial class MainWindow
                 var link = Button("Collega come Remix", (_, _) => LinkLibraryVariant(game)); SmallAction(link, "Collega come Remix", "link"); link.IsEnabled = !_busy;
                 System.Windows.Automation.AutomationProperties.SetAutomationId(link, "LibraryLinkVariant-" + game.Id); edit.Children.Add(link);
             }
-            foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; }
+            foreach (var button in edit.Children.OfType<Button>()) { button.FontSize = 11; button.Padding = new Thickness(8, 7, 8, 7); button.Background = Brushes.Transparent; button.Margin = new Thickness(0, 0, 0, 10); }
             details.Children.Add(edit); body.Children.Add(details);
             var card = new Border { Background = Surface, BorderBrush = group.Variants.Any(g => g.Id == _library.SelectedId) ? DesignSystem.Color("#526B3B") : DesignSystem.Line,
                 BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Margin = new Thickness(0, 0, 18, 18), Child = body, ClipToBounds = true };

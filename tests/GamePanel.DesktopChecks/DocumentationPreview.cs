@@ -84,6 +84,7 @@ internal static class DocumentationPreview
                 var report = new GameReport(1, now, remix.ExecutablePath, remix.Sha256, remix.Architecture,
                     remix.GraphicsApis, [new(".trex/d3d9.dll", "RTX Remix", "Demo")], [], false, false);
                 var settings = new RemixDlssSettings(1, 4, true, true, true, 3, 1);
+                ((TextBox)Get("_path")).Text = report.ExecutablePath;
                 Set("_report", report); Set("_dlssSettings", settings);
                 Set("_assetMessage", "Anteprima dimostrativa dei percorsi per la copia selezionata.");
                 Set("_graphicsAdapters", "NVIDIA GeForce RTX 5080 Laptop GPU · esempio dimostrativo");
