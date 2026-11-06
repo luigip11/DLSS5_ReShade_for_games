@@ -6,7 +6,7 @@ Le funzioni vengono proposte in base al gioco, al renderer e all'hardware rileva
 
 ## Download
 
-**[Scarica GamePanel alpha.16 per Windows x64](https://github.com/luigip11/GamePanel/actions/runs/42211356115/artifacts/13499396707)** · [Build e controlli superati](https://github.com/luigip11/GamePanel/actions/runs/42211356115) · [PR #7](https://github.com/luigip11/GamePanel/pull/7). Il download degli artifact richiede accesso a GitHub e resta disponibile fino al 4 febbraio 2027.
+**[Scarica GamePanel alpha.16 per Windows x64](https://github.com/luigip11/GamePanel/actions/runs/42228867851/artifacts/13507551076)** · [Build e controlli superati](https://github.com/luigip11/GamePanel/actions/runs/42228867851) · [PR #7](https://github.com/luigip11/GamePanel/pull/7). Il download degli artifact richiede accesso a GitHub e resta disponibile fino al 4 febbraio 2027.
 
 Per usare una build portabile, estrarre tutto lo ZIP in una cartella nuova e aprire **GamePanel.exe**. Runtime dell'app incluso; guide in **Docs**, licenze in **Licenses**, materiali in **Assets**. Giochi e pacchetti Remix non sono inclusi.
 
@@ -30,12 +30,56 @@ Le copie preparate richiedono una prova nel gioco. Il collaudo di una configuraz
 
 ## Schermate
 
-Catture della vera app WPF alpha.16 su Windows, con libreria dimostrativa isolata e copertine illustrative locali. Non mostrano prestazioni misurate dei giochi.
+Catture della vera app WPF alpha.16 su Windows, con libreria dimostrativa isolata e copertine illustrative locali. L'hardware mostrato nella pagina Gioco appartiene al runner Windows; non rappresenta il PC dell'utente. Nessun gioco viene eseguito per produrre queste immagini.
 
-![Libreria GamePanel con Underground 1 e 2](docs/images/alpha16-library-nfs.png)
+![Libreria GamePanel](docs/images/alpha16-library-nfs.png)
 
-![Gioco con copertina selezionata](docs/images/alpha16-game.png)
+<details>
+<summary>Azioni delle schede della libreria</summary>
 
-![Parametri DLSS nella UI Windows](docs/images/alpha16-dlss-parameters.png)
+![Azioni con icone](docs/images/alpha16-library-actions.png)
 
-Verifica: **271/271 controlli core Windows superati**, controlli UI, avvio, updater e launcher Explorer riusciti. Le copie Remix generate richiedono un collaudo nel gioco sul PC dell'utente.
+</details>
+
+<details>
+<summary>Gioco e specifiche hardware</summary>
+
+![Gioco e copertina](docs/images/alpha16-game.png)
+
+![CPU, GPU e RAM rilevate](docs/images/alpha16-hardware.png)
+
+</details>
+
+<details>
+<summary>Grafica del gioco</summary>
+
+![Scorciatoie grafiche e filtri](docs/images/alpha16-graphics.png)
+
+</details>
+
+<details>
+<summary>DLSS: configurazione e parametri</summary>
+
+![Salva e ripristina affiancati](docs/images/alpha16-dlss-profile.png)
+
+![Parametri DLSS](docs/images/alpha16-dlss-parameters.png)
+
+</details>
+
+<details>
+<summary>Schermo e configurazione avanzata</summary>
+
+![Monitor selezionato e risoluzione](docs/images/alpha16-screen.png)
+
+![Configurazione avanzata del gioco](docs/images/alpha16-screen-advanced.png)
+
+</details>
+
+<details>
+<summary>Backup e punti di ripristino</summary>
+
+![Backup con Esamina ed Elimina](docs/images/alpha16-backups.png)
+
+</details>
+
+Verifica: **273/273 controlli core Windows superati**, controlli UI, avvio, updater e launcher Explorer riusciti. Le copie Remix generate richiedono un collaudo nel gioco sul PC dell'utente.
